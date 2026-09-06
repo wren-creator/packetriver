@@ -144,13 +144,15 @@ body {
 .swimmer { fill: #ffe4b8; stroke: #c98b45; stroke-width: .6; }
 .swimmer.sick { fill: #9bb06a; }
 
-.house .win  { fill: #b7ab90; }
-.house .win.on  { fill: #ffd759; }
-.house .drop { fill: #b7ab90; }
+/* the house window is the power indicator: warm yellow when the residential
+   feeder is up, dark when it drops */
+.house .win  { fill: #2a2320; transition: fill .4s; }
+.house .win.on  { fill: #ffd35a; filter: drop-shadow(0 0 3px #ffcf5a); }
+.house .drop { fill: #2a2320; }
 .house .drop.on { fill: var(--river); }
-.streetlight { fill: #b7ab90; }
-.streetlight.on { fill: var(--warn); }
+.streetlight { fill: #6a6250; }
+.streetlight.on { fill: #ffcf5a; filter: drop-shadow(0 0 2px #ffcf5a); }
 
-.train { fill: #7a5a3c; stroke: #4a3626; stroke-width: 1; }
-.spur.spur-set { stroke: var(--bad); }
+.spur { opacity: .7; }
+.spur.spur-set { stroke: var(--bad); opacity: 1; }
 .factory.fire  { fill: var(--bad); opacity: .55; }

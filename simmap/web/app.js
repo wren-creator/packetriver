@@ -48,15 +48,20 @@ function buildOverlay(layout) {
     points: layout.powerFeeder.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "#e3a52e", "stroke-width": 4, class: "flow" }, svg);
 
-  // rail + spur + train
+  // rail loop (perimeter) + spur + a little train
   REFS.rail = el("polyline", {
     points: layout.railPath.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
-    fill: "none", stroke: "#8a7d64", "stroke-width": 3, "stroke-dasharray": "2 6" }, svg);
-  const last = layout.railPath[layout.railPath.length - 1];
+    fill: "none", stroke: "#6f6350", "stroke-width": 2.5, "stroke-dasharray": "2 6",
+    opacity: 0.7 }, svg);
+  const sb = layout.spurBranch || layout.railPath[Math.floor(layout.railPath.length / 4)];
   REFS.spur = el("line", {
-    x1: X(last[0]), y1: Y(last[1]), x2: X(layout.spurEnd[0]), y2: Y(layout.spurEnd[1]),
-    stroke: "#8a7d64", "stroke-width": 3, class: "spur" }, svg);
-  REFS.train = el("rect", { width: 16, height: 8, rx: 2, class: "train" }, svg);
+    x1: X(sb[0]), y1: Y(sb[1]), x2: X(layout.spurEnd[0]), y2: Y(layout.spurEnd[1]),
+    stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
+  REFS.train = el("g", { class: "train" }, svg);
+  // loco + two cars, centred on the origin so the group can translate+rotate
+  el("rect", { x: -13, y: -3.5, width: 9, height: 7, rx: 1.5, fill: "#8a3b2f" }, REFS.train);
+  el("rect", { x: -3, y: -3, width: 7, height: 6, rx: 1, fill: "#5b4636" }, REFS.train);
+  el("rect", { x: 5, y: -3, width: 7, height: 6, rx: 1, fill: "#5b4636" }, REFS.train);
 
   // buildings: hotspot + status ring + badge
   for (const [id, b] of Object.entries(layout.buildings)) {
@@ -86,12 +91,13 @@ function buildOverlay(layout) {
 
   // houses + streetlights
   REFS.houses = layout.houses.map(hp => {
-    const g = el("g", { class: "house" }, svg);
-    el("path", { d: `M ${X(hp.x) - 9} ${Y(hp.y) + 8} L ${X(hp.x) - 9} ${Y(hp.y) - 3} ` +
-      `L ${X(hp.x)} ${Y(hp.y) - 10} L ${X(hp.x) + 9} ${Y(hp.y) - 3} L ${X(hp.x) + 9} ${Y(hp.y) + 8} Z`,
-      fill: "#efe6d0", stroke: "#b7a77e" }, g);
-    const win = el("rect", { x: X(hp.x) - 3, y: Y(hp.y) - 2, width: 6, height: 6, class: "win" }, g);
-    const drop = el("circle", { cx: X(hp.x) - 7, cy: Y(hp.y) + 4, r: 2.5, class: "drop" }, g);
+    const cx = X(hp.x), cy = Y(hp.y), g = el("g", { class: "house" }, svg);
+    el("path", { d: `M ${cx - 11} ${cy + 9} L ${cx - 11} ${cy - 3} L ${cx} ${cy - 12} ` +
+      `L ${cx + 11} ${cy - 3} L ${cx + 11} ${cy + 9} Z`,
+      fill: "#2b2521", stroke: "#0f0d0b", "stroke-width": 1 }, g);
+    // the window is the power indicator: yellow = powered, dark = out
+    const win = el("rect", { x: cx - 4, y: cy - 1, width: 8, height: 8, rx: 1, class: "win" }, g);
+    const drop = el("circle", { cx: cx + 7, cy: cy + 4, r: 2.6, class: "drop" }, g);
     return { win, drop };
   });
   REFS.streetlights = layout.streetlights.map(sp =>
@@ -142,18 +148,27 @@ function render(s) {
     R.crash.textContent = t.crash_count ? "⚠ " + t.crash_count : "";
   });
 
-  // rail
+  // rail: the train runs the full perimeter loop; on a thrown switch it ends
+  // up on the spur and stops.
   if (s.rail && REFS.rail) {
     const L = REFS.rail.getTotalLength();
-    let p = s.rail.derailed
-      ? REFS.spur.getPointAtLength(REFS.spur.getTotalLength())
-      : REFS.rail.getPointAtLength((s.rail.train_pos * L) % L);
-    REFS.train.setAttribute("x", p.x - 8);
-    REFS.train.setAttribute("y", p.y - 4);
+    let p, ang;
+    if (s.rail.derailed) {
+      p = REFS.spur.getPointAtLength(REFS.spur.getTotalLength());
+      const a = REFS.spur.getPointAtLength(0);
+      ang = Math.atan2(p.y - a.y, p.x - a.x) * 180 / Math.PI;
+    } else {
+      const d = (s.rail.train_pos * L) % L;
+      p = REFS.rail.getPointAtLength(d);
+      const q = REFS.rail.getPointAtLength((d + 6) % L);
+      ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+    }
+    REFS.train.setAttribute("transform", `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${ang.toFixed(1)})`);
     REFS.spur.classList.toggle("spur-set", s.rail.switch_position === "spur");
-    if (REFS.shops["factory"])
-      REFS.shops["factory"].ring.classList.toggle("factory", true),
+    if (REFS.shops["factory"]) {
+      REFS.shops["factory"].ring.classList.add("factory");
       REFS.shops["factory"].ring.classList.toggle("fire", !!s.rail.factory_fire);
+    }
   }
 
   // water / sewage / power
