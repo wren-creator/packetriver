@@ -94,6 +94,20 @@ TECHNIQUES = {
         "hint": "the card gateway's GET /receipt/<txn_id> has no auth or "
                 "ownership check; walk the ids",
     },
+
+    # --- First Packet Bank & Trust ---
+    "bank_jwt_none": {
+        "subsystem": "bank", "target": "bank", "effect": "bank_drain",
+        "severity": "loud", "base": 200,
+        "hint": "the JWT check honours {\"alg\":\"none\"}; forge a role:admin "
+                "token, then the staff dashboard shows the wire settlement token",
+    },
+    "bank_account_idor": {
+        "subsystem": "bank", "target": "bank", "effect": "bank_leak",
+        "severity": "medium", "base": 125,
+        "hint": "GET /api/accounts/<id> has no ownership check; the municipal "
+                "account's memo holds a reconciliation token",
+    },
     "water_modbus_pump": {
         "subsystem": "utility",
         "target": "water",

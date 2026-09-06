@@ -123,6 +123,24 @@ services:
       timeout: 5s
       retries: 8
 
+  # --- First Packet Bank & Trust (online banking) ---------------------
+  bank:
+    <<: *common
+    build: ./bank
+    container_name: packetriver-bank
+    depends_on:
+      scoring: { condition: service_healthy }
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:8100:8100"
+    networks: [it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- fake card gateway for the shops + utility bills ------------------
   paygw:
     <<: *common

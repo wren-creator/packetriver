@@ -159,7 +159,10 @@
       "w": 0.046,
       "h": 0.056,
       "label": "First Packet Bank & Trust",
-      "kind": "bank"
+      "kind": "bank",
+      "port": 8100,
+      "path": "/",
+      "technique": "bank_jwt_none"
     },
     "cityhall": {
       "x": 0.49,

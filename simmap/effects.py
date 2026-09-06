@@ -53,6 +53,7 @@ EFFECTS = {
 
     # --- Bank / civic ---
     "bank_drain":      _bank_drain,
+    "bank_leak":       lambda town, p: setattr(town.bank, "site_status", "db_dumped"),
     "cityhall_deface": _cityhall_deface,
     "cityhall_payroll": lambda town, p: (
         setattr(town.cityhall, "payroll_balance", 0),

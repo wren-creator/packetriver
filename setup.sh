@@ -8,7 +8,7 @@ require_docker
 
 # Host ports Packet River publishes (all on 127.0.0.1). If any is already
 # taken the containers will fail to bind.
-PORTS=(8080 8090 8093 8500 1883 5502 5503)
+PORTS=(8080 8090 8093 8100 8500 1883 5502 5503)
 info "checking host ports ${PORTS[*]}"
 BUSY=0
 for p in "${PORTS[@]}"; do
