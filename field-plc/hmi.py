@@ -81,8 +81,8 @@ def index():
     power_rows = [
         ("Main incomer breaker", brk(pco[POWER["coil"]["BRK_MAIN"]])),
         ("Residential feeder", brk(pco[POWER["coil"]["BRK_RES"]])),
-        ("Downtown feeder", brk(pco[POWER["coil"]["BRK_DT"]])),
-        ("Industrial feeder", brk(pco[POWER["coil"]["BRK_IND"]])),
+        ("Business feeder (Main St)", brk(pco[POWER["coil"]["BRK_BIZ"]])),
+        ("Plants feeder (factory / water / sewage)", brk(pco[POWER["coil"]["BRK_IND"]])),
         ("Streetlights feeder", brk(pco[POWER["coil"]["BRK_ST"]])),
         ("Local generation", onoff(pco[POWER["coil"]["GEN_ENABLE"]])),
         ("Bus frequency", f"{phr[POWER['hr']['BUS_FREQ']] / 100:.2f} Hz"),

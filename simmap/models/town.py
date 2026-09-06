@@ -82,7 +82,7 @@ class Power:
     bus_freq_hz: float = 60.0
     feeders: dict = field(default_factory=lambda: {
         "residential": True,
-        "downtown": True,
+        "business": True,
         "streetlights": True,
         "industrial": True,
     })
@@ -180,9 +180,9 @@ class TownState:
         self.state_seq += 1
 
     def _step_traffic(self, dt: float) -> None:
-        downtown_up = self.power.feeders["downtown"]
+        business_up = self.power.feeders["business"]
         for x in self.traffic:
-            if not downtown_up:
+            if not business_up:
                 x.phase = "dark"
                 continue
             if x.mode == "ALL-GREEN":
@@ -246,7 +246,7 @@ class TownState:
     def _step_bank(self) -> None:
         # Alarm is armed only while the industrial feeder is up and nobody has
         # cut it via the alarm panel.
-        self.bank.alarm_armed = self.power.feeders["industrial"] and not self.bank._alarm_cut
+        self.bank.alarm_armed = self.power.feeders["business"] and not self.bank._alarm_cut
 
     def _step_alert(self, dt: float) -> None:
         a = self.alert

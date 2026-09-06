@@ -16,8 +16,10 @@ WATER = dict(
 )
 
 # --- power substation bus (container port 503) ------------------------
+# feeders: RES = houses, BIZ = Main Street + Town Hall + bank, IND = the plants
+# (widget factory, water company, sewage), ST = streetlights.
 POWER = dict(
-    coil=dict(BRK_MAIN=0, BRK_RES=1, BRK_DT=2, BRK_IND=3, BRK_ST=4,
+    coil=dict(BRK_MAIN=0, BRK_RES=1, BRK_BIZ=2, BRK_IND=3, BRK_ST=4,
               GEN_ENABLE=5, MAINT_MODE=8),
     hr=dict(GEN_SP=0, BUS_FREQ=10, BUS_VOLT=11, LOAD=12),
     golden=dict(GEN_SP=80),                           # 8.0 MW

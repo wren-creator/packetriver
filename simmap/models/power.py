@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-FEEDERS = ["residential", "downtown", "industrial", "streetlights"]
+FEEDERS = ["residential", "business", "industrial", "streetlights"]
 
 
 @dataclass
@@ -20,11 +20,11 @@ class PowerModel:
     load_mw: float = 7.6
     feeders: dict = field(default_factory=lambda: {f: True for f in FEEDERS})
 
-    def step(self, dt: float, *, main: bool, res: bool, downtown: bool,
+    def step(self, dt: float, *, main: bool, res: bool, business: bool,
              industrial: bool, streetlights: bool, gen: bool, sp_mw: float) -> None:
         self.feeders = {
             "residential": bool(res and main),
-            "downtown": bool(downtown and main),
+            "business": bool(business and main),
             "industrial": bool(industrial and main),
             "streetlights": bool(streetlights and main),
         }

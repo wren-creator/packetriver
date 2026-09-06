@@ -320,8 +320,9 @@ const DEBUG_ACTIONS = [
   ["Deface Town Hall", { effect: "cityhall_deface", player: "debug" }],
   ["Break water main", { effect: "water_main_break" }],
   ["Sewage bypass", { effect: "sewage_bypass" }],
-  ["Trip industrial feeder", { effect: "power_trip_feeder", feeder: "industrial" }],
   ["Trip residential feeder", { effect: "power_trip_feeder", feeder: "residential" }],
+  ["Trip business feeder", { effect: "power_trip_feeder", feeder: "business" }],
+  ["Trip plants feeder", { effect: "power_trip_feeder", feeder: "industrial" }],
   ["Hijack all lights", { effect: "traffic_all_green" }],
   ["Throw rail switch", { effect: "rail_switch_spur" }],
 ];

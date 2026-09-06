@@ -24,9 +24,9 @@ TICK = float(os.environ.get("TICK_SECONDS", "1.0"))
 
 W = dict(INTAKE=0, HIGHLIFT=1, CHLORINE=2, MAIN_VALVE=3, MAINT=8,
          HIGHLIFT_SP=0, CHLORINE_SP=1, TANK=10, PRESS=11, CL=12, FLOW=13)
-P = dict(MAIN=0, RES=1, DT=2, IND=3, ST=4, GEN=5, MAINT=8,
+P = dict(MAIN=0, RES=1, BIZ=2, IND=3, ST=4, GEN=5, MAINT=8,
          GEN_SP=0, FREQ=10, VOLT=11, LOAD=12)
-FEEDER_COIL = {"residential": P["RES"], "downtown": P["DT"],
+FEEDER_COIL = {"residential": P["RES"], "business": P["BIZ"],
                "industrial": P["IND"], "streetlights": P["ST"]}
 WATER_GOLDEN_SP = (620, 120)   # high-lift psi x10, chlorine ppm x100
 POWER_GOLDEN_SP = 80           # generation MW x10
@@ -92,7 +92,7 @@ def _power_loop(town, lock) -> None:
             model.step(
                 TICK,
                 main=bool(co[P["MAIN"]]), res=bool(co[P["RES"]]),
-                downtown=bool(co[P["DT"]]), industrial=bool(co[P["IND"]]),
+                business=bool(co[P["BIZ"]]), industrial=bool(co[P["IND"]]),
                 streetlights=bool(co[P["ST"]]), gen=bool(co[P["GEN"]]),
                 sp_mw=hr[P["GEN_SP"]] / 10.0,
             )
