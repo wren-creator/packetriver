@@ -8,8 +8,9 @@ name: packetriver
 # and status.sh re-audits. it-net, ot-net, and bus-net are internal so nothing
 # on them can reach the internet.
 #
-# Phase 0 scaffold: gateway + simmap + scoring + bus. The vulnerable target
-# districts (shops, city hall, utilities, traffic, rail) land in later phases.
+# Phase 1: gateway + simmap + scoring + bus, plus the first real target
+# district - the General Store (websites + db) behind its login portal - and
+# the boxed-in player box. More districts land in later phases.
 
 x-common: &common
   restart: unless-stopped
@@ -61,14 +62,79 @@ services:
       bus: { condition: service_healthy }
     environment:
       MQTT_HOST: "bus"
+      SESSION_SECRET: "${SESSION_SECRET:-packet-river-dev-secret}"
     volumes:
       - scoring-data:/data
+      - pkt-flags:/run/secret          # writes each target's flag here for it to plant
     networks: [it-net, bus-net]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8001/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 6
+
+  # --- the vulnerable Main Street storefronts (Phase 1: General Store) ---
+  db:
+    <<: *common
+    image: mariadb:11
+    container_name: packetriver-db
+    command: ["--innodb-buffer-pool-size=64M", "--local-infile=1"]
+    environment:
+      MARIADB_ROOT_PASSWORD: "root"
+      MARIADB_DATABASE: "generalstore"
+      MARIADB_USER: "shop"
+      MARIADB_PASSWORD: "shop"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./db/init/generalstore.sql:/docker-entrypoint-initdb.d/10-generalstore.sql:ro
+      - ./db/my.cnf:/etc/mysql/conf.d/packetriver.cnf:ro
+    networks: [it-net]
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h127.0.0.1 -uroot -proot --silent || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  websites:
+    <<: *common
+    build: ./websites
+    container_name: packetriver-websites
+    depends_on:
+      db:      { condition: service_healthy }
+      scoring: { condition: service_healthy }
+    environment:
+      DB_HOST: "db"
+      DB_NAME: "generalstore"
+      DB_USER: "shop"
+      DB_PASS: "shop"
+      VERBOSE_ERRORS: "${VERBOSE_ERRORS:-1}"
+    volumes:
+      - pkt-flags:/run/secret:ro       # Phase 3 tightens this to a per-target subpath
+    ports:
+      - "127.0.0.1:8090:80"
+    # on edge-net too so the published port has a route back from the host
+    # (a container only on internal networks can't publish reliably)
+    networks: [it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/health.php || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+
+  # --- the boxed-in attacker workstation --------------------------------
+  player:
+    <<: *common
+    build: ./player
+    container_name: packetriver-player
+    cap_add: [NET_ADMIN]
+    depends_on:
+      websites: { condition: service_healthy }
+    networks: [it-net]               # Phase 4 hardening moves this to edge-net + a real pivot
+    healthcheck:
+      test: ["CMD-SHELL", "command -v sqlmap >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   # --- event bus AND a deliberately-open MQTT target ------------------
   # On edge-net as well so its published port has a route back from the host
@@ -103,3 +169,5 @@ networks:
 
 volumes:
   scoring-data:
+  db-data:
+  pkt-flags:

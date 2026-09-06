@@ -40,21 +40,33 @@ gateway), `field-plc` (water + sewage + electric soft-PLCs in one container),
 `player` (the attacker box). Cinema and Bakery render on the map but are set
 dressing.
 
-## Services (Phase 0)
+## Services (through Phase 1)
 
 | Service | Stack | Role |
 |---|---|---|
 | `gateway` | nginx:alpine | Reverse proxy and, later, vhost router. Proxies `/` and `/api/state` and `/ws` to `simmap`, `/api/score/*` to `scoring`. Writes a JSON access log (a shared volume for the Alert-Level tailer arrives in Phase 4). |
-| `simmap` | python:3.12-slim, Flask + flask-sock + paho-mqtt | The town state model, a 1 s tick loop, a coarse physics pass, the MQTT bridge, the WebSocket feed, and the map UI (a pixel-art isometric base image + a calibrated live SVG overlay from `web/overlay.json`, light palette). Serves the UI itself; `gateway` just proxies. |
-| `scoring` | python:3.12-alpine, Flask + paho-mqtt | Owns `scoring.db` (SQLite on a named volume). Phase 0 is schema + health + stubs; Phase 1 adds flag generation/injection, auth, submission validation, the score formula, and the leaderboard. |
+| `simmap` | python:3.12-slim, Flask + flask-sock + paho-mqtt | The town state model, a 1 s tick loop, a coarse physics pass, the MQTT bridge, the WebSocket feed, and the map UI (a pixel-art isometric base image + a calibrated live SVG overlay from `web/overlay.json`, light palette). Subscribes `pkt/score/events` and breaks the named part of the town on a valid submission. Serves the UI itself; `gateway` just proxies. |
+| `scoring` | python:3.12-alpine, Flask + paho-mqtt | Owns `scoring.db` (SQLite on a named volume) and the flags. `flags.py` mints a random `PKTR{...}` per technique at boot, records the authoritative technique -> (flag, effect, points) map, and drops each flag onto the shared `pkt-flags` volume. `auth.py` = HMAC signed-cookie sessions + scrypt. `POST /api/score/{register,login,logout,run,arm,submit}`, `GET /me` + `/leaderboard`. The only write path is `submit {flag}`; points are a pure function of a valid random flag + server-held timing. On a hit it publishes `pkt/score/events`. |
 | `bus` | eclipse-mosquitto:2 | Event bus for `pkt/#`, and a target: `pkt/traffic/#` is world-writable in the flat build. |
+| `db` | mariadb:11 | Real MySQL (the SQLi syllabus needs `information_schema`, `UNION`, verbose errors). Phase 1: the `generalstore` schema + seed. Capped buffer pool. |
+| `websites` | php:8.2-apache | The vulnerable Main Street storefronts. Phase 1: the General Store behind its login portal, with a real concatenated-`LIKE` SQL injection in the authenticated search. Its entrypoint waits for the db and plants this session's flag into `staff_notes`. Published on `127.0.0.1:8090` for the map UI to iframe. |
+| `player` | python:3.12-slim + tools | The boxed-in attacker box: sqlmap, nmap, curl, jq. Default route dropped at start; `scripts/targets.py` is a lab-only allowlist guard. |
 
 ## Networks
 
-- `edge-net` (bridge) - `gateway`, and later `player`. Faces the host.
-- `it-net` (bridge, `internal: true`) - `gateway`, `simmap`, `scoring`, `bus`, and later `websites`, `db`, `paygw`.
+- `edge-net` (bridge) - `gateway`, `bus`, `websites`. Faces the host, so published ports have a route back. (`bus` and `websites` are also on `it-net`; a container only on internal networks can't publish reliably.)
+- `it-net` (bridge, `internal: true`) - `gateway`, `simmap`, `scoring`, `bus`, `websites`, `db`, `player`, and later `paygw` / `bank`.
 - `bus-net` (bridge, `internal: true`) - `bus`, `simmap`, `scoring`, and later `traffic-plc`.
-- `ot-net` (bridge, `internal: true`) - added in Phase 2 for the PLC protocol endpoints and their HMIs. The `player` box never joins it; OT is reachable only after a pivot through `websites`.
+- `ot-net` (bridge, `internal: true`) - added in Phase 2 for the PLC protocol endpoints and their HMIs. `player` moves off `it-net` in the Phase 4 hardening and reaches OT only after a pivot through `websites`.
+
+## Anti-cheat (from Phase 1)
+
+The flag string is the only currency. It exists only in `scoring.db` and inside
+the one vulnerable resource it was planted in, never in simmap, the browser, or
+the `player` box (which does not mount `pkt-flags`). `submit` needs a session
+and an active run, one accepted flag per (run, technique), wrong guesses just
+return `{accepted:false}`. Phase 3 tightens the `pkt-flags` mount into
+`websites` to a per-target subpath so one storefront can't read another's flag.
 
 Every published port binds to `127.0.0.1`. `lib.sh:assert_loopback_only` parses
 `docker compose config` and refuses to start if any `published:` port lacks
@@ -101,11 +113,3 @@ placeholder art's layout and gets re-calibrated when the base image changes.
   reconnects with backoff and derives all animation from state, never from
   having seen every event.
 
-## Anti-cheat (from Phase 1)
-
-There is no "award points" endpoint. The only write path is
-`POST /api/score/submit {flag}`, and points are a pure server-side function of
-a valid random flag plus server-held timing and Alert state. Flags are minted
-per `docker compose up`, written to a shared volume mounted read-only into only
-the one target that owns each, and never reach `simmap`, the browser, or the
-`player` box.

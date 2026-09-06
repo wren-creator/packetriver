@@ -21,6 +21,10 @@ echo
 info "endpoint checks"
 code="$(curl -fsS -o /dev/null -w '%{http_code}' "http://127.0.0.1:8080/health" 2>/dev/null || true)"
 [ "$code" = "200" ] && ok "city map  ($code)" || bad "city map  ($code)"
+gs="$(curl -fsS -o /dev/null -w '%{http_code}' "http://127.0.0.1:8090/health.php" 2>/dev/null || true)"
+if [ "$gs" = "200" ]; then ok "General Store  ($gs)"
+elif [ -z "$gs" ] || [ "$gs" = "000" ]; then warn "General Store  (not running)"
+else bad "General Store  ($gs)"; fi
 if (exec 3<>"/dev/tcp/127.0.0.1/1883") 2>/dev/null; then ok "event bus  (127.0.0.1:1883 open)"; exec 3>&- || true
 else bad "event bus  (127.0.0.1:1883 closed)"; fi
 

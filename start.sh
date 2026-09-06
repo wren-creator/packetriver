@@ -48,7 +48,9 @@ done
 echo
 ok "Packet River is up  [$MODE]"
 echo "  city map        http://127.0.0.1:8080/"
+echo "  General Store   http://127.0.0.1:8090/   (a target - click it on the map too)"
 echo "  event bus       127.0.0.1:1883   MQTT (also a target: pkt/traffic/#)"
 echo
+echo "  attacker shell:         docker compose exec player sh"
 echo "  reset to golden state:  ./reset.sh"
 echo "  hardened run:           ./start.sh --segmented   (Phase 4+)"

@@ -11,28 +11,37 @@ function el(tag, attrs, parent) {
   if (parent) parent.appendChild(n);
   return n;
 }
+function $(id) { return document.getElementById(id); }
 function toast(msg) {
-  const t = document.getElementById("toast");
+  const t = $("toast");
   t.textContent = msg; t.hidden = false;
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => { t.hidden = true; }, 2600);
+  toast._t = setTimeout(() => { t.hidden = true; }, 2800);
+}
+async function api(path, method = "GET", body) {
+  const r = await fetch(path, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = {};
+  try { data = await r.json(); } catch {}
+  return { ok: r.ok, status: r.status, data };
 }
 
 // ----------------------------------------------------------- overlay build
-const REFS = { shops: {}, civic: {}, ints: [], houses: [], streetlights: [] };
+const REFS = { shops: {}, ints: [], houses: [], streetlights: [] };
 let LAYOUT = null;
 
 function buildOverlay(layout) {
   LAYOUT = layout;
   VB = layout.viewBox || [1000, 545];
-  const svg = document.getElementById("overlay");
+  const svg = $("overlay");
   svg.setAttribute("viewBox", `0 0 ${VB[0]} ${VB[1]}`);
   svg.innerHTML = "";
 
-  // river + outfall + swimmers
   const r = layout.river;
-  REFS.river = el("rect", { x: X(r.x), y: Y(r.y), width: X(r.w), height: Y(r.h),
-    class: "river-body" }, svg);
+  REFS.river = el("rect", { x: X(r.x), y: Y(r.y), width: X(r.w), height: Y(r.h), class: "river-body" }, svg);
   REFS.outfall = el("line", {
     x1: X(layout.outfall[0][0]), y1: Y(layout.outfall[0][1]),
     x2: X(layout.outfall[1][0]), y2: Y(layout.outfall[1][1]),
@@ -40,7 +49,6 @@ function buildOverlay(layout) {
   REFS.swimmers = layout.swimmers.map(p =>
     el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "swimmer" }, svg));
 
-  // water main + power feeder flows
   REFS.waterMain = el("polyline", {
     points: layout.waterMain.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "#2f8fbf", "stroke-width": 4, class: "flow" }, svg);
@@ -48,54 +56,39 @@ function buildOverlay(layout) {
     points: layout.powerFeeder.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "#e3a52e", "stroke-width": 4, class: "flow" }, svg);
 
-  // the train's motion path (invisible; the track itself is in the base art)
-  // + the spur + a little three-car train
   REFS.rail = el("polyline", {
     points: layout.railPath.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "none", opacity: 0 }, svg);
-  const sb = layout.spurBranch || layout.railPath[Math.floor(layout.railPath.length / 4)];
+  const sb = layout.spurBranch || layout.railPath[0];
   REFS.spur = el("line", {
     x1: X(sb[0]), y1: Y(sb[1]), x2: X(layout.spurEnd[0]), y2: Y(layout.spurEnd[1]),
     stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
   REFS.train = el("g", { class: "train" }, svg);
-  // chunky little train: loco (with a stack) + two cars, centred on the origin
-  // so the group can translate + rotate along the path
   el("rect", { x: -17, y: -5, width: 12, height: 10, fill: "#8a3b2f", stroke: "#3a1c16" }, REFS.train);
   el("rect", { x: -15, y: -9, width: 4, height: 4, fill: "#3a1c16" }, REFS.train);
   el("rect", { x: -4, y: -4.5, width: 9, height: 9, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
-  el("rect", { x: 6, y: -4.5, width: 9, height: 9, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
+  el("rect", { x: 5, y: -4.5, width: 9, height: 9, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
 
-  // buildings: hotspot + status ring + badge
   for (const [id, b] of Object.entries(layout.buildings)) {
     const w = X(b.w), h = Y(b.h), x = X(b.x) - w / 2, y = Y(b.y) - h / 2;
     const g = el("g", { id: "b-" + id }, svg);
-    el("rect", { x, y, width: w, height: h, rx: 4,
-      class: "ring healthy " + id }, g).classList.add("ring");
+    const ring = el("rect", { x, y, width: w, height: h, rx: 4, class: "ring healthy" }, g);
     const hot = el("rect", { x, y, width: w, height: h, rx: 4, class: "hotspot" }, g);
     hot.addEventListener("click", () => openTarget(id, b));
-    const badge = el("text", { x: X(b.x), y: y - 4, "text-anchor": "middle",
-      class: "badge", visibility: "hidden" }, g);
-    const rec = { g, ring: g.querySelector(".ring"), badge, kind: b.kind };
-    if (b.kind === "shop" || b.kind === "bank" || b.kind === "civic" || b.kind === "utility")
-      REFS.civic[id] = rec;
-    REFS.shops[id] = rec;
+    const badge = el("text", { x: X(b.x), y: y - 4, "text-anchor": "middle", class: "badge", visibility: "hidden" }, g);
+    REFS.shops[id] = { g, ring, badge, kind: b.kind };
   }
 
-  // intersections
   REFS.ints = layout.intersections.map(it => {
     const g = el("g", { id: "int" + it.id, class: "int" }, svg);
     const ns = el("circle", { cx: X(it.x), cy: Y(it.y) - 9, r: 4.5, class: "light off" }, g);
     const ew = el("circle", { cx: X(it.x) + 12, cy: Y(it.y), r: 4.5, class: "light off" }, g);
-    const crash = el("text", { x: X(it.x) + 8, y: Y(it.y) - 14, class: "badge defaced",
-      "font-size": 10 }, g);
+    const crash = el("text", { x: X(it.x) + 8, y: Y(it.y) - 14, class: "badge defaced", "font-size": 10 }, g);
     return { g, ns, ew, crash };
   });
 
-  // houses + streetlights
   REFS.houses = layout.houses.map(hp => {
     const cx = X(hp.x), cy = Y(hp.y), g = el("g", { class: "house" }, svg);
-    // no house body (the art has the houses); just the indicators over it.
-    // window = power: warm glow when the residential feeder is up, dim dot when out.
     const win = el("rect", { x: cx - 4, y: cy - 4, width: 8, height: 8, rx: 1.5, class: "win" }, g);
     const drop = el("circle", { cx: cx - 8, cy: cy + 3, r: 2.4, class: "drop" }, g);
     return { win, drop };
@@ -104,38 +97,32 @@ function buildOverlay(layout) {
     el("circle", { cx: X(sp.x), cy: Y(sp.y), r: 3, class: "streetlight" }, svg));
 }
 
-function openTarget(id, b) {
-  // Phase 1+ opens the real service in a side panel; its first screen is a
-  // login portal (Cross Creek / Widgetorium style). Phase 0 just names it.
-  if (b.kind === "dressing") { toast(b.label + " — just scenery"); return; }
-  toast(b.label + " — login portal opens here in Phase 1");
+// ---------------------------------------------------------------- render
+function setStatus(rec, status) {
+  if (!rec) return;
+  rec.ring.setAttribute("class", "ring " + status);
+  if (status === "healthy") {
+    rec.badge.setAttribute("visibility", "hidden");
+  } else {
+    rec.badge.setAttribute("visibility", "visible");
+    rec.badge.setAttribute("class", "badge " + status);
+    rec.badge.textContent = status.replace("_", " ");
+  }
 }
 
-// --------------------------------------------------------------- render
 function render(s) {
-  const setStatus = (rec, status) => {
-    if (!rec) return;
-    rec.ring.setAttribute("class", "ring " + status + " " + (rec.ring.dataset.id || ""));
-    if (status === "healthy") { rec.badge.setAttribute("visibility", "hidden"); }
-    else {
-      rec.badge.setAttribute("visibility", "visible");
-      rec.badge.setAttribute("class", "badge " + status);
-      rec.badge.textContent = status.replace("_", " ");
-    }
-  };
-
   (s.shops || []).forEach(sh => setStatus(REFS.shops[sh.key], sh.site_status));
   if (s.bank) {
     setStatus(REFS.shops["bank"], s.bank.site_status);
-    if (!s.bank.alarm_armed && REFS.shops["bank"])
-      REFS.shops["bank"].badge.setAttribute("visibility", "visible"),
+    if (!s.bank.alarm_armed && REFS.shops["bank"]) {
+      REFS.shops["bank"].badge.setAttribute("visibility", "visible");
       REFS.shops["bank"].badge.textContent = "alarm cut";
+    }
   }
   if (s.cityhall) setStatus(REFS.shops["cityhall"], s.cityhall.site_status);
   if (s.police) setStatus(REFS.shops["police"], s.police.site_status);
   if (s.fire) setStatus(REFS.shops["fire"], s.fire.site_status);
 
-  // traffic
   (s.traffic || []).forEach((t, i) => {
     const R = REFS.ints[i]; if (!R) return;
     const setL = (node, c) => node.setAttribute("class", "light " + c);
@@ -148,9 +135,6 @@ function render(s) {
     R.crash.textContent = t.crash_count ? "⚠ " + t.crash_count : "";
   });
 
-  // rail: the train runs the visible top track (train_pos 0..1), leaves the
-  // frame, and reappears at the start after a beat. A thrown switch sends it
-  // down the spur, where it stops.
   if (s.rail && REFS.rail) {
     const L = REFS.rail.getTotalLength();
     let p, ang, show = true;
@@ -163,9 +147,7 @@ function render(s) {
       p = REFS.rail.getPointAtLength(d);
       const q = REFS.rail.getPointAtLength(Math.min(L, d + 6));
       ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
-    } else {
-      show = false;   // off screen, waiting to come around again
-    }
+    } else { show = false; }
     REFS.train.setAttribute("visibility", show ? "visible" : "hidden");
     if (show)
       REFS.train.setAttribute("transform",
@@ -177,7 +159,6 @@ function render(s) {
     }
   }
 
-  // water / sewage / power
   if (s.water) REFS.waterMain.classList.toggle("stopped", s.water.quality === "dry");
   if (s.sewage) {
     REFS.river.classList.toggle("foul", s.sewage.river_contamination > 0.4);
@@ -195,10 +176,9 @@ function render(s) {
     REFS.houses[i].drop.classList.toggle("on", !!h.has_water);
   });
 
-  // hud
   const lvl = (s.alert && s.alert.level) || 0;
-  document.getElementById("hud-alert").dataset.lvl = lvl;
-  document.getElementById("hud-alert-lvl").textContent = lvl;
+  $("hud-alert").dataset.lvl = lvl;
+  $("hud-alert-lvl").textContent = lvl;
 }
 
 // ------------------------------------------------------------ transport
@@ -215,19 +195,127 @@ function connect() {
   };
 }
 function setConn(up) {
-  const c = document.getElementById("hud-conn");
+  const c = $("hud-conn");
   c.dataset.up = up ? "yes" : "no";
-  document.getElementById("hud-conn-lbl").textContent = up ? "live" : "down";
+  $("hud-conn-lbl").textContent = up ? "live" : "down";
+}
+
+// -------------------------------------------------------------- account
+let ME = { anon: true };
+
+async function refreshMe() {
+  const { data } = await api("/api/score/me");
+  ME = data;
+  $("hud-score").textContent = data.total ?? 0;
+  $("hud-best").textContent = data.best ?? 0;
+  const anon = !!data.anon;
+  $("auth-box").hidden = !anon;
+  $("run-box").hidden = anon;
+  $("who").textContent = anon ? "" : data.name;
+  if (!anon) {
+    const run = data.active_run;
+    $("run-state").textContent = run
+      ? `Run #${run.id} active — ${run.score_so_far} pts this run.`
+      : "No run started. Hit Start.";
+  }
+}
+
+async function refreshBoard() {
+  const { data } = await api("/api/score/leaderboard");
+  const ol = $("board");
+  ol.innerHTML = "";
+  if (!Array.isArray(data) || !data.length) {
+    ol.innerHTML = '<li class="hint">nobody on the board yet</li>';
+    return;
+  }
+  data.forEach(row => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${escapeHtml(row.name)}</span><b>${row.best_run_total}</b>`;
+    ol.appendChild(li);
+  });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function wireAccount() {
+  $("auth-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    await doAuth("/api/score/login");
+  });
+  $("auth-register").addEventListener("click", () => doAuth("/api/score/register"));
+  $("auth-logout").addEventListener("click", async () => {
+    await api("/api/score/logout", "POST", {});
+    await refreshMe();
+  });
+  $("run-start").addEventListener("click", async () => {
+    const { ok, data } = await api("/api/score/run", "POST", {});
+    if (ok) { toast("run #" + data.run_id + " started"); refreshMe(); }
+    else toast(data.error || "could not start run");
+  });
+}
+
+async function doAuth(path) {
+  const name = $("auth-name").value.trim();
+  const password = $("auth-pass").value;
+  const errEl = $("auth-err");
+  errEl.hidden = true;
+  const { ok, data } = await api(path, "POST", { name, password });
+  if (ok) {
+    $("auth-pass").value = "";
+    await refreshMe();
+    await refreshBoard();
+  } else {
+    errEl.textContent = data.error || "that didn't work";
+    errEl.hidden = false;
+  }
+}
+
+// ----------------------------------------------------------- site panel
+function openTarget(id, b) {
+  if (b.kind === "dressing") { toast(b.label + " — just scenery"); return; }
+  if (!b.port) { toast(b.label + " — comes online in a later phase"); return; }
+  const url = `${location.protocol}//${location.hostname}:${b.port}/`;
+  $("sitepanel-title").textContent = b.label + " — login portal";
+  $("sitepanel-open").href = url;
+  $("sitepanel-frame").src = url;
+  $("flag-input").value = "";
+  $("flag-result").textContent = "";
+  $("submit-flag").hidden = !b.technique;
+  $("submit-flag").dataset.technique = b.technique || "";
+  $("sitepanel").hidden = false;
+}
+
+function wireSitePanel() {
+  $("sitepanel-close").addEventListener("click", () => {
+    $("sitepanel").hidden = true;
+    $("sitepanel-frame").src = "about:blank";
+  });
+  $("submit-flag").addEventListener("submit", async e => {
+    e.preventDefault();
+    const flag = $("flag-input").value.trim();
+    const res = $("flag-result");
+    if (ME.anon) { res.textContent = "log in first"; return; }
+    if (!ME.active_run) { res.textContent = "start a run first"; return; }
+    res.textContent = "checking…";
+    const { data } = await api("/api/score/submit", "POST", { flag });
+    if (data.accepted) {
+      res.textContent = `+${data.points} (${JSON.stringify(data.breakdown)})`;
+      toast(`+${data.points} — ${data.target} breached`);
+      refreshMe(); refreshBoard();
+    } else {
+      res.textContent = data.detail || "not a valid flag";
+    }
+  });
 }
 
 // ---------------------------------------------------------------- panels
 const DEBUG_ACTIONS = [
-  ["Dump General Store", { effect: "shop_sqli_dump", shop: "generalstore" }],
   ["Deface Barbershop", { effect: "shop_xss_deface", shop: "barber" }],
   ["Card the Diner Wi-Fi", { effect: "shop_carded", shop: "diner" }],
   ["Drain the Bank", { effect: "bank_drain" }],
   ["Deface Town Hall", { effect: "cityhall_deface", player: "debug" }],
-  ["Drain payroll", { effect: "cityhall_payroll" }],
   ["Break water main", { effect: "water_main_break" }],
   ["Sewage bypass", { effect: "sewage_bypass" }],
   ["Trip industrial feeder", { effect: "power_trip_feeder", feeder: "industrial" }],
@@ -237,12 +325,11 @@ const DEBUG_ACTIONS = [
 ];
 
 async function post(url, body) {
-  await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body || {}) });
+  await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
 }
 
 function buildPanels(cfg) {
-  const rb = document.getElementById("reset-buttons");
+  const rb = $("reset-buttons");
   (cfg.reset_scopes || ["all"]).forEach(scope => {
     const b = document.createElement("button");
     b.textContent = scope;
@@ -250,7 +337,7 @@ function buildPanels(cfg) {
     b.onclick = () => post("/api/debug/reset", { scope });
     rb.appendChild(b);
   });
-  const db = document.getElementById("debug-buttons");
+  const db = $("debug-buttons");
   DEBUG_ACTIONS.forEach(([label, body]) => {
     const b = document.createElement("button");
     b.textContent = label; b.className = "danger";
@@ -260,13 +347,13 @@ function buildPanels(cfg) {
 }
 
 function setupDonation(tag) {
-  const box = document.getElementById("donation");
+  const box = $("donation");
   try { if (localStorage.getItem("pktr_donation_dismissed") === "1") return; } catch {}
-  const link = document.getElementById("donation-link");
+  const link = $("donation-link");
   link.textContent = "$" + tag;
   link.href = "https://cash.app/$" + tag;
   box.hidden = false;
-  document.getElementById("donation-dismiss").onclick = () => {
+  $("donation-dismiss").onclick = () => {
     box.hidden = true;
     try { localStorage.setItem("pktr_donation_dismissed", "1"); } catch {}
   };
@@ -274,12 +361,18 @@ function setupDonation(tag) {
 
 // ---------------------------------------------------------------- boot
 (async function () {
-  let layout, cfg = { reset_scopes: ["all"], cashapp: "britleywren", phase: 0 };
+  let layout, cfg = { reset_scopes: ["all"], cashapp: "britleywren", phase: 1 };
   try { layout = await (await fetch("/overlay.json")).json(); } catch (e) { console.error(e); }
   try { cfg = await (await fetch("/api/config")).json(); } catch {}
   if (layout) buildOverlay(layout);
-  document.getElementById("phase-badge").textContent = "phase " + (cfg.phase ?? 0) + " · scaffold";
+  $("phase-badge").textContent = "phase " + (cfg.phase ?? 1);
   buildPanels(cfg);
   setupDonation(cfg.cashapp || "britleywren");
+  wireAccount();
+  wireSitePanel();
   connect();
+  await refreshMe();
+  await refreshBoard();
+  setInterval(refreshMe, 5000);
+  setInterval(refreshBoard, 12000);
 })();

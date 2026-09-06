@@ -8,11 +8,14 @@ reuse map live in the design doc.
   lifecycle scripts + loopback guard, compose skeleton (gateway, simmap,
   scoring, bus), the pixel-art live map + overlay with a debug breach/reset
   path, `docs/architecture.md`.
-- [ ] **Phase 1 - Vertical slice.** The General Store behind a login portal:
-  real SQLi + verbose errors, `db`, per-session flag generation + injection,
-  signed-cookie auth, `POST /api/score/{arm,submit}`, the score formula, the
-  leaderboard, the `player` attacker box. Deliverable: sign up, `sqlmap` past
-  the portal, watch the shop break on the map, beat your best, reset it.
+- [x] **Phase 1 - Vertical slice.** The General Store behind a login portal:
+  real concatenated-`LIKE` SQLi + verbose errors + reflected XSS in the search,
+  `db` (MariaDB), per-session flag generation + injection, HMAC signed-cookie
+  auth + scrypt, `POST /api/score/{register,login,run,arm,submit}` + `/me` +
+  `/leaderboard`, the score formula, the live leaderboard, the target
+  side-panel, the boxed-in `player` box. Sign up, get a shop session, UNION the
+  flag out of the search, submit it, watch the store break on the map (+alert),
+  beat your best. Overlay alignment still rough - tweak later.
 - [ ] **Phase 2 - Water + power districts.** `field-plc` (water + electric
   soft-PLCs), the physics integrators lifted from `crosscreek/process-sim`,
   Modbus/S7 attack scripts, houses that go dry and dark. Validate `python-snap7`

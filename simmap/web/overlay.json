@@ -7,7 +7,7 @@
     "sewage":       {"x": 0.675, "y": 0.160, "w": 0.090, "h": 0.090, "label": "Sewage Plant", "kind": "utility"},
     "factory":      {"x": 0.530, "y": 0.145, "w": 0.090, "h": 0.110, "label": "Widget Factory", "kind": "dressing"},
     "tavern":       {"x": 0.405, "y": 0.435, "w": 0.042, "h": 0.048, "label": "Tavern / Watering Hole", "kind": "shop"},
-    "generalstore": {"x": 0.440, "y": 0.415, "w": 0.040, "h": 0.046, "label": "General Store", "kind": "shop"},
+    "generalstore": {"x": 0.440, "y": 0.415, "w": 0.040, "h": 0.046, "label": "General Store", "kind": "shop", "port": 8090, "technique": "generalstore_sqli"},
     "bakery":       {"x": 0.465, "y": 0.400, "w": 0.032, "h": 0.040, "label": "Bakery", "kind": "dressing"},
     "pharmacy":     {"x": 0.490, "y": 0.385, "w": 0.038, "h": 0.044, "label": "Pharmacy / Apothecary", "kind": "shop"},
     "diner":        {"x": 0.516, "y": 0.366, "w": 0.038, "h": 0.044, "label": "Local Diner / Cafe", "kind": "shop"},

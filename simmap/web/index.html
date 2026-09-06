@@ -11,13 +11,14 @@
     <div class="brand">
       <span class="mark">◆</span>
       <span class="name">PACKET RIVER</span>
-      <span class="phase" id="phase-badge">phase 0 · scaffold</span>
+      <span class="phase" id="phase-badge">phase 1</span>
     </div>
     <div class="hud">
       <div class="stat"><label>score</label><span id="hud-score">0</span></div>
       <div class="stat"><label>best</label><span id="hud-best">0</span></div>
       <div class="stat alert" id="hud-alert"><label>alert</label><span id="hud-alert-lvl">0</span></div>
       <div class="stat conn" id="hud-conn"><label>feed</label><span id="hud-conn-lbl">…</span></div>
+      <div class="who" id="who"></div>
     </div>
   </header>
 
@@ -30,16 +31,60 @@
     </section>
 
     <aside class="panel">
+      <div id="auth-box">
+        <h2>Player</h2>
+        <p class="hint">Sign in to keep score. New name = new account.</p>
+        <form id="auth-form" class="stack">
+          <input id="auth-name" placeholder="name" autocomplete="username" required>
+          <input id="auth-pass" type="password" placeholder="password" autocomplete="current-password" required>
+          <div class="btnrow">
+            <button type="submit" data-mode="login">Log in</button>
+            <button type="button" id="auth-register">Register</button>
+          </div>
+          <p class="err" id="auth-err" hidden></p>
+        </form>
+      </div>
+
+      <div id="run-box" hidden>
+        <h2>Run</h2>
+        <p class="hint" id="run-state">No run started.</p>
+        <div class="btnrow">
+          <button id="run-start">Start a run</button>
+          <button id="auth-logout" class="ghost">Log out</button>
+        </div>
+      </div>
+
+      <h2>Leaderboard</h2>
+      <ol class="board" id="board"><li class="hint">nobody on the board yet</li></ol>
+
       <h2>Reset panel</h2>
       <p class="hint">Restore a subsystem, or the whole town, to golden state.</p>
       <div class="btnrow" id="reset-buttons"></div>
 
-      <h2>Debug: trigger a breach</h2>
-      <p class="hint">Phase 0 stand-in for real exploits. Phase 1 wires these to
-        flag submissions from real targets.</p>
-      <div class="btnrow" id="debug-buttons"></div>
+      <details class="debug">
+        <summary>Debug: trigger a breach</summary>
+        <p class="hint">Phase-0 stand-in. The General Store now breaks for real
+          via a flag submission; the rest still use these.</p>
+        <div class="btnrow" id="debug-buttons"></div>
+      </details>
     </aside>
   </main>
+
+  <!-- target service panel -->
+  <div class="sitepanel" id="sitepanel" hidden>
+    <div class="sitepanel-bar">
+      <span id="sitepanel-title">Target</span>
+      <span class="spacer"></span>
+      <a id="sitepanel-open" href="#" target="_blank" rel="noopener">open in new tab ↗</a>
+      <button id="sitepanel-close" aria-label="close">✕</button>
+    </div>
+    <iframe id="sitepanel-frame" title="target service"></iframe>
+    <form class="submit-flag" id="submit-flag" hidden>
+      <input id="flag-input" placeholder="PKTR{...}  paste the flag you extracted">
+      <button type="submit">Submit</button>
+      <span class="flag-result" id="flag-result"></span>
+    </form>
+  </div>
 
   <div class="donation" id="donation" hidden>
     <span>Enjoying Packet River? Tip the jar:

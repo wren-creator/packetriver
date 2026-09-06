@@ -1,0 +1,45 @@
+:root {
+  --bg: #f3ecdd; --panel: #fffdf7; --ink: #3b3226; --dim: #8c7d64;
+  --line: #e4d8bf; --accent: #2f8fbf; --bad: #d9584f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 ui-rounded, "Segoe UI", system-ui, sans-serif; }
+
+.shop-top {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px 20px; background: var(--panel); border-bottom: 2px solid var(--line);
+}
+.shop-top .brand { font-weight: 800; letter-spacing: .08em; text-decoration: none; color: var(--ink); }
+.shop-top .search { display: flex; gap: 6px; flex: 1; min-width: 220px; }
+.shop-top .search input { flex: 1; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.shop-top .search button, .portal button {
+  padding: 6px 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+}
+.shop-top nav { display: flex; gap: 12px; align-items: center; color: var(--dim); }
+.shop-top nav a { color: var(--accent); }
+
+main { max-width: 820px; margin: 24px auto; padding: 0 20px; }
+h1 { font-size: 22px; }
+.lede { color: var(--dim); }
+
+.list { width: 100%; border-collapse: collapse; margin-top: 12px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.list th, .list td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.list th { background: #f7efdd; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); }
+.list tr:last-child td { border-bottom: 0; }
+
+.portal { max-width: 380px; margin: 40px auto; background: var(--panel);
+  border: 2px solid var(--line); border-radius: 14px; padding: 24px; }
+.portal h1 { margin-top: 0; }
+.portal-note { color: var(--dim); font-size: 13px; }
+.portal label { display: block; margin: 10px 0; font-size: 13px; color: var(--dim); }
+.portal input { display: block; width: 100%; margin-top: 4px; padding: 7px 10px;
+  border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.portal button { width: 100%; margin-top: 8px; }
+.portal-err { color: var(--bad); font-weight: 600; }
+.portal-alt { font-size: 13px; margin-top: 14px; }
+.portal-alt a { color: var(--accent); }
+
+.shop-foot { text-align: center; color: var(--dim); font-size: 12px; padding: 30px 20px; }

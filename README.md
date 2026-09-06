@@ -73,10 +73,13 @@ would rather attack from your own shell.
 
 ## Status
 
-Early build. See `ROADMAP.md` for what is in and what is coming. This is
-**Phase 0**: the scaffold, the pixel-art live map with its overlay, the reset
-path, and a debug breach menu. Real targets and scoring start in Phase 1. The
-map art is a placeholder concept; the final pixel-art pass is Phase 6.
+Early build. See `ROADMAP.md` for what is in and what is coming. **Phase 1** is
+in: the pixel-art live map, and the first real target, the **General Store**,
+end to end. Register a player, start a run, click the store on the map to get
+its login portal, get a session, UNION the flag out of the product search,
+submit it, and watch the store break on the map and the leaderboard move. The
+other districts and the rest of Main Street land over Phases 2-6. Overlay
+alignment against the map art is still being tightened.
 
 ## More
 

@@ -1,5 +1,7 @@
 #!/bin/sh
-# Phase 0: nothing to generate yet (no targets). Phase 1 adds:
-#   python flags.py generate   # mint per-session flags, write /run/secret/*, seed scoring.db
+# Generate this session's flags (writes the flag map into scoring.db and drops
+# each flag onto the shared pkt-flags volume for its target to plant), then
+# start the API.
 set -e
+python flags.py
 exec python -u app.py
