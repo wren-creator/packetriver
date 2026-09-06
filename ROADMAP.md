@@ -26,11 +26,25 @@ reuse map live in the design doc.
   `recon.py` + `modbus_attack.py`. Debug buttons and reset now poke the real
   PLCs, so they do the same thing an attack does. (Modbus for power too, not S7
   - arm64-safe; an S7/CIP "vendor dialects" pass can come later.)
-- [ ] **Phase 3 - Full Main Street + Town Hall + payments + the Bank.** All 8
-  storefronts (one bug class each) behind login portals, `paygw` fake gateway
-  with test PANs, Town Hall (announcements + payroll + LFI), the **`bank`**
-  service (JWT `none`, account IDOR, ATM, grid-tied alarm), Police + Fire as
-  minor targets, the `websites` -> `ot-net` pivot.
+- **Phase 3 - Full Main Street + Town Hall + payments + the Bank + mainframes.**
+  Split into ordered sub-phases, each committed + playable:
+  - [x] **3a-1** all 8 storefronts, one bug class each (IDOR, auth-bypass,
+    exposed backup, stored XSS + regex bot, default creds, `.git` leak, SSRF).
+  - [ ] **3a-2** Town Hall (announcements deface, payroll portal, LFI) +
+    Police + Fire as minor targets + `paygw` (fake card gateway, test PANs) +
+    a real checkout on the shops.
+  - [ ] **3a-3** the Bank district (`bank` service: JWT `none`, account IDOR,
+    ATM API, alarm panel on the business feeder), the `websites` -> `ot-net`
+    pivot.
+  - [ ] **3b** Widget Factory PLC controls (assembly line + train loading) on
+    `field-plc`.
+  - [ ] **3c** AS/400 (IBM i) behind City Hall + the factory for payroll:
+    green-screen TN5250 + one RPG/DDS payroll app + a handful of curated bugs
+    (default profiles, library-list injection). Reuse `web3270` TN5250 +
+    `rpgle_library`.
+  - [ ] **3d** IBM z16 behind the Bank: green-screen TN3270 + a CICS inquiry +
+    a RACF panel + curated bugs (UACC, WARNING mode, magic SVC). Reuse
+    `web3270` mock LPARs.
 - [ ] **Phase 4 - Sewage + traffic + rail + Alert Level + blue team.**
   `traffic-plc`, `rail-plc`, sewage on `field-plc`, the river + swimmers +
   swimming beach, the leaky-bucket Alert meter, the blue-team response

@@ -4,6 +4,28 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Phase 3a-1 - the rest of Main Street (8 storefronts)
+- `websites` restructured: one docroot, one subdirectory per shop
+  (`/generalstore/`, `/hardware/`, ...), each its own MariaDB schema. Shared
+  kit in `site/lib/` (schema picked from the running script's directory,
+  relative-link portal, generic storefront). A Main Street directory at `/`.
+- Seven new storefronts, each a distinct verified bug: hardware (IDOR on
+  `receipt.php`), pharmacy (auth-bypass in the portal login), diner (a
+  `db_backup.sql` in the web root), barber (stored XSS + a regex "manager bot"
+  that writes its flag onto your booking), tavern (default creds `admin`/`admin`
+  on the POS admin), drycleaner (browsable `.git`, `git-dumper` + `git log -p`),
+  baittackle (SSRF in `fetch.php?url=` to a localhost-only inventory endpoint).
+- `db/init/` is now a directory mount; `20-mainstreet.sql` builds the seven
+  schemas + grants + seed. The `websites` entrypoint plants the DB-row flags
+  (hardware, pharmacy), writes the diner backup, builds the drycleaner `.git`
+  history, and runs the barber bot loop.
+- `scoring/flags.py`: seven new techniques. `player` image gains `git` +
+  `git-dumper`. `overlay.json`: every shop hotspot wired with its port +
+  subpath, so clicking it on the map opens that storefront.
+- Verified: every shop's exploit extracts and submits its flag; the shop shows
+  `db_dumped` / `defaced` / `carded` on the map; chain bonus stacks across the
+  run.
+
 ### Phase 2 - the water and power districts, on real Modbus
 - `field-plc`: one container, two real Modbus/TCP soft-PLCs - water treatment +
   distribution (:502) and the power substation bus (:503) - plus a shared Flask
