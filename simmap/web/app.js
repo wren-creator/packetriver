@@ -154,10 +154,20 @@ function render(s) {
       REFS.train.setAttribute("transform",
         `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${ang.toFixed(1)})`);
     REFS.spur.classList.toggle("spur-set", s.rail.switch_position === "spur");
-    if (REFS.shops["factory"]) {
-      REFS.shops["factory"].ring.classList.add("factory");
-      REFS.shops["factory"].ring.classList.toggle("fire", !!s.rail.factory_fire);
-    }
+  }
+
+  // factory: fire from a derail, or a "trouble" ring from a PLC jam
+  if (REFS.shops["factory"]) {
+    const f = s.factory || {};
+    const R = REFS.shops["factory"];
+    R.ring.classList.add("factory");
+    R.ring.classList.toggle("fire", !!(f.on_fire || (s.rail && s.rail.factory_fire)));
+    const trouble = f.line_jam || (f.throughput_pct != null && f.throughput_pct < 40);
+    R.ring.setAttribute("class", "ring " + (trouble && !f.on_fire ? "db_dumped factory" : "healthy factory"));
+    if (f.on_fire) R.ring.classList.add("fire");
+    R.badge.setAttribute("visibility", trouble || f.on_fire ? "visible" : "hidden");
+    R.badge.textContent = f.on_fire ? "fire" : (trouble ? "line jam" : "");
+    if (trouble || f.on_fire) R.badge.setAttribute("class", "badge db_dumped");
   }
 
   if (s.water) REFS.waterMain.classList.toggle("stopped", s.water.quality === "dry");

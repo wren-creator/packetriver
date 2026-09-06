@@ -69,6 +69,8 @@ class Bus:
                         icsloops.restore_water()
                     if scope in ("all", "power"):
                         icsloops.restore_power()
+                    if scope in ("all", "factory"):
+                        icsloops.restore_factory()
                 except Exception as exc:
                     print("[bus] reset poke:", exc)
             elif msg.topic == "pkt/campaign":

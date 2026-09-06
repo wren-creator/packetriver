@@ -26,6 +26,7 @@ def _ctx():
 
 WCTX, WLOCK = _ctx()
 PCTX, PLOCK = _ctx()
+FCTX, FLOCK = _ctx()   # widget factory
 
 
 def rd(ctx, lock, fc, addr, count=1):

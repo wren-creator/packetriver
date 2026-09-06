@@ -15,24 +15,29 @@ import time
 
 from pymodbus.client import ModbusTcpClient
 
+from models.factory import FactoryModel
 from models.power import PowerModel
 from models.water import WaterModel
 
 FIELD_HOST = os.environ.get("FIELD_PLC_HOST", "field-plc")
-WATER_PORT, POWER_PORT = 502, 503
+WATER_PORT, POWER_PORT, FACTORY_PORT = 502, 503, 504
 TICK = float(os.environ.get("TICK_SECONDS", "1.0"))
 
 W = dict(INTAKE=0, HIGHLIFT=1, CHLORINE=2, MAIN_VALVE=3, MAINT=8,
          HIGHLIFT_SP=0, CHLORINE_SP=1, TANK=10, PRESS=11, CL=12, FLOW=13)
 P = dict(MAIN=0, RES=1, BIZ=2, IND=3, ST=4, GEN=5, MAINT=8,
          GEN_SP=0, FREQ=10, VOLT=11, LOAD=12)
+F = dict(LINE_RUN=0, ESTOP_BYPASS=1, GANTRY=2, HOPPER_GATE=3, MAINT=8,
+         LINE_SPEED=0, CARS=10, THRU=11, CAR_IN_POS=0, LINE_JAM=1)
 FEEDER_COIL = {"residential": P["RES"], "business": P["BIZ"],
                "industrial": P["IND"], "streetlights": P["ST"]}
 WATER_GOLDEN_SP = (620, 120)   # high-lift psi x10, chlorine ppm x100
 POWER_GOLDEN_SP = 80           # generation MW x10
+FACTORY_GOLDEN_SP = 70
 
 _wc: ModbusTcpClient | None = None
 _pc: ModbusTcpClient | None = None
+_fc: ModbusTcpClient | None = None
 _io_lock = threading.Lock()    # serialise writes we issue from effects/reset
 
 
@@ -109,9 +114,42 @@ def _power_loop(town, lock) -> None:
         time.sleep(max(0.0, TICK - (time.time() - t0)))
 
 
+def _factory_loop(town, lock) -> None:
+    global _fc
+    _fc = _conn(FACTORY_PORT)
+    model = FactoryModel()
+    while True:
+        t0 = time.time()
+        try:
+            if not _fc.connected:
+                _fc.connect()
+            with _io_lock:
+                co = _fc.read_coils(0, 10, slave=1).bits
+                hr = _fc.read_holding_registers(0, 12, slave=1).registers
+                di = _fc.read_discrete_inputs(0, 4, slave=1).bits
+            model.step(
+                TICK,
+                line_run=bool(co[F["LINE_RUN"]]), estop_bypass=bool(co[F["ESTOP_BYPASS"]]),
+                hopper_gate=bool(co[F["HOPPER_GATE"]]), car_in_position=bool(di[F["CAR_IN_POS"]]),
+                line_speed=hr[F["LINE_SPEED"]], jam_di=bool(di[F["LINE_JAM"]]),
+            )
+            with _io_lock:
+                _fc.write_registers(F["THRU"], [int(model.throughput_pct)], slave=1)
+            with lock:
+                town.factory.throughput_pct = round(model.throughput_pct, 1)
+                town.factory.line_jam = model.line_jam
+                town.factory.estop_bypassed = model.estop_bypassed
+                town.factory.hopper_open = model.hopper_open
+                town.factory.line_running = model.line_running
+        except Exception as exc:
+            print("[icsloops] factory:", exc)
+        time.sleep(max(0.0, TICK - (time.time() - t0)))
+
+
 def start(town, lock) -> None:
     threading.Thread(target=_water_loop, args=(town, lock), daemon=True).start()
     threading.Thread(target=_power_loop, args=(town, lock), daemon=True).start()
+    threading.Thread(target=_factory_loop, args=(town, lock), daemon=True).start()
 
 
 # -- pokes (debug menu + pkt/reset) ----------------------------------
@@ -127,8 +165,38 @@ def _p(coil, val):
             _pc.write_coil(coil, bool(val), slave=1)
 
 
+def _f(coil, val):
+    if _fc:
+        with _io_lock:
+            _fc.write_coil(coil, bool(val), slave=1)
+
+
 def stop_highlift():
     _w(W["HIGHLIFT"], False)
+
+
+def factory_line_stop():
+    _f(F["LINE_RUN"], False)
+
+
+def factory_estop_bypass():
+    _f(F["ESTOP_BYPASS"], True)
+    if _fc:
+        with _io_lock:
+            _fc.write_register(F["LINE_SPEED"], 99, slave=1)
+
+
+def factory_hopper_dump():
+    _f(F["HOPPER_GATE"], True)
+
+
+def restore_factory():
+    if not _fc:
+        return
+    with _io_lock:
+        _fc.write_coils(0, [True, False, True, False], slave=1)
+        _fc.write_register(F["LINE_SPEED"], FACTORY_GOLDEN_SP, slave=1)
+        _fc.write_coil(F["MAINT"], False, slave=1)
 
 
 def trip_feeder(name: str):

@@ -9,8 +9,8 @@ import os
 
 from flask import Flask, redirect, request, session
 
-from maps import POWER, WATER
-from store import PCTX, PLOCK, WCTX, WLOCK, rd
+from maps import FACTORY, POWER, WATER
+from store import FCTX, FLOCK, PCTX, PLOCK, WCTX, WLOCK, rd
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("HMI_SECRET", "field-plc-dev")
@@ -90,6 +90,21 @@ def index():
         ("Total load", f"{phr[POWER['hr']['LOAD']] / 10:.1f} MW"),
     ]
 
+    fco = rd(FCTX, FLOCK, 1, 0, 10)
+    fhr = rd(FCTX, FLOCK, 3, 0, 12)
+    fdi = rd(FCTX, FLOCK, 2, 0, 4)
+    factory_rows = [
+        ("Assembly line", onoff(fco[FACTORY["coil"]["LINE_RUN"]])),
+        ("E-stop interlock", "BYPASSED" if fco[FACTORY["coil"]["ESTOP_BYPASS"]]
+         else "armed").replace("BYPASSED", "<span class=alarm>BYPASSED</span>"),
+        ("Line speed", f"{fhr[FACTORY['hr']['LINE_SPEED']]} %"),
+        ("Loading gantry", onoff(fco[FACTORY["coil"]["GANTRY"]])),
+        ("Hopper gate", "OPEN" if fco[FACTORY["coil"]["HOPPER_GATE"]]
+         else "closed").replace("OPEN", "<span class=alarm>OPEN</span>"),
+        ("Rail car in position", "yes" if fdi[FACTORY["di"]["CAR_IN_POSITION"]] else "no"),
+    ]
+    factory_alarms = ["LINE JAM / UNSAFE STATE"] if fdi[FACTORY["di"]["LINE_JAM"]] else []
+
     def tbl(rows):
         return "<table>" + "".join(
             f"<tr><td class=k>{k}</td><td>{v}</td></tr>" for k, v in rows) + "</table>"
@@ -99,6 +114,9 @@ def index():
         + (f"<p class=alarm>&#9888; {' &nbsp; '.join(water_alarms)}</p>" if water_alarms else "")
         + "</div>"
         f"<div class=card><h2>Power Substation</h2>{tbl(power_rows)}</div>"
+        f"<div class=card><h2>Widget Factory</h2>{tbl(factory_rows)}"
+        + (f"<p class=alarm>&#9888; {' &nbsp; '.join(factory_alarms)}</p>" if factory_alarms else "")
+        + "</div>"
         "<p><a href=/logout>Log out</a></p>"
     )
     return PAGE.format(title="Plant Overview", body=body)

@@ -128,6 +128,16 @@ TECHNIQUES = {
                 "is in the input-register block gated by the maintenance-mode "
                 "coil (8)",
     },
+    "factory_modbus": {
+        "subsystem": "utility",
+        "target": "factory",
+        "effect": "noop",
+        "severity": "loud",
+        "base": 175,
+        "hint": "unauth Modbus write on :504 - bypass the assembly-line e-stop "
+                "and overspeed it, or open the hopper gate with no rail car in "
+                "position; flag in the maintenance-mode input registers",
+    },
 }
 
 

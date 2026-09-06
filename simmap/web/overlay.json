@@ -47,7 +47,10 @@
       "w": 0.09,
       "h": 0.11,
       "label": "Widget Factory",
-      "kind": "dressing"
+      "kind": "utility",
+      "port": 8093,
+      "path": "/",
+      "technique": "factory_modbus"
     },
     "tavern": {
       "x": 0.405,

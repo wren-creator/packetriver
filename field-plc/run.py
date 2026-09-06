@@ -22,8 +22,8 @@ import time
 from pymodbus.server import StartTcpServer
 
 import maps
-from maps import POWER, WATER, FLAG_IR_BASE, FLAG_IR_LEN, pack_flag
-from store import PCTX, PLOCK, WCTX, WLOCK, rd, wr
+from maps import FACTORY, POWER, WATER, FLAG_IR_BASE, FLAG_IR_LEN, pack_flag
+from store import FCTX, FLOCK, PCTX, PLOCK, WCTX, WLOCK, rd, wr
 
 WRITE_OPEN = os.environ.get("MODBUS_WRITE_OPEN", "1") == "1"
 FLAG_DIR = "/run/secret"
@@ -39,6 +39,7 @@ def _read_flag(name: str) -> str:
 
 WATER_FLAG = _read_flag("water_modbus_pump")
 POWER_FLAG = _read_flag("power_modbus_feeder")
+FACTORY_FLAG = _read_flag("factory_modbus")
 
 
 def seed() -> None:
@@ -48,6 +49,8 @@ def seed() -> None:
     wr(WCTX, WLOCK, 3, WATER["hr"]["CHLORINE_SP"], [WATER["golden"]["CHLORINE_SP"]])
     wr(PCTX, PLOCK, 1, 0, [1, 1, 1, 1, 1, 1])      # BRK_MAIN + 4 feeders + GEN_ENABLE
     wr(PCTX, PLOCK, 3, POWER["hr"]["GEN_SP"], [POWER["golden"]["GEN_SP"]])
+    wr(FCTX, FLOCK, 1, 0, [1, 0, 1, 0])            # LINE_RUN, ESTOP_BYPASS off, GANTRY, HOPPER_GATE closed
+    wr(FCTX, FLOCK, 3, FACTORY["hr"]["LINE_SPEED"], [FACTORY["golden"]["LINE_SPEED"]])
     print(f"[field-plc] seeded golden state; WRITE_OPEN={WRITE_OPEN}")
 
 
@@ -71,6 +74,10 @@ def scan_loop() -> None:
                 _clamp(WCTX, WLOCK, WATER["hr"]["CHLORINE_SP"], *WATER["sp_clamp"]["CHLORINE_SP"])
                 wr(PCTX, PLOCK, 1, 0, [1, 1, 1, 1, 1, 1])
                 _clamp(PCTX, PLOCK, POWER["hr"]["GEN_SP"], *POWER["sp_clamp"]["GEN_SP"])
+                wr(FCTX, FLOCK, 1, FACTORY["coil"]["LINE_RUN"], [1])
+                wr(FCTX, FLOCK, 1, FACTORY["coil"]["ESTOP_BYPASS"], [0])
+                wr(FCTX, FLOCK, 1, FACTORY["coil"]["HOPPER_GATE"], [0])
+                _clamp(FCTX, FLOCK, FACTORY["hr"]["LINE_SPEED"], *FACTORY["sp_clamp"]["LINE_SPEED"])
 
             # alarms derived from the PVs simmap writes back
             wp = rd(WCTX, WLOCK, 3, WATER["hr"]["MAIN_PRESSURE"])[0] / 10.0
@@ -80,8 +87,19 @@ def scan_loop() -> None:
             wr(WCTX, WLOCK, 2, WATER["di"]["LOW_TANK"], [int(wt < 20)])
             wr(WCTX, WLOCK, 2, WATER["di"]["LOW_CHLORINE"], [int(wc < 0.3)])
 
+            # factory: line jam if the e-stop is bypassed and the line is
+            # running fast, or the hopper is dumping with no car in position
+            fco = rd(FCTX, FLOCK, 1, 0, 8)
+            fspd = rd(FCTX, FLOCK, 3, FACTORY["hr"]["LINE_SPEED"])[0]
+            car = rd(FCTX, FLOCK, 2, FACTORY["di"]["CAR_IN_POSITION"])[0]
+            jam = int((fco[FACTORY["coil"]["ESTOP_BYPASS"]] and fspd > 90)
+                      or (fco[FACTORY["coil"]["HOPPER_GATE"]] and not car)
+                      or not fco[FACTORY["coil"]["LINE_RUN"]])
+            wr(FCTX, FLOCK, 2, FACTORY["di"]["LINE_JAM"], [jam])
+
             _flag_block(WCTX, WLOCK, WATER["coil"]["MAINT_MODE"], WATER_FLAG)
             _flag_block(PCTX, PLOCK, POWER["coil"]["MAINT_MODE"], POWER_FLAG)
+            _flag_block(FCTX, FLOCK, FACTORY["coil"]["MAINT_MODE"], FACTORY_FLAG)
         except Exception as exc:  # keep the loop alive
             print("[field-plc] scan error:", exc)
         time.sleep(0.3)
@@ -95,6 +113,7 @@ def main() -> None:
     seed()
     threading.Thread(target=_serve, args=(WCTX, 502), daemon=True).start()
     threading.Thread(target=_serve, args=(PCTX, 503), daemon=True).start()
+    threading.Thread(target=_serve, args=(FCTX, 504), daemon=True).start()
     threading.Thread(target=scan_loop, daemon=True).start()
     import hmi
     hmi.app.run(host="0.0.0.0", port=8093, threaded=True, use_reloader=False)

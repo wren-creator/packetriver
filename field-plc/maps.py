@@ -26,6 +26,15 @@ POWER = dict(
     sp_clamp=dict(GEN_SP=(40, 120)),
 )
 
+# --- widget factory: assembly line + train loading (container port 504) ---
+FACTORY = dict(
+    coil=dict(LINE_RUN=0, ESTOP_BYPASS=1, GANTRY=2, HOPPER_GATE=3, MAINT_MODE=8),
+    hr=dict(LINE_SPEED=0, CARS_LOADED=10, THROUGHPUT=11),
+    di=dict(CAR_IN_POSITION=0, LINE_JAM=1),
+    golden=dict(LINE_SPEED=70),
+    sp_clamp=dict(LINE_SPEED=(20, 90)),
+)
+
 FLAG_IR_BASE = 100     # input registers FLAG_IR_BASE .. +FLAG_IR_LEN hold the flag
 FLAG_IR_LEN = 32       # 64 bytes, plenty for PKTR{...}
 

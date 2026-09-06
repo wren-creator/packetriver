@@ -34,7 +34,8 @@ SHOPS = [
 ]
 
 RESET_SCOPES = (
-    ["all", "traffic", "rail", "water", "sewage", "power", "cityhall", "bank", "police", "fire"]
+    ["all", "traffic", "rail", "factory", "water", "sewage", "power",
+     "cityhall", "bank", "police", "fire"]
     + [k for k, _ in SHOPS]
 )
 
@@ -75,6 +76,16 @@ class Sewage:
     aeration_on: bool = True
     river_contamination: float = 0.0
     swimmers_sick: bool = False
+
+
+@dataclass
+class Factory:
+    throughput_pct: float = 100.0
+    line_running: bool = True
+    line_jam: bool = False
+    estop_bypassed: bool = False
+    hopper_open: bool = False
+    on_fire: bool = False           # set by a rail derail into the factory
 
 
 @dataclass
@@ -145,6 +156,8 @@ class TownState:
             self.traffic = [Intersection(id=i) for i in range(1, 5)]
         if s in ("all", "rail"):
             self.rail = Rail()
+        if s in ("all", "factory"):
+            self.factory = Factory()
         if s in ("all", "water"):
             self.water = Water()
         if s in ("all", "sewage"):
@@ -212,6 +225,7 @@ class TownState:
         if r.switch_position == "spur" and crossed:
             r.derailed = True
             r.factory_fire = True
+            self.factory.on_fire = True
             r.train_speed = 0.0
 
     def _step_water(self, dt: float) -> None:
@@ -281,6 +295,14 @@ class TownState:
                 "derailed": self.rail.derailed,
                 "console_locked": self.rail.console_locked,
                 "factory_fire": self.rail.factory_fire,
+            },
+            "factory": {
+                "throughput_pct": round(self.factory.throughput_pct, 1),
+                "line_running": self.factory.line_running,
+                "line_jam": self.factory.line_jam,
+                "estop_bypassed": self.factory.estop_bypassed,
+                "hopper_open": self.factory.hopper_open,
+                "on_fire": self.factory.on_fire or self.rail.factory_fire,
             },
             "water": {
                 "tank_pct": round(w.tank_pct, 1),

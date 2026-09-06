@@ -176,6 +176,7 @@ services:
       - "127.0.0.1:8093:8093"    # operator HMI
       - "127.0.0.1:5502:502"     # water Modbus/TCP
       - "127.0.0.1:5503:503"     # power Modbus/TCP
+      - "127.0.0.1:5504:504"     # widget-factory Modbus/TCP
     networks: [it-net, edge-net]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8093/health || exit 1"]

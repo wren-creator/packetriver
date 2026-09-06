@@ -67,6 +67,9 @@ EFFECTS = {
     "water_main_break": lambda town, p: _ics().stop_highlift(),
     "power_trip_feeder": lambda town, p: _ics().trip_feeder(p.get("feeder", "industrial")),
     "power_trip_main": lambda town, p: _ics().trip_main(),
+    "factory_line_stop": lambda town, p: _ics().factory_line_stop(),
+    "factory_estop_bypass": lambda town, p: _ics().factory_estop_bypass(),
+    "factory_hopper_dump": lambda town, p: _ics().factory_hopper_dump(),
     "sewage_bypass": lambda town, p: (
         setattr(town.sewage, "effluent_path", "raw"),
         setattr(town.sewage, "aeration_on", False),
