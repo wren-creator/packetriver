@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Packet Creek</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">▲</span>
+      <span class="name">PACKET CREEK</span>
+      <span class="phase" id="phase-badge">phase 0 · scaffold</span>
+    </div>
+    <div class="hud">
+      <div class="stat"><label>score</label><span id="hud-score">0</span></div>
+      <div class="stat"><label>best</label><span id="hud-best">0</span></div>
+      <div class="stat alert" id="hud-alert"><label>alert</label><span id="hud-alert-lvl">0</span></div>
+      <div class="stat conn" id="hud-conn"><label>feed</label><span id="hud-conn-lbl">…</span></div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="mapwrap">
+      <div id="scene"></div>
+    </section>
+
+    <aside class="panel">
+      <h2>Reset panel</h2>
+      <p class="hint">Restore a subsystem, or the whole town, to golden state.</p>
+      <div class="btnrow" id="reset-buttons"></div>
+
+      <h2>Debug: trigger a breach</h2>
+      <p class="hint">Phase 0 stand-in for real exploits. Phase 1 wires these to
+        flag submissions.</p>
+      <div class="btnrow" id="debug-buttons"></div>
+    </aside>
+  </main>
+
+  <div class="donation" id="donation" hidden>
+    <span>Enjoying Packet Creek? Consider tipping the jar:
+      <a id="donation-link" href="#" target="_blank" rel="noopener noreferrer">$…</a></span>
+    <button id="donation-dismiss" aria-label="dismiss">✕</button>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

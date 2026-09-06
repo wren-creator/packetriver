@@ -1,0 +1,22 @@
+# --- local env ---
+# real .env is generated from .env.example by setup.sh, never committed
+.env
+
+# --- runtime state (all lives in named docker volumes; these patterns cover
+#     anyone who switches to a host bind mount) ---
+scoring/scoring.db
+scoring/flags/
+simmap/state/
+**/runtime/
+
+# --- os / editor cruft ---
+.DS_Store
+*.swp
+__pycache__/
+*.pyc
+
+# --- built ebook is committed on purpose; scratch build dirs are not ---
+docs/syllabus-epub/build/
+
+# --- committed on purpose ---
+# .claude/ .vscode/ .cursor/ are tracked intentionally when present.
