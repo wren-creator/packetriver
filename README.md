@@ -1,8 +1,8 @@
-# Packet Creek
+# Packet River
 
 A small town you break into for a high score.
 
-Packet Creek is a browser game wrapped around a real cyber range. One live map
+Packet River is a browser game wrapped around a real cyber range. One live map
 shows a whole town running normally: traffic cycling through four crossroads, a
 train on its loop, water and power flowing to the houses, a clean river with
 people swimming in it. Every building on that map is also a real, deliberately
@@ -16,8 +16,8 @@ It is the third in a family with [Widgetorium](https://github.com/wren-creator/w
 (a vulnerable web app lab) and [Cross Creek](https://github.com/wren-creator/crosscreek)
 (an ICS/OT range). Same idea, learn by doing, except this one keeps score.
 
-> **Authorised use only.** Packet Creek ships wired with real, working
-> weaknesses. Run it only on a machine you control. Never point a Packet Creek
+> **Authorised use only.** Packet River ships wired with real, working
+> weaknesses. Run it only on a machine you control. Never point a Packet River
 > command, script, payload, scan, or credential at a system you do not own.
 > Some of these attacks have physical consequences in the real world. This game
 > exists so you never have to learn that on a live one. `start.sh` refuses to
@@ -32,10 +32,12 @@ It is the third in a family with [Widgetorium](https://github.com/wren-creator/w
 ./status.sh     # health + loopback + containment audit
 ```
 
-Then open **http://127.0.0.1:8080/**, sign up, and start a run. Scan the town,
-pick a target, break it, find the flag, submit it. Your score goes up, the map
-degrades, and the leaderboard updates. The reset panel puts any building, or
-the whole town, back to golden state.
+Then open **http://127.0.0.1:8080/**, sign up, and start a run. The map is the
+town of Packet River (pop. 646). Click any building and its real service opens,
+starting with a login portal, the same as the Cross Creek HMIs and the
+Widgetorium login. Get past it, scan, break something, find the flag, submit
+it. Your score goes up, the map degrades, and the leaderboard updates. The
+reset panel puts any building, or the whole town, back to golden state.
 
 ```
 ./reset.sh              # restore everything to golden state
@@ -47,16 +49,21 @@ the whole town, back to golden state.
 
 | District | What is there | What breaks |
 |---|---|---|
-| Main Street | 8 shops, each its own storefront and card checkout | defaced, database dumped, customers carded |
-| City Hall | public announcements, payroll portal, card payments | site defaced, payroll drained |
+| Main Street | 8 storefronts: General Store, Hardware, Pharmacy, Diner/Cafe, Barbershop, Tavern, Dry Cleaners, Bait & Tackle | defaced, database dumped, customers carded |
+| First Packet Bank & Trust | online banking, an ATM, an alarm panel wired to the power grid | money moved, ATM drained, alarm cut |
+| Town Hall | public announcements, payroll portal, card payments | site defaced, payroll drained |
 | Water treatment | operator HMI + a soft PLC | mains pressure lost, houses go dry, a main bursts |
-| Sewage plant | operator HMI + a soft PLC | bypass opened, raw sewage into the river, swimmers sick |
-| Electric company | operator HMI + a soft PLC | feeders tripped, houses and streetlights dark, frequency sags |
+| Sewage plant | operator HMI + a soft PLC | bypass opened, raw sewage down the river to the swimming beach |
+| Power substation | operator HMI + a soft PLC | feeders tripped, houses and streetlights dark, frequency sags |
 | Traffic control | 4 crossroads + an open message broker | lights hijacked to all-green, crashes |
 | Rail | loop track + a switch into the widget factory | switch thrown, train derailed, factory fire |
+| Police & Fire | dispatch screens, alarm panels | minor targets, one bug each |
+| Local Diner Wi-Fi | an open, unencrypted network | a different lane: sniff cleartext credentials off the air |
 
-Exactly one bug class per shop, so no two teach the same thing. Every scenario
-in `docs/scenarios.md` carries a real incident or CVE reference and a fix.
+Exactly one bug class per storefront, so no two teach the same thing. Every
+scenario in `docs/scenarios.md` carries a real incident or CVE reference and a
+fix. The map is pixel-art isometric with a live overlay for everything that
+lights up, floods, or goes dark.
 
 ## Requirements
 
@@ -67,17 +74,18 @@ would rather attack from your own shell.
 ## Status
 
 Early build. See `ROADMAP.md` for what is in and what is coming. This is
-**Phase 0**: the scaffold, the live map, the reset path, and a debug breach
-menu. Real targets and scoring start in Phase 1.
+**Phase 0**: the scaffold, the pixel-art live map with its overlay, the reset
+path, and a debug breach menu. Real targets and scoring start in Phase 1. The
+map art is a placeholder concept; the final pixel-art pass is Phase 6.
 
 ## More
 
 - Community and discussion: **britleydev.slack.com**
 - Consulting, training, and talks: **https://britleyhoffconsulting.com**,
   **britleyhoff@britleyhoffconsulting.com**
-- Source: **https://github.com/wren-creator/packetcreek**
+- Source: **https://github.com/wren-creator/packetriver**
 
-If Packet Creek is useful to you, there is a tip jar in the corner of the map.
+If Packet River is useful to you, there is a tip jar in the corner of the map.
 No pressure, and it never gates anything in the game.
 
 ## Licence

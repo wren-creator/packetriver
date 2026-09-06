@@ -1,6 +1,6 @@
-name: packetcreek
+name: packetriver
 
-# Packet Creek: a small town you attack for a high score. This base file is the
+# Packet River: a small town you attack for a high score. This base file is the
 # FLAT topology: every deliberate weakness is on. Fold in
 # docker-compose.segmented.yml (./start.sh --segmented) for the hardened town.
 #
@@ -21,7 +21,7 @@ services:
   gateway:
     <<: *common
     build: ./gateway
-    container_name: packetcreek-gateway
+    container_name: packetriver-gateway
     depends_on:
       simmap:  { condition: service_healthy }
       scoring: { condition: service_healthy }
@@ -38,7 +38,7 @@ services:
   simmap:
     <<: *common
     build: ./simmap
-    container_name: packetcreek-simmap
+    container_name: packetriver-simmap
     depends_on:
       bus: { condition: service_healthy }
     environment:
@@ -56,7 +56,7 @@ services:
   scoring:
     <<: *common
     build: ./scoring
-    container_name: packetcreek-scoring
+    container_name: packetriver-scoring
     depends_on:
       bus: { condition: service_healthy }
     environment:
@@ -76,7 +76,7 @@ services:
   bus:
     <<: *common
     image: eclipse-mosquitto:2
-    container_name: packetcreek-bus
+    container_name: packetriver-bus
     volumes:
       - ./bus/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
     ports:

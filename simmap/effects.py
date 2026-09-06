@@ -12,30 +12,45 @@ from __future__ import annotations
 
 
 def _shop(town, payload, status):
-    i = int(payload.get("shop", 1))
-    if 1 <= i <= len(town.shops):
-        town.shops[i - 1].site_status = status
+    key = payload.get("shop", "generalstore")
+    for s in town.shops:
+        if s.key == key:
+            s.site_status = status
+            return
+
+
+def _bank_drain(town, payload):
+    town.bank.site_status = "carded"
+    town.bank.balance = 0
+    town.bank.atm_drained = True
+    town.bank.admin_pwned = True
+    town.bank._alarm_cut = True
+
+
+def _cityhall_deface(town, payload):
+    town.cityhall.announcement_text = payload.get("text", "OWNED BY " + payload.get("player", "anon"))
+    town.cityhall.site_status = "defaced"
 
 
 EFFECTS = {
     # --- Main Street ---
-    "shop_sqli_dump":   lambda town, p: _shop(town, p, "db_dumped"),
-    "shop_xss_deface":  lambda town, p: _shop(town, p, "defaced"),
-    "shop_carded":      lambda town, p: _shop(town, p, "carded"),
+    "shop_sqli_dump":  lambda town, p: _shop(town, p, "db_dumped"),
+    "shop_xss_deface": lambda town, p: _shop(town, p, "defaced"),
+    "shop_carded":     lambda town, p: _shop(town, p, "carded"),
 
-    # --- City Hall ---
-    "cityhall_deface":  lambda town, p: setattr(
-        town.cityhall, "announcement_text",
-        p.get("text", "OWNED BY " + p.get("player", "anon"))) or
-        setattr(town.cityhall, "site_status", "defaced"),
+    # --- Bank / civic ---
+    "bank_drain":      _bank_drain,
+    "cityhall_deface": _cityhall_deface,
     "cityhall_payroll": lambda town, p: (
         setattr(town.cityhall, "payroll_balance", 0),
         setattr(town.cityhall, "admin_pwned", True),
     ),
+    "police_deface": lambda town, p: setattr(town.police, "site_status", "defaced"),
+    "fire_deface":   lambda town, p: setattr(town.fire, "site_status", "defaced"),
 
     # --- utilities ---
     "water_main_break": lambda town, p: setattr(town.water, "broken", True),
-    "sewage_bypass":    lambda town, p: (
+    "sewage_bypass": lambda town, p: (
         setattr(town.sewage, "effluent_path", "raw"),
         setattr(town.sewage, "aeration_on", False),
     ),

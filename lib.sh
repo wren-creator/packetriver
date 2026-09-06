@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for the Packet Creek lifecycle scripts. Sourced, not run.
+# Shared helpers for the Packet River lifecycle scripts. Sourced, not run.
 # Adapted from crosscreek/lib.sh.
 
 if [ -t 1 ]; then
@@ -31,7 +31,7 @@ require_docker() {
 
 # Fail if the effective compose config publishes any port to a non-loopback
 # host address. This is the guard that keeps a town full of deliberately
-# vulnerable services, mini-sites, and soft-PLCs off the network. Packet Creek
+# vulnerable services, mini-sites, and soft-PLCs off the network. Packet River
 # is reachable from the machine running it and nowhere else.
 assert_loopback_only() {
   local cfg

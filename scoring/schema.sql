@@ -1,4 +1,4 @@
--- Packet Creek scoreboard. SQLite. Created on first boot by app.py.
+-- Packet River scoreboard. SQLite. Created on first boot by app.py.
 
 CREATE TABLE IF NOT EXISTS users (
   id         INTEGER PRIMARY KEY,

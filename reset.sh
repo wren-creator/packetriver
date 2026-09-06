@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Restore Packet Creek to golden state: fresh flags, nominal town, clean
+# Restore Packet River to golden state: fresh flags, nominal town, clean
 # scoreboard run state. This is the "reset all" hammer; the in-game reset
 # panel does per-subsystem restores over pkt/reset without a container bounce.
 #   -y   skip the confirmation prompt
@@ -10,14 +10,14 @@ source ./lib.sh
 require_docker
 
 if [ "${1:-}" != "-y" ]; then
-  printf '%s' "Restore Packet Creek to golden state (new flags, nominal town, clear run state)? [y/N] "
+  printf '%s' "Restore Packet River to golden state (new flags, nominal town, clear run state)? [y/N] "
   read -r ans
   case "$ans" in y|Y|yes|YES) ;; *) info "cancelled"; exit 0 ;; esac
 fi
 
 FILES=(-f docker-compose.yml)
 if dc -f docker-compose.yml -f docker-compose.segmented.yml ps --format '{{.Name}}' 2>/dev/null \
-     | grep -q packetcreek-ids; then
+     | grep -q packetriver-ids; then
   FILES+=(-f docker-compose.segmented.yml)
 fi
 

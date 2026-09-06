@@ -10,7 +10,7 @@ require_docker
 
 FILES=(-f docker-compose.yml)
 if dc -f docker-compose.yml -f docker-compose.segmented.yml ps --format '{{.Name}}' 2>/dev/null \
-     | grep -q packetcreek-ids; then
+     | grep -q packetriver-ids; then
   FILES+=(-f docker-compose.segmented.yml)
 fi
 
@@ -39,7 +39,7 @@ done < <(dc "${FILES[@]}" ps --format '{{.Name}}\t{{.Ports}}' 2>/dev/null)
 
 echo
 info "containment: player box must not reach the internet, nor the OT segment directly"
-if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetcreek-player; then
+if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetriver-player; then
   if dc "${FILES[@]}" exec -T player python3 -c \
        'import socket,sys; s=socket.socket(); s.settimeout(3); sys.exit(s.connect_ex(("1.1.1.1",53)) == 0)' \
        2>/dev/null; then
@@ -49,7 +49,7 @@ if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetcreek-pl
     AUDIT_FAIL=1
   fi
   # traffic-plc lives on ot-net; the player has no business reaching it before a pivot
-  if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetcreek-traffic-plc; then
+  if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetriver-traffic-plc; then
     if dc "${FILES[@]}" exec -T player python3 -c \
          'import socket,sys; s=socket.socket(); s.settimeout(3); sys.exit(s.connect_ex(("traffic-plc",8092)) == 0)' \
          2>/dev/null; then

@@ -1,4 +1,4 @@
-"""The Packet Creek town state model.
+"""The Packet River town state model.
 
 One @dataclass per subsystem, plain floats and bools, golden defaults. `step`
 is a coarse first-order-lag integrator so a breach has a visible consequence
@@ -15,20 +15,23 @@ from dataclasses import dataclass, field
 TRAFFIC_CYCLE = ["ns-green", "all-red", "ew-green", "all-red"]
 PHASE_SECONDS = 4.0
 
-SHOP_NAMES = [
-    "Bit & Bridle Feed",
-    "The Daily Grind",
-    "Fuse & Filament Hardware",
-    "Riverside Books",
-    "Packet Creek Pharmacy",
-    "Anodyne Coffee",
-    "Switchback Cycles",
-    "Kernel's Bakery",
+# The eight Main Street storefronts. The bank, police, and fire are their own
+# first-class entities; the cinema and bakery are set dressing (not modelled).
+SHOPS = [
+    ("generalstore", "General Store"),
+    ("hardware", "Hardware & Supply"),
+    ("pharmacy", "Pharmacy / Apothecary"),
+    ("diner", "Local Diner / Cafe"),
+    ("barber", "Barbershop / Salon"),
+    ("tavern", "Tavern / Watering Hole"),
+    ("drycleaner", "Dry Cleaners / Laundromat"),
+    ("baittackle", "Bait & Tackle / Beach Outfitter"),
 ]
 
-RESET_SCOPES = ["all", "traffic", "rail", "water", "sewage", "power", "cityhall"] + [
-    f"shop{i}" for i in range(1, 9)
-]
+RESET_SCOPES = (
+    ["all", "traffic", "rail", "water", "sewage", "power", "cityhall", "bank", "police", "fire"]
+    + [k for k, _ in SHOPS]
+)
 
 
 @dataclass
@@ -44,9 +47,9 @@ class Intersection:
 
 @dataclass
 class Rail:
-    train_pos: float = 0.0             # 0..1 around the loop
-    train_speed: float = 0.035        # loop fraction per second
-    switch_position: str = "loop"    # loop | spur
+    train_pos: float = 0.0
+    train_speed: float = 0.035
+    switch_position: str = "loop"   # loop | spur
     derailed: bool = False
     console_locked: bool = True
     factory_fire: bool = False
@@ -56,15 +59,15 @@ class Rail:
 class Water:
     tank_pct: float = 78.0
     mains_pressure_pct: float = 100.0
-    quality: str = "clean"           # clean | brown | dry
-    broken: bool = False             # an exploit sets this; physics drains the mains
+    quality: str = "clean"          # clean | brown | dry
+    broken: bool = False
 
 
 @dataclass
 class Sewage:
-    effluent_path: str = "treated"   # treated | raw
+    effluent_path: str = "treated"  # treated | raw
     aeration_on: bool = True
-    river_contamination: float = 0.0  # 0..1
+    river_contamination: float = 0.0
     swimmers_sick: bool = False
 
 
@@ -81,17 +84,34 @@ class Power:
 
 @dataclass
 class Shop:
-    id: int
+    key: str
     name: str
-    site_status: str = "healthy"      # healthy | defaced | db_dumped | carded
+    site_status: str = "healthy"     # healthy | defaced | db_dumped | carded
     fraud_charges: int = 0
+
+
+@dataclass
+class Bank:
+    site_status: str = "healthy"
+    balance: int = 2_400_000
+    alarm_armed: bool = True
+    atm_drained: bool = False
+    admin_pwned: bool = False
+    _alarm_cut: bool = False
+
+
+@dataclass
+class Civic:
+    name: str
+    site_status: str = "healthy"
+    dispatch_pwned: bool = False
 
 
 @dataclass
 class CityHall:
     site_status: str = "healthy"
     payroll_balance: int = 480_000
-    announcement_text: str = "Welcome to Packet Creek. Founder's Day is Saturday."
+    announcement_text: str = "Welcome to Packet River. Founder's Day is Saturday."
     admin_pwned: bool = False
 
 
@@ -123,11 +143,17 @@ class TownState:
         if s in ("all", "power"):
             self.power = Power()
         if s == "all":
-            self.shops = [Shop(id=i, name=SHOP_NAMES[i - 1]) for i in range(1, 9)]
-        elif s.startswith("shop") and s[4:].isdigit():
-            i = int(s[4:])
-            if 1 <= i <= 8:
-                self.shops[i - 1] = Shop(id=i, name=SHOP_NAMES[i - 1])
+            self.shops = [Shop(key=k, name=n) for k, n in SHOPS]
+        else:
+            for i, (k, n) in enumerate(SHOPS):
+                if s == k:
+                    self.shops[i] = Shop(key=k, name=n)
+        if s in ("all", "bank"):
+            self.bank = Bank()
+        if s in ("all", "police"):
+            self.police = Civic(name="Police Station")
+        if s in ("all", "fire"):
+            self.fire = Civic(name="Fire Department")
         if s in ("all", "cityhall"):
             self.cityhall = CityHall()
         if s == "all":
@@ -140,6 +166,7 @@ class TownState:
         self._step_water(dt)
         self._step_sewage(dt)
         self._step_power(dt)
+        self._step_bank()
         self._step_alert(dt)
         self.state_seq += 1
 
@@ -169,8 +196,8 @@ class TownState:
             return
         prev = r.train_pos
         r.train_pos = (r.train_pos + r.train_speed * dt) % 1.0
-        crossed_switch = prev < 0.5 <= r.train_pos or (prev > r.train_pos and 0.5 <= r.train_pos)
-        if r.switch_position == "spur" and crossed_switch:
+        crossed = prev < 0.5 <= r.train_pos or (prev > r.train_pos and 0.5 <= r.train_pos)
+        if r.switch_position == "spur" and crossed:
             r.derailed = True
             r.factory_fire = True
             r.train_speed = 0.0
@@ -183,12 +210,8 @@ class TownState:
         else:
             w.mains_pressure_pct = min(100.0, w.mains_pressure_pct + 6.0 * dt)
             w.tank_pct = min(78.0, w.tank_pct + 1.5 * dt)
-        if w.mains_pressure_pct < 20:
-            w.quality = "dry"
-        elif w.mains_pressure_pct < 70:
-            w.quality = "brown"
-        else:
-            w.quality = "clean"
+        w.quality = "dry" if w.mains_pressure_pct < 20 else \
+            "brown" if w.mains_pressure_pct < 70 else "clean"
 
     def _step_sewage(self, dt: float) -> None:
         sg = self.sewage
@@ -203,6 +226,11 @@ class TownState:
         open_feeders = sum(1 for up in p.feeders.values() if not up)
         target = 60.0 - 0.7 * open_feeders
         p.bus_freq_hz += (target - p.bus_freq_hz) * min(1.0, dt / 3.0)
+
+    def _step_bank(self) -> None:
+        # Alarm is armed only while the industrial feeder is up and nobody has
+        # cut it via the alarm panel.
+        self.bank.alarm_armed = self.power.feeders["industrial"] and not self.bank._alarm_cut
 
     def _step_alert(self, dt: float) -> None:
         a = self.alert
@@ -219,13 +247,10 @@ class TownState:
     # -- snapshot ----------------------------------------------------
     def snapshot(self) -> dict:
         w, p = self.water, self.power
-        houses = []
-        for i in range(1, 9):
-            houses.append({
-                "id": i,
-                "has_water": w.mains_pressure_pct > 25,
-                "has_power": p.feeders["residential"],
-            })
+        houses = [
+            {"id": i, "has_water": w.mains_pressure_pct > 25, "has_power": p.feeders["residential"]}
+            for i in range(1, 9)
+        ]
         return {
             "state_seq": self.state_seq,
             "generated_at": time.time(),
@@ -257,16 +282,25 @@ class TownState:
                 "streetlights_on": p.feeders["streetlights"],
             },
             "shops": [
-                {"id": s.id, "name": s.name, "site_status": s.site_status,
+                {"key": s.key, "name": s.name, "site_status": s.site_status,
                  "fraud_charges": s.fraud_charges}
                 for s in self.shops
             ],
+            "bank": {
+                "site_status": self.bank.site_status,
+                "balance": self.bank.balance,
+                "alarm_armed": self.bank.alarm_armed,
+                "atm_drained": self.bank.atm_drained,
+                "admin_pwned": self.bank.admin_pwned,
+            },
             "cityhall": {
                 "site_status": self.cityhall.site_status,
                 "payroll_balance": self.cityhall.payroll_balance,
                 "announcement_text": self.cityhall.announcement_text,
                 "admin_pwned": self.cityhall.admin_pwned,
             },
+            "police": {"site_status": self.police.site_status, "dispatch_pwned": self.police.dispatch_pwned},
+            "fire": {"site_status": self.fire.site_status, "dispatch_pwned": self.fire.dispatch_pwned},
             "houses": houses,
             "alert": {"level": self.alert.level, "heat": round(self.alert.heat, 1)},
         }

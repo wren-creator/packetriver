@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Packet Creek</title>
+  <title>Packet River</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
-      <span class="mark">▲</span>
-      <span class="name">PACKET CREEK</span>
+      <span class="mark">◆</span>
+      <span class="name">PACKET RIVER</span>
       <span class="phase" id="phase-badge">phase 0 · scaffold</span>
     </div>
     <div class="hud">
@@ -23,7 +23,10 @@
 
   <main class="layout">
     <section class="mapwrap">
-      <div id="scene"></div>
+      <div class="scene" id="scene">
+        <img class="basemap" src="/basemap.png" alt="Packet River">
+        <svg class="overlay" id="overlay" viewBox="0 0 1000 545" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
     </section>
 
     <aside class="panel">
@@ -33,16 +36,18 @@
 
       <h2>Debug: trigger a breach</h2>
       <p class="hint">Phase 0 stand-in for real exploits. Phase 1 wires these to
-        flag submissions.</p>
+        flag submissions from real targets.</p>
       <div class="btnrow" id="debug-buttons"></div>
     </aside>
   </main>
 
   <div class="donation" id="donation" hidden>
-    <span>Enjoying Packet Creek? Consider tipping the jar:
+    <span>Enjoying Packet River? Tip the jar:
       <a id="donation-link" href="#" target="_blank" rel="noopener noreferrer">$…</a></span>
     <button id="donation-dismiss" aria-label="dismiss">✕</button>
   </div>
+
+  <div id="toast" hidden></div>
 
   <script src="/app.js"></script>
 </body>

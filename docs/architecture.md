@@ -1,4 +1,4 @@
-# Packet Creek architecture
+# Packet River architecture
 
 First cut, tracking the code as it lands. Phase 0 is the scaffold below; each
 phase adds services and updates this document in the same commit series.
@@ -27,18 +27,25 @@ event fabric and as a deliberately-open target for the traffic lights.
                                 +---------------------+
 ```
 
+Every target's front door is a **login portal**, styled like the Cross Creek
+HMI logons and the Widgetorium `login.php`. Getting past it is the first move
+of most scenarios.
+
 Later phases hang the vulnerable districts off `gateway` (by `Host:` header)
-and off the OT network: `websites` (8 shops + City Hall, one PHP/Apache
-container), `db` (MariaDB), `paygw` (fake card gateway), `field-plc` (water +
-sewage + electric soft-PLCs in one container), `traffic-plc`, `rail-plc`, and
-`player` (the attacker box).
+and off the OT network: `websites` (8 storefronts + Town Hall + Police + Fire,
+one PHP/Apache container), `bank` (Express: online banking, JWT `none`, account
+IDOR, ATM, a grid-tied alarm panel), `db` (MariaDB), `paygw` (fake card
+gateway), `field-plc` (water + sewage + electric soft-PLCs in one container),
+`traffic-plc`, `rail-plc`, `netlab` (the Diner open-Wi-Fi sniff/MITM lane), and
+`player` (the attacker box). Cinema and Bakery render on the map but are set
+dressing.
 
 ## Services (Phase 0)
 
 | Service | Stack | Role |
 |---|---|---|
 | `gateway` | nginx:alpine | Reverse proxy and, later, vhost router. Proxies `/` and `/api/state` and `/ws` to `simmap`, `/api/score/*` to `scoring`. Writes a JSON access log (a shared volume for the Alert-Level tailer arrives in Phase 4). |
-| `simmap` | python:3.12-slim, Flask + flask-sock + paho-mqtt | The town state model, a 1 s tick loop, a coarse physics pass, the MQTT bridge, the WebSocket feed, and the inline-SVG map UI. Serves the UI itself; `gateway` just proxies. |
+| `simmap` | python:3.12-slim, Flask + flask-sock + paho-mqtt | The town state model, a 1 s tick loop, a coarse physics pass, the MQTT bridge, the WebSocket feed, and the map UI (a pixel-art isometric base image + a calibrated live SVG overlay from `web/overlay.json`, light palette). Serves the UI itself; `gateway` just proxies. |
 | `scoring` | python:3.12-alpine, Flask + paho-mqtt | Owns `scoring.db` (SQLite on a named volume). Phase 0 is schema + health + stubs; Phase 1 adds flag generation/injection, auth, submission validation, the score formula, and the leaderboard. |
 | `bus` | eclipse-mosquitto:2 | Event bus for `pkt/#`, and a target: `pkt/traffic/#` is world-writable in the flat build. |
 
@@ -57,12 +64,26 @@ Every published port binds to `127.0.0.1`. `lib.sh:assert_loopback_only` parses
 ## The town state model (`simmap/models/town.py`)
 
 One `@dataclass` per subsystem, golden defaults, plain floats and bools:
-`Intersection` x4, `Rail`, `Water`, `Sewage`, `Power`, `Shop` x8, `CityHall`,
-`Alert`. `TownState.step(dt)` advances all of them once per tick with coarse
-first-order-lag math (open a feeder and the frequency sags; open the sewage
-bypass and the river contamination integrates up until the swimmers get sick).
-`snapshot()` flattens everything, adds the derived per-house water/power state
-and a monotonic `state_seq`, and that dict is what every client renders.
+`Intersection` x4, `Rail`, `Water`, `Sewage`, `Power`, `Shop` x8 (keyed:
+generalstore, hardware, pharmacy, diner, barber, tavern, drycleaner,
+baittackle), `Bank` (balance, `alarm_armed`, `atm_drained`), `Civic` x2
+(police, fire), `CityHall`, `Alert`. `TownState.step(dt)` advances all of them
+once per tick with coarse first-order-lag math (open a feeder and the frequency
+sags; open the sewage bypass and the river contamination integrates up until
+the swimmers get sick; the bank alarm follows the industrial feeder unless it
+was cut). `snapshot()` flattens everything, adds the derived per-house
+water/power state and a monotonic `state_seq`, and that dict is what every
+client renders onto the overlay.
+
+### The map overlay (`simmap/web/`)
+
+`index.html` layers a transparent `<svg>` over `basemap.png`. `app.js` fetches
+`overlay.json` (percentage coords, `0..1`, for every building hotspot, traffic
+head, house, streetlight, the rail path, the river, the swimmers, the two
+utility flows), builds the overlay elements once, then mutates their `fill` /
+`class` / `visibility` from each snapshot. Clicking a building hotspot opens its
+service (Phase 1+); Phase 0 just names it. `overlay.json` is pinned to the
+placeholder art's layout and gets re-calibrated when the base image changes.
 
 ### Event flow
 

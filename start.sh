@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bring Packet Creek up. Refuses to launch if any published port would bind
+# Bring Packet River up. Refuses to launch if any published port would bind
 # beyond 127.0.0.1.
 #   --segmented   start with the hardened topology (every weakness off) instead
 #                 of the flat, vulnerable-by-default town
@@ -46,7 +46,7 @@ while :; do
 done
 
 echo
-ok "Packet Creek is up  [$MODE]"
+ok "Packet River is up  [$MODE]"
 echo "  city map        http://127.0.0.1:8080/"
 echo "  event bus       127.0.0.1:1883   MQTT (also a target: pkt/traffic/#)"
 echo

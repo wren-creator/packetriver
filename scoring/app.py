@@ -1,4 +1,4 @@
-"""Packet Creek scoring service.
+"""Packet River scoring service.
 
 Phase 0: schema + health + stub endpoints so the gateway route and the UI HUD
 have something to talk to. Phase 1 fills in flag generation/injection, the
