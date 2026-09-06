@@ -167,7 +167,10 @@
       "w": 0.052,
       "h": 0.1,
       "label": "Town Hall",
-      "kind": "civic"
+      "kind": "civic",
+      "port": 8090,
+      "path": "/townhall/",
+      "technique": "townhall_lfi"
     },
     "police": {
       "x": 0.385,
@@ -175,7 +178,10 @@
       "w": 0.055,
       "h": 0.07,
       "label": "Police Station",
-      "kind": "civic"
+      "kind": "civic",
+      "port": 8090,
+      "path": "/police/",
+      "technique": "police_leak"
     },
     "fire": {
       "x": 0.6,
@@ -183,7 +189,10 @@
       "w": 0.052,
       "h": 0.07,
       "label": "Fire Department",
-      "kind": "civic"
+      "kind": "civic",
+      "port": 8090,
+      "path": "/fire/",
+      "technique": "fire_defaultcreds"
     }
   },
   "intersections": [

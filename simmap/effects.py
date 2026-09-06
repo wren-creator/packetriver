@@ -37,11 +37,19 @@ def _cityhall_deface(town, payload):
     town.cityhall.site_status = "defaced"
 
 
+def _carding_spread(town, payload):
+    # the gateway feeds every shop's checkout; carding it spreads fraud
+    for s in town.shops:
+        s.site_status = "carded" if s.site_status == "healthy" else s.site_status
+        s.fraud_charges += 1800
+
+
 EFFECTS = {
     # --- Main Street ---
     "shop_sqli_dump":  lambda town, p: _shop(town, p, "db_dumped"),
     "shop_xss_deface": lambda town, p: _shop(town, p, "defaced"),
     "shop_carded":     lambda town, p: _shop(town, p, "carded"),
+    "paygw_carded":    _carding_spread,
 
     # --- Bank / civic ---
     "bank_drain":      _bank_drain,

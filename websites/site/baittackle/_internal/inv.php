@@ -9,4 +9,4 @@ if (!in_array($ip, ['127.0.0.1', '::1'], true)) {
 require __DIR__ . '/../../lib/db.php';
 header('Content-Type: text/plain');
 echo "PACKET RIVER BAIT & TACKLE - internal inventory API\n";
-echo "warehouse token: " . pr_flag('baittackle') . "\n";
+echo "warehouse token: " . pr_flag('baittackle_ssrf') . "\n";

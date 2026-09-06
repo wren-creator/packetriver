@@ -37,8 +37,8 @@ def _read_flag(name: str) -> str:
         return f"PKTR{{{name}_flag_missing}}"
 
 
-WATER_FLAG = _read_flag("water")
-POWER_FLAG = _read_flag("power")
+WATER_FLAG = _read_flag("water_modbus_pump")
+POWER_FLAG = _read_flag("power_modbus_feeder")
 
 
 def seed() -> None:

@@ -123,6 +123,24 @@ services:
       timeout: 5s
       retries: 8
 
+  # --- fake card gateway for the shops + utility bills ------------------
+  paygw:
+    <<: *common
+    build: ./paygw
+    container_name: packetriver-paygw
+    depends_on:
+      scoring: { condition: service_healthy }
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:8500:8500"
+    networks: [it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8500/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- the water + power soft-PLCs (Modbus) + their operator HMI --------
   field-plc:
     <<: *common

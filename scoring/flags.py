@@ -64,6 +64,36 @@ TECHNIQUES = {
         "hint": "fetch.php?url= is an open SSRF; reach the localhost-only "
                 "/baittackle/_internal/inv.php",
     },
+
+    # --- civic (Town Hall, Police, Fire) + payments ---
+    "townhall_deface": {
+        "subsystem": "civic", "target": "cityhall", "effect": "cityhall_deface",
+        "severity": "loud", "base": 100,
+        "hint": "the announcements admin (/townhall/admin.php) takes clerk/clerk "
+                "and stores the notice raw; the confirmation code is the flag",
+    },
+    "townhall_lfi": {
+        "subsystem": "civic", "target": "cityhall", "effect": "cityhall_payroll",
+        "severity": "loud", "base": 175,
+        "hint": "payroll login is a concatenated query; then payslip.php?doc= is "
+                "an LFI: ?doc=../../../../run/secret/cityhall/flag.txt",
+    },
+    "police_leak": {
+        "subsystem": "civic", "target": "police", "effect": "police_deface",
+        "severity": "quiet", "base": 75,
+        "hint": "/police/dispatch/config.json is world-readable",
+    },
+    "fire_defaultcreds": {
+        "subsystem": "civic", "target": "fire", "effect": "fire_deface",
+        "severity": "medium", "base": 75,
+        "hint": "the station alarm panel (/fire/) takes admin/fire",
+    },
+    "paygw_receipt_idor": {
+        "subsystem": "shop", "target": "paygw", "effect": "paygw_carded",
+        "severity": "loud", "base": 150,
+        "hint": "the card gateway's GET /receipt/<txn_id> has no auth or "
+                "ownership check; walk the ids",
+    },
     "water_modbus_pump": {
         "subsystem": "utility",
         "target": "water",
@@ -101,7 +131,8 @@ def generate() -> None:
             (tid, flag, t["subsystem"], t["target"], t["effect"],
              t["severity"], t["base"], t["hint"]),
         )
-        d = SECRET_DIR / t["target"]
+        # one dir per technique (a target can own more than one)
+        d = SECRET_DIR / tid
         d.mkdir(parents=True, exist_ok=True)
         (d / "flag.txt").write_text(flag + "\n")
         n += 1

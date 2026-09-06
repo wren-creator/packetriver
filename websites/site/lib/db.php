@@ -89,8 +89,18 @@ function pr_sql_error(string $sql, PDOException $e): void
     exit;
 }
 
-function pr_flag(?string $shop = null): string
+const SHOP_TECHNIQUE = [
+    'generalstore' => 'generalstore_sqli', 'hardware' => 'hardware_idor',
+    'pharmacy' => 'pharmacy_authbypass', 'diner' => 'diner_backup',
+    'barber' => 'barber_xss', 'tavern' => 'tavern_defaultcreds',
+    'drycleaner' => 'drycleaner_gitleak', 'baittackle' => 'baittackle_ssrf',
+];
+
+/** Read this session's flag for a technique (defaults to the current shop's
+ *  primary technique). scoring/flags.py writes /run/secret/<technique_id>/flag.txt */
+function pr_flag(?string $technique = null): string
 {
-    $f = '/run/secret/' . ($shop ?? pr_shop()) . '/flag.txt';
+    $technique = $technique ?? (SHOP_TECHNIQUE[pr_shop()] ?? pr_shop());
+    $f = '/run/secret/' . $technique . '/flag.txt';
     return is_readable($f) ? trim((string) file_get_contents($f)) : 'flag-not-planted';
 }
