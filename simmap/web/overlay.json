@@ -1,52 +1,52 @@
 {
-  "_note": "Percentage coords (0..1) for every dynamic element and click hotspot, calibrated against basemap.png (the dusk image with the full perimeter rail loop + river bridge). Still eyeballed; refined per district in later phases and re-pinned to the final art in Phase 6.",
+  "_note": "Percentage coords (0..1) for every dynamic element and click hotspot, calibrated against basemap.png (dusk image, clean rail loop, no parked train). Still eyeballed; a full alignment pass follows once the base art is final (Phase 6), plus per-district nudges as each is wired.",
   "viewBox": [1000, 545],
   "buildings": {
-    "power":        {"x": 0.355, "y": 0.235, "w": 0.090, "h": 0.090, "label": "Power Substation", "kind": "utility"},
-    "water":        {"x": 0.300, "y": 0.320, "w": 0.070, "h": 0.080, "label": "Water Treatment", "kind": "utility"},
-    "sewage":       {"x": 0.685, "y": 0.145, "w": 0.090, "h": 0.085, "label": "Sewage Plant", "kind": "utility"},
-    "factory":      {"x": 0.535, "y": 0.155, "w": 0.078, "h": 0.090, "label": "Widget Factory", "kind": "dressing"},
-    "tavern":       {"x": 0.435, "y": 0.450, "w": 0.040, "h": 0.048, "label": "Tavern / Watering Hole", "kind": "shop"},
-    "bakery":       {"x": 0.455, "y": 0.430, "w": 0.036, "h": 0.044, "label": "Bakery", "kind": "dressing"},
-    "generalstore": {"x": 0.420, "y": 0.462, "w": 0.044, "h": 0.052, "label": "General Store", "kind": "shop"},
-    "pharmacy":     {"x": 0.475, "y": 0.445, "w": 0.042, "h": 0.050, "label": "Pharmacy / Apothecary", "kind": "shop"},
-    "diner":        {"x": 0.515, "y": 0.478, "w": 0.042, "h": 0.048, "label": "Local Diner / Cafe", "kind": "shop"},
-    "barber":       {"x": 0.500, "y": 0.505, "w": 0.038, "h": 0.046, "label": "Barbershop / Salon", "kind": "shop"},
-    "hardware":     {"x": 0.548, "y": 0.520, "w": 0.044, "h": 0.052, "label": "Hardware & Supply", "kind": "shop"},
-    "drycleaner":   {"x": 0.585, "y": 0.552, "w": 0.040, "h": 0.048, "label": "Dry Cleaners / Laundromat", "kind": "shop"},
-    "cinema":       {"x": 0.622, "y": 0.582, "w": 0.044, "h": 0.052, "label": "Cinema", "kind": "dressing"},
-    "baittackle":   {"x": 0.660, "y": 0.605, "w": 0.042, "h": 0.050, "label": "Bait & Tackle / Beach Outfitter", "kind": "shop"},
-    "bank":         {"x": 0.700, "y": 0.632, "w": 0.048, "h": 0.058, "label": "First Packet Bank & Trust", "kind": "bank"},
-    "cityhall":     {"x": 0.500, "y": 0.570, "w": 0.050, "h": 0.088, "label": "Town Hall", "kind": "civic"},
-    "police":       {"x": 0.385, "y": 0.700, "w": 0.052, "h": 0.066, "label": "Police Station", "kind": "civic"},
-    "fire":         {"x": 0.602, "y": 0.720, "w": 0.050, "h": 0.066, "label": "Fire Department", "kind": "civic"}
+    "power":        {"x": 0.355, "y": 0.278, "w": 0.088, "h": 0.088, "label": "Power Substation", "kind": "utility"},
+    "water":        {"x": 0.300, "y": 0.335, "w": 0.068, "h": 0.078, "label": "Water Treatment", "kind": "utility"},
+    "sewage":       {"x": 0.685, "y": 0.150, "w": 0.088, "h": 0.082, "label": "Sewage Plant", "kind": "utility"},
+    "factory":      {"x": 0.535, "y": 0.160, "w": 0.076, "h": 0.088, "label": "Widget Factory", "kind": "dressing"},
+    "tavern":       {"x": 0.415, "y": 0.455, "w": 0.040, "h": 0.046, "label": "Tavern / Watering Hole", "kind": "shop"},
+    "bakery":       {"x": 0.445, "y": 0.435, "w": 0.034, "h": 0.042, "label": "Bakery", "kind": "dressing"},
+    "generalstore": {"x": 0.475, "y": 0.418, "w": 0.042, "h": 0.050, "label": "General Store", "kind": "shop"},
+    "pharmacy":     {"x": 0.505, "y": 0.400, "w": 0.040, "h": 0.048, "label": "Pharmacy / Apothecary", "kind": "shop"},
+    "diner":        {"x": 0.535, "y": 0.470, "w": 0.040, "h": 0.046, "label": "Local Diner / Cafe", "kind": "shop"},
+    "barber":       {"x": 0.520, "y": 0.496, "w": 0.036, "h": 0.044, "label": "Barbershop / Salon", "kind": "shop"},
+    "hardware":     {"x": 0.560, "y": 0.520, "w": 0.042, "h": 0.050, "label": "Hardware & Supply", "kind": "shop"},
+    "drycleaner":   {"x": 0.595, "y": 0.550, "w": 0.040, "h": 0.046, "label": "Dry Cleaners / Laundromat", "kind": "shop"},
+    "cinema":       {"x": 0.630, "y": 0.585, "w": 0.042, "h": 0.050, "label": "Cinema", "kind": "dressing"},
+    "baittackle":   {"x": 0.665, "y": 0.615, "w": 0.040, "h": 0.048, "label": "Bait & Tackle / Beach Outfitter", "kind": "shop"},
+    "bank":         {"x": 0.715, "y": 0.650, "w": 0.046, "h": 0.056, "label": "First Packet Bank & Trust", "kind": "bank"},
+    "cityhall":     {"x": 0.500, "y": 0.565, "w": 0.048, "h": 0.086, "label": "Town Hall", "kind": "civic"},
+    "police":       {"x": 0.385, "y": 0.700, "w": 0.050, "h": 0.064, "label": "Police Station", "kind": "civic"},
+    "fire":         {"x": 0.605, "y": 0.725, "w": 0.048, "h": 0.064, "label": "Fire Department", "kind": "civic"}
   },
   "intersections": [
-    {"id": 1, "x": 0.376, "y": 0.476},
-    {"id": 2, "x": 0.400, "y": 0.552},
-    {"id": 3, "x": 0.466, "y": 0.666},
-    {"id": 4, "x": 0.536, "y": 0.696}
+    {"id": 1, "x": 0.375, "y": 0.475},
+    {"id": 2, "x": 0.400, "y": 0.548},
+    {"id": 3, "x": 0.470, "y": 0.665},
+    {"id": 4, "x": 0.535, "y": 0.700}
   ],
   "houses": [
-    {"x": 0.100, "y": 0.552}, {"x": 0.240, "y": 0.552}, {"x": 0.090, "y": 0.668}, {"x": 0.222, "y": 0.662},
-    {"x": 0.100, "y": 0.808}, {"x": 0.242, "y": 0.802}, {"x": 0.140, "y": 0.918}, {"x": 0.292, "y": 0.900}
+    {"x": 0.100, "y": 0.545}, {"x": 0.235, "y": 0.550}, {"x": 0.090, "y": 0.665}, {"x": 0.220, "y": 0.660},
+    {"x": 0.100, "y": 0.810}, {"x": 0.245, "y": 0.805}, {"x": 0.150, "y": 0.915}, {"x": 0.300, "y": 0.900}
   ],
   "streetlights": [
-    {"x": 0.130, "y": 0.500}, {"x": 0.272, "y": 0.520}, {"x": 0.082, "y": 0.622},
-    {"x": 0.312, "y": 0.628}, {"x": 0.100, "y": 0.752}, {"x": 0.302, "y": 0.752}
+    {"x": 0.130, "y": 0.495}, {"x": 0.270, "y": 0.520}, {"x": 0.080, "y": 0.620},
+    {"x": 0.315, "y": 0.630}, {"x": 0.105, "y": 0.755}, {"x": 0.305, "y": 0.755}
   ],
   "railPath": [
-    [0.130, 0.100], [0.700, 0.083], [0.820, 0.100], [0.925, 0.160],
-    [0.955, 0.450], [0.950, 0.780], [0.900, 0.870], [0.780, 0.900],
-    [0.620, 0.905], [0.300, 0.945], [0.060, 0.950], [0.035, 0.600],
-    [0.040, 0.280], [0.080, 0.160], [0.130, 0.100]
+    [0.125, 0.115], [0.700, 0.105], [0.820, 0.120], [0.930, 0.190],
+    [0.958, 0.480], [0.950, 0.820], [0.900, 0.895], [0.780, 0.920],
+    [0.720, 0.930], [0.300, 0.965], [0.055, 0.945], [0.030, 0.620],
+    [0.035, 0.230], [0.075, 0.150], [0.125, 0.115]
   ],
-  "railBridge": [[0.620, 0.905], [0.780, 0.900]],
-  "spurBranch": [0.420, 0.093],
-  "spurEnd": [0.475, 0.170],
-  "river": {"x": 0.615, "y": 0.000, "w": 0.210, "h": 1.000},
-  "outfall": [[0.830, 0.200], [0.880, 0.155]],
-  "swimmers": [[0.800, 0.460], [0.830, 0.500], [0.790, 0.540], [0.850, 0.552], [0.818, 0.585]],
-  "waterMain": [[0.300, 0.330], [0.200, 0.500], [0.150, 0.620]],
-  "powerFeeder": [[0.360, 0.280], [0.280, 0.500], [0.180, 0.600]]
+  "railBridge": [[0.720, 0.930], [0.820, 0.918]],
+  "spurBranch": [0.415, 0.100],
+  "spurEnd": [0.478, 0.175],
+  "river": {"x": 0.615, "y": 0.000, "w": 0.215, "h": 1.000},
+  "outfall": [[0.835, 0.205], [0.885, 0.160]],
+  "swimmers": [[0.795, 0.460], [0.825, 0.500], [0.788, 0.540], [0.850, 0.550], [0.815, 0.585]],
+  "waterMain": [[0.305, 0.340], [0.205, 0.505], [0.150, 0.625]],
+  "powerFeeder": [[0.360, 0.290], [0.280, 0.505], [0.180, 0.605]]
 }
