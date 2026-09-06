@@ -45,7 +45,7 @@ function buildOverlay(layout) {
   REFS.outfall = el("line", {
     x1: X(layout.outfall[0][0]), y1: Y(layout.outfall[0][1]),
     x2: X(layout.outfall[1][0]), y2: Y(layout.outfall[1][1]),
-    stroke: "#4aa35b", "stroke-width": 5 }, svg);
+    stroke: "#7d6a3c", "stroke-width": 5, opacity: 0 }, svg);
   REFS.swimmers = layout.swimmers.map(p =>
     el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "swimmer" }, svg));
 
@@ -162,7 +162,8 @@ function render(s) {
   if (s.water) REFS.waterMain.classList.toggle("stopped", s.water.quality === "dry");
   if (s.sewage) {
     REFS.river.classList.toggle("foul", s.sewage.river_contamination > 0.4);
-    REFS.outfall.setAttribute("stroke", s.sewage.effluent_path === "raw" ? "#7d6a3c" : "#4aa35b");
+    // only draw the outfall discharge when it's running raw
+    REFS.outfall.setAttribute("opacity", s.sewage.effluent_path === "raw" ? "0.9" : "0");
     REFS.swimmers.forEach(sw => sw.classList.toggle("sick", s.sewage.swimmers_sick));
   }
   if (s.power) {
