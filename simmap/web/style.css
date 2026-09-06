@@ -138,20 +138,22 @@ body {
 .flow.stopped { animation-play-state: paused; opacity: .25; }
 @keyframes flow { to { stroke-dashoffset: -12; } }
 
-/* the river is already in the base art; only wash it when contaminated */
-.river-body { fill: var(--river-foul); opacity: 0; transition: opacity .8s; }
-.river-body.foul { opacity: .6; }
+/* the river is already in the base art; only wash it when contaminated.
+   blurred so the placeholder rectangle reads as a plume, not a hard edge.
+   (Phase 4 replaces this with a river-shaped path + gradient.) */
+.river-body { fill: var(--river-foul); opacity: 0; transition: opacity 1s; filter: blur(9px); }
+.river-body.foul { opacity: .55; }
 .swimmer { fill: #ffe4b8; stroke: #c98b45; stroke-width: .6; }
 .swimmer.sick { fill: #9bb06a; }
 
-/* the house window is the power indicator: warm yellow when the residential
-   feeder is up, dark when it drops */
-.house .win  { fill: #2a2320; transition: fill .4s; }
-.house .win.on  { fill: #ffd35a; filter: drop-shadow(0 0 3px #ffcf5a); }
-.house .drop { fill: #2a2320; }
-.house .drop.on { fill: var(--river); }
-.streetlight { fill: #6a6250; }
-.streetlight.on { fill: #ffcf5a; filter: drop-shadow(0 0 2px #ffcf5a); }
+/* the house window is the power indicator: warm glow when the residential
+   feeder is up, a dim red dot when it drops */
+.house .win  { fill: #d9584f; opacity: .5; transition: opacity .4s, fill .4s; }
+.house .win.on  { fill: #ffd35a; opacity: 1; filter: drop-shadow(0 0 4px #ffcf5a); }
+.house .drop { fill: #d9584f; opacity: .0; }
+.house .drop.on { fill: var(--river); opacity: .85; }
+.streetlight { fill: #6a6250; opacity: .5; }
+.streetlight.on { fill: #ffcf5a; opacity: 1; filter: drop-shadow(0 0 3px #ffcf5a); }
 
 .spur { opacity: .7; }
 .spur.spur-set { stroke: var(--bad); opacity: 1; }

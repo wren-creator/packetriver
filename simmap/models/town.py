@@ -15,6 +15,11 @@ from dataclasses import dataclass, field
 TRAFFIC_CYCLE = ["ns-green", "all-red", "ew-green", "all-red"]
 PHASE_SECONDS = 4.0
 
+# The train runs the visible top track (train_pos 0..1), then spends the rest
+# of the cycle off-screen before re-entering from the start.
+TRAIN_CYCLE = 1.7
+SWITCH_POINT = 0.42   # where the spur branches, as a fraction of the visible run
+
 # The eight Main Street storefronts. The bank, police, and fire are their own
 # first-class entities; the cinema and bakery are set dressing (not modelled).
 SHOPS = [
@@ -195,8 +200,11 @@ class TownState:
         if r.derailed:
             return
         prev = r.train_pos
-        r.train_pos = (r.train_pos + r.train_speed * dt) % 1.0
-        crossed = prev < 0.5 <= r.train_pos or (prev > r.train_pos and 0.5 <= r.train_pos)
+        r.train_pos += r.train_speed * dt
+        if r.train_pos >= TRAIN_CYCLE:
+            r.train_pos -= TRAIN_CYCLE
+        # crossed the switch point on this pass across the visible run
+        crossed = prev < SWITCH_POINT <= r.train_pos
         if r.switch_position == "spur" and crossed:
             r.derailed = True
             r.factory_fire = True
@@ -260,6 +268,7 @@ class TownState:
             ],
             "rail": {
                 "train_pos": round(self.rail.train_pos, 4),
+                "on_screen": self.rail.train_pos < 1.0,
                 "switch_position": self.rail.switch_position,
                 "derailed": self.rail.derailed,
                 "console_locked": self.rail.console_locked,
