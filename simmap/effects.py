@@ -27,6 +27,11 @@ def _bank_drain(town, payload):
     town.bank._alarm_cut = True
 
 
+def _ics():
+    import icsloops
+    return icsloops
+
+
 def _cityhall_deface(town, payload):
     town.cityhall.announcement_text = payload.get("text", "OWNED BY " + payload.get("player", "anon"))
     town.cityhall.site_status = "defaced"
@@ -48,14 +53,19 @@ EFFECTS = {
     "police_deface": lambda town, p: setattr(town.police, "site_status", "defaced"),
     "fire_deface":   lambda town, p: setattr(town.fire, "site_status", "defaced"),
 
-    # --- utilities ---
-    "water_main_break": lambda town, p: setattr(town.water, "broken", True),
+    # --- utilities: water + power are real PLCs, so poke them over Modbus
+    #     (the debug button and a real attack then do the exact same thing) ---
+    "water_main_break": lambda town, p: _ics().stop_highlift(),
+    "power_trip_feeder": lambda town, p: _ics().trip_feeder(p.get("feeder", "industrial")),
+    "power_trip_main": lambda town, p: _ics().trip_main(),
     "sewage_bypass": lambda town, p: (
         setattr(town.sewage, "effluent_path", "raw"),
         setattr(town.sewage, "aeration_on", False),
     ),
-    "power_trip_feeder": lambda town, p: town.power.feeders.__setitem__(
-        p.get("feeder", "industrial"), False),
+
+    # a valid flag submission for an OT technique scores + raises Alert heat;
+    # the physical damage was already done by the player's Modbus write.
+    "noop": lambda town, p: None,
 
     # --- traffic + rail ---
     "traffic_all_green": lambda town, p: [

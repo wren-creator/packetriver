@@ -40,7 +40,7 @@ gateway), `field-plc` (water + sewage + electric soft-PLCs in one container),
 `player` (the attacker box). Cinema and Bakery render on the map but are set
 dressing.
 
-## Services (through Phase 1)
+## Services (through Phase 2)
 
 | Service | Stack | Role |
 |---|---|---|
@@ -50,7 +50,8 @@ dressing.
 | `bus` | eclipse-mosquitto:2 | Event bus for `pkt/#`, and a target: `pkt/traffic/#` is world-writable in the flat build. |
 | `db` | mariadb:11 | Real MySQL (the SQLi syllabus needs `information_schema`, `UNION`, verbose errors). Phase 1: the `generalstore` schema + seed. Capped buffer pool. |
 | `websites` | php:8.2-apache | The vulnerable Main Street storefronts. Phase 1: the General Store behind its login portal, with a real concatenated-`LIKE` SQL injection in the authenticated search. Its entrypoint waits for the db and plants this session's flag into `staff_notes`. Published on `127.0.0.1:8090` for the map UI to iframe. |
-| `player` | python:3.12-slim + tools | The boxed-in attacker box: sqlmap, nmap, curl, jq. Default route dropped at start; `scripts/targets.py` is a lab-only allowlist guard. |
+| `field-plc` | python:3.12-slim + pymodbus | Two real Modbus/TCP soft-PLCs in one container - water (:502) and power (:503) - plus a shared Flask operator HMI (:8093, `operator`/`operator`). A 0.3 s scan loop runs the golden control program and, when `MODBUS_WRITE_OPEN=0`, re-asserts the safe state every pass. Each plant's flag sits in an input-register block gated by the maintenance-mode coil. |
+| `player` | python:3.12-slim + tools | The boxed-in attacker box: sqlmap, nmap, curl, jq, pymodbus. Default route dropped at start; `scripts/targets.py` is a lab-only allowlist guard. `recon.py` sweeps the lab; `modbus_attack.py` drives the unauth writes against `field-plc`. |
 
 ## Networks
 
@@ -72,6 +73,17 @@ Every published port binds to `127.0.0.1`. `lib.sh:assert_loopback_only` parses
 `docker compose config` and refuses to start if any `published:` port lacks
 `host_ip: 127.0.0.1`. `status.sh` re-audits the running bindings and, once the
 `player` box exists, checks it cannot reach the internet or the OT segment.
+
+## The water + power loop (`simmap/icsloops.py`)
+
+From Phase 2, `simmap` is a Modbus *client* to `field-plc`. Two threads, one
+per plant: read the coils and setpoints, step `WaterModel` / `PowerModel` (a
+coarse first-order integrator - stop the pump and pressure bleeds out over a
+few ticks), write the PVs back so the HMI stays live, and mirror the derived
+state into `TownState`. Those subsystems are listed in `town.external`, so the
+built-in idle physics leaves them alone. The debug-menu effects and
+`pkt/reset {scope:water|power}` call the same `icsloops` pokes, which issue the
+same Modbus writes an attacker would - so a button and an attack are identical.
 
 ## The town state model (`simmap/models/town.py`)
 

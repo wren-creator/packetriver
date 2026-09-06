@@ -16,10 +16,16 @@ reuse map live in the design doc.
   side-panel, the boxed-in `player` box. Sign up, get a shop session, UNION the
   flag out of the search, submit it, watch the store break on the map (+alert),
   beat your best. Overlay alignment still rough - tweak later.
-- [ ] **Phase 2 - Water + power districts.** `field-plc` (water + electric
-  soft-PLCs), the physics integrators lifted from `crosscreek/process-sim`,
-  Modbus/S7 attack scripts, houses that go dry and dark. Validate `python-snap7`
-  / `cpppo` on arm64 here.
+- [x] **Phase 2 - Water + power districts.** `field-plc` runs two real
+  Modbus/TCP soft-PLCs (water :502, power :503) plus a shared operator HMI
+  (`operator`/`operator`). simmap drives the physics from them via `icsloops`
+  (`WaterModel` / `PowerModel`). Unauth Modbus writes: stop the high-lift pump
+  -> the town loses water; open a feeder breaker -> a zone goes dark; open the
+  main -> whole town dark, frequency dives. Flag per plant in an input-register
+  block that fills when you set the maintenance-mode coil. `player` gets
+  `recon.py` + `modbus_attack.py`. Debug buttons and reset now poke the real
+  PLCs, so they do the same thing an attack does. (Modbus for power too, not S7
+  - arm64-safe; an S7/CIP "vendor dialects" pass can come later.)
 - [ ] **Phase 3 - Full Main Street + Town Hall + payments + the Bank.** All 8
   storefronts (one bug class each) behind login portals, `paygw` fake gateway
   with test PANs, Town Hall (announcements + payroll + LFI), the **`bank`**
@@ -42,8 +48,29 @@ reuse map live in the design doc.
 
 ## Ideas / bucket list
 
-- [ ] Widget Factory ops site (weak SNMP) instead of the factory being a pure
-  consequence entity.
+- [ ] **Midrange + mainframe tier.** Give the big civic systems the machines a
+  real small town would run them on:
+  - an **AS/400 (IBM i)** behind **City Hall** and the **Widget Factory**,
+    running payroll (TN5250 green screen, an RPG IV / DDS payroll app). Reuse
+    the TN5250 stack from `web3270` and the RPG IV / DDS parser from
+    `rpgle_library`. Bugs: default `QSECOFR` / weak profiles, no exit-program
+    controls, library-list / command-line injection, unencrypted 5250.
+  - an **IBM z16** behind **First Packet Bank & Trust** for core banking
+    (TN3270, z/OS, RACF, CICS). Reuse the mock-LPAR / TN3270 stack from
+    `web3270`. Bugs: RACF misconfig (universal access, WARNING mode, magic
+    SVC), CICS transaction abuse, APF / surrogat, TSO REXX. This is Britley's
+    home turf and the range's real differentiator.
+  These tie into the existing web front doors: pop the City Hall payroll portal
+  (web) then pivot to the AS/400 behind it; pop the bank's online banking (web)
+  then pivot to the z16.
+- [ ] **Widget Factory PLC controls.** The factory gets its own soft-PLC on
+  `field-plc` (or its own container): the **assembly line** (conveyor run/stop,
+  line speed, e-stop interlocks) and **train loading** (the spur, the loading
+  gantry / hopper gate, a car-in-position sensor). Same unauth-Modbus-write
+  lesson as water/power; ties to the rail switch already on the map. Effects:
+  line jam, over/under-fill, a car loaded while the switch is thrown.
+- [ ] Widget Factory ops site (weak SNMP) alongside the PLC controls, instead of
+  the factory being a pure consequence entity.
 - [ ] Optional `ttyd` browser terminal in the `player` box for players without
   a local shell.
 - [ ] Timed events beyond the news crew: a state inspector visit, a Founder's

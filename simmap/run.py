@@ -5,6 +5,7 @@ import os
 import threading
 import time
 
+import icsloops
 import server
 from bus import Bus
 from models import TownState
@@ -19,6 +20,11 @@ def main() -> None:
     bus = Bus(town, lock, on_change=server.broadcast)
     server.BUS = bus
     threading.Thread(target=bus.start, daemon=True).start()
+
+    # the water + power districts are driven by the real Modbus PLCs in
+    # field-plc; take those subsystems off the built-in idle physics.
+    town.external.update({"water", "power"})
+    icsloops.start(town, lock)
 
     tick = float(os.environ.get("TICK_SECONDS", "1.0"))
 

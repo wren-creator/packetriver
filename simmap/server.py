@@ -82,7 +82,7 @@ def api_config():
     return {
         "cashapp": os.environ.get("DONATION_CASHAPP", "britleywren"),
         "reset_scopes": RESET_SCOPES,
-        "phase": 1,
+        "phase": 2,
     }
 
 
@@ -102,6 +102,14 @@ def api_debug_reset():
     scope = data.get("scope", "all")
     with STATE["lock"]:
         STATE["town"].reset(scope)
+    try:
+        import icsloops
+        if scope in ("all", "water"):
+            icsloops.restore_water()
+        if scope in ("all", "power"):
+            icsloops.restore_power()
+    except Exception as exc:
+        print("[server] reset poke:", exc)
     broadcast()
     return {"ok": True, "scope": scope}
 

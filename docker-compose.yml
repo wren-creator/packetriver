@@ -41,11 +41,13 @@ services:
     build: ./simmap
     container_name: packetriver-simmap
     depends_on:
-      bus: { condition: service_healthy }
+      bus:       { condition: service_healthy }
+      field-plc: { condition: service_healthy }
     environment:
       TICK_SECONDS: "${TICK_SECONDS:-1.0}"
       DONATION_CASHAPP: "${DONATION_CASHAPP:-britleywren}"
       MQTT_HOST: "bus"
+      FIELD_PLC_HOST: "field-plc"
     networks: [it-net, bus-net]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
@@ -117,6 +119,30 @@ services:
     networks: [it-net, edge-net]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost/health.php || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+
+  # --- the water + power soft-PLCs (Modbus) + their operator HMI --------
+  field-plc:
+    <<: *common
+    build: ./field-plc
+    container_name: packetriver-field-plc
+    depends_on:
+      scoring: { condition: service_healthy }
+    environment:
+      MODBUS_WRITE_OPEN: "${MODBUS_WRITE_OPEN:-1}"
+      HMI_USER: "operator"
+      HMI_PASS: "operator"      # default creds; Phase 4 hardening rotates this
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:8093:8093"    # operator HMI
+      - "127.0.0.1:5502:502"     # water Modbus/TCP
+      - "127.0.0.1:5503:503"     # power Modbus/TCP
+    networks: [it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8093/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 8

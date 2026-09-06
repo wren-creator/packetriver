@@ -11,7 +11,7 @@
   --warn: #e3a52e;        /* sun */
   --bad: #d9584f;         /* barn red */
   --river: #55a8d8;
-  --river-foul: #7d6a3c;
+  --river-foul: #6f8a3c;
   --sand: #f0dfae;
 }
 
@@ -210,3 +210,7 @@ body {
 .spur { opacity: .7; }
 .spur.spur-set { stroke: var(--bad); opacity: 1; }
 .factory.fire  { fill: var(--bad); opacity: .55; }
+
+/* treated effluent -> river: moving blue, turns algae-green when messed with */
+.outfall { stroke: #37a6dd; opacity: .95; }
+.outfall.foul { stroke: #7cb03a; }

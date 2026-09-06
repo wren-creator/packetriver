@@ -8,6 +8,8 @@ RUN apt-get update \
       sqlmap nmap curl jq iproute2 ca-certificates less \
  && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir pymodbus==3.6.9
+
 COPY scripts/ /opt/pktr/scripts/
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh /opt/pktr/scripts/*.sh 2>/dev/null || true

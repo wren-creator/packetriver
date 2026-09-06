@@ -30,6 +30,26 @@ TECHNIQUES = {
         "base": 150,
         "hint": "UNION out of the product search (3 columns) into staff_notes",
     },
+    "water_modbus_pump": {
+        "subsystem": "utility",
+        "target": "water",
+        "effect": "noop",   # the physical damage was the player's Modbus write
+        "severity": "loud",
+        "base": 175,
+        "hint": "unauth Modbus write on :502 - stop the high-lift pump; the flag "
+                "is in the input-register block that fills when you set the "
+                "maintenance-mode coil (8)",
+    },
+    "power_modbus_feeder": {
+        "subsystem": "utility",
+        "target": "power",
+        "effect": "noop",
+        "severity": "loud",
+        "base": 175,
+        "hint": "unauth Modbus write on :503 - open a feeder breaker; the flag "
+                "is in the input-register block gated by the maintenance-mode "
+                "coil (8)",
+    },
 }
 
 

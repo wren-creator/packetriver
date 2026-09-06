@@ -42,10 +42,11 @@ function buildOverlay(layout) {
 
   const r = layout.river;
   REFS.river = el("rect", { x: X(r.x), y: Y(r.y), width: X(r.w), height: Y(r.h), class: "river-body" }, svg);
-  REFS.outfall = el("line", {
-    x1: X(layout.outfall[0][0]), y1: Y(layout.outfall[0][1]),
-    x2: X(layout.outfall[1][0]), y2: Y(layout.outfall[1][1]),
-    stroke: "#7d6a3c", "stroke-width": 5, opacity: 0 }, svg);
+  // treated effluent flowing to the river: a moving blue line, green when the
+  // treatment has been messed with
+  REFS.outfall = el("polyline", {
+    points: layout.outfall.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
+    fill: "none", "stroke-width": 4, class: "flow outfall" }, svg);
   REFS.swimmers = layout.swimmers.map(p =>
     el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "swimmer" }, svg));
 
@@ -161,9 +162,9 @@ function render(s) {
 
   if (s.water) REFS.waterMain.classList.toggle("stopped", s.water.quality === "dry");
   if (s.sewage) {
+    const raw = s.sewage.effluent_path === "raw";
     REFS.river.classList.toggle("foul", s.sewage.river_contamination > 0.4);
-    // only draw the outfall discharge when it's running raw
-    REFS.outfall.setAttribute("opacity", s.sewage.effluent_path === "raw" ? "0.9" : "0");
+    REFS.outfall.classList.toggle("foul", raw);
     REFS.swimmers.forEach(sw => sw.classList.toggle("sick", s.sewage.swimmers_sick));
   }
   if (s.power) {

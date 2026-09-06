@@ -61,7 +61,16 @@ class Bus:
                     apply(self.town, effect, payload)
                 self.town.add_heat(SEVERITY_HEAT.get(payload.get("severity", "medium"), 10))
             elif msg.topic == "pkt/reset":
-                self.town.reset(payload.get("scope", "all"))
+                scope = payload.get("scope", "all")
+                self.town.reset(scope)
+                try:
+                    import icsloops
+                    if scope in ("all", "water"):
+                        icsloops.restore_water()
+                    if scope in ("all", "power"):
+                        icsloops.restore_power()
+                except Exception as exc:
+                    print("[bus] reset poke:", exc)
             elif msg.topic == "pkt/campaign":
                 pass  # Phase 4
         self.on_change()

@@ -65,7 +65,8 @@ class Water:
     tank_pct: float = 78.0
     mains_pressure_pct: float = 100.0
     quality: str = "clean"          # clean | brown | dry
-    broken: bool = False
+    houses_supplied: int = 12
+    broken: bool = False            # pressure lost; kept for the map + effects
 
 
 @dataclass
@@ -132,6 +133,9 @@ ALERT_THRESHOLDS = [(150, 5), (110, 4), (75, 3), (45, 2), (20, 1)]
 class TownState:
     def __init__(self):
         self.state_seq = 0
+        # subsystems driven by an external client loop (icsloops) instead of the
+        # built-in idle physics; their _step_* methods no-op when listed here.
+        self.external: set[str] = set()
         self.reset("all")
 
     # -- reset -----------------------------------------------------------
@@ -211,6 +215,8 @@ class TownState:
             r.train_speed = 0.0
 
     def _step_water(self, dt: float) -> None:
+        if "water" in self.external:
+            return
         w = self.water
         if w.broken:
             w.mains_pressure_pct = max(0.0, w.mains_pressure_pct - 8.0 * dt)
@@ -230,6 +236,8 @@ class TownState:
         sg.swimmers_sick = sg.river_contamination > 0.45
 
     def _step_power(self, dt: float) -> None:
+        if "power" in self.external:
+            return
         p = self.power
         open_feeders = sum(1 for up in p.feeders.values() if not up)
         target = 60.0 - 0.7 * open_feeders
@@ -278,6 +286,7 @@ class TownState:
                 "tank_pct": round(w.tank_pct, 1),
                 "mains_pressure_pct": round(w.mains_pressure_pct, 1),
                 "quality": w.quality,
+                "houses_supplied": w.houses_supplied,
             },
             "sewage": {
                 "effluent_path": self.sewage.effluent_path,

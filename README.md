@@ -73,13 +73,19 @@ would rather attack from your own shell.
 
 ## Status
 
-Early build. See `ROADMAP.md` for what is in and what is coming. **Phase 1** is
-in: the pixel-art live map, and the first real target, the **General Store**,
-end to end. Register a player, start a run, click the store on the map to get
-its login portal, get a session, UNION the flag out of the product search,
-submit it, and watch the store break on the map and the leaderboard move. The
-other districts and the rest of Main Street land over Phases 2-6. Overlay
-alignment against the map art is still being tightened.
+Early build. See `ROADMAP.md`. **Phases 0-2** are in:
+
+- the pixel-art live map with its overlay
+- the **General Store** (web) end to end - a login portal, a real SQL injection
+  in the product search, a flag you UNION out and submit
+- the **water and power districts** on real Modbus - stop the high-lift pump
+  and the town goes dry, open a feeder breaker and a zone goes dark; the flag
+  is in the PLC's maintenance-mode register block; there's an operator HMI at
+  `:8093`
+
+The rest of Main Street, the bank, Town Hall, sewage, traffic, rail, and the
+Wi-Fi lane land over Phases 3-6. Overlay alignment against the map art is still
+being tightened.
 
 ## More
 

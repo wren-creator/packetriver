@@ -49,6 +49,8 @@ echo
 ok "Packet River is up  [$MODE]"
 echo "  city map        http://127.0.0.1:8080/"
 echo "  General Store   http://127.0.0.1:8090/   (a target - click it on the map too)"
+echo "  field HMI       http://127.0.0.1:8093/   (water + power operator screen, operator/operator)"
+echo "  water Modbus    127.0.0.1:5502   /  power Modbus  127.0.0.1:5503   (no auth)"
 echo "  event bus       127.0.0.1:1883   MQTT (also a target: pkt/traffic/#)"
 echo
 echo "  attacker shell:         docker compose exec player sh"
