@@ -88,7 +88,7 @@ services:
       MARIADB_PASSWORD: "shop"
     volumes:
       - db-data:/var/lib/mysql
-      - ./db/init/generalstore.sql:/docker-entrypoint-initdb.d/10-generalstore.sql:ro
+      - ./db/init:/docker-entrypoint-initdb.d:ro
       - ./db/my.cnf:/etc/mysql/conf.d/packetriver.cnf:ro
     networks: [it-net]
     healthcheck:

@@ -278,7 +278,7 @@ async function doAuth(path) {
 function openTarget(id, b) {
   if (b.kind === "dressing") { toast(b.label + " — just scenery"); return; }
   if (!b.port) { toast(b.label + " — comes online in a later phase"); return; }
-  const url = `${location.protocol}//${location.hostname}:${b.port}/`;
+  const url = `${location.protocol}//${location.hostname}:${b.port}${b.path || "/"}`;
   $("sitepanel-title").textContent = b.label + " — login portal";
   $("sitepanel-open").href = url;
   $("sitepanel-frame").src = url;

@@ -5,10 +5,10 @@ FROM python:3.12-slim
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      sqlmap nmap curl jq iproute2 ca-certificates less \
+      sqlmap nmap curl jq iproute2 ca-certificates less git \
  && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir pymodbus==3.6.9
+RUN pip install --no-cache-dir pymodbus==3.6.9 git-dumper==1.0.8
 
 COPY scripts/ /opt/pktr/scripts/
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

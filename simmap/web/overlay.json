@@ -1,51 +1,380 @@
 {
   "_note": "Percentage coords (0..1) for every dynamic element and click hotspot, calibrated against the FINAL basemap.png (dusk, clean rail, no parked train) using a 5%% grid. Nudged per screenshot pass; refine further only if the art changes.",
-  "viewBox": [1000, 545],
+  "viewBox": [
+    1000,
+    545
+  ],
   "buildings": {
-    "power":        {"x": 0.360, "y": 0.275, "w": 0.100, "h": 0.100, "label": "Power Substation", "kind": "utility", "port": 8093, "technique": "power_modbus_feeder"},
-    "water":        {"x": 0.665, "y": 0.335, "w": 0.058, "h": 0.095, "label": "Packet River Water Company", "kind": "utility", "port": 8093, "technique": "water_modbus_pump"},
-    "watertower":   {"x": 0.905, "y": 0.145, "w": 0.045, "h": 0.150, "label": "Water Tower", "kind": "dressing"},
-    "sewage":       {"x": 0.575, "y": 0.175, "w": 0.080, "h": 0.080, "label": "Sewage Plant", "kind": "utility"},
-    "factory":      {"x": 0.530, "y": 0.145, "w": 0.090, "h": 0.110, "label": "Widget Factory", "kind": "dressing"},
-    "tavern":       {"x": 0.405, "y": 0.435, "w": 0.042, "h": 0.048, "label": "Tavern / Watering Hole", "kind": "shop"},
-    "generalstore": {"x": 0.440, "y": 0.415, "w": 0.040, "h": 0.046, "label": "General Store", "kind": "shop", "port": 8090, "technique": "generalstore_sqli"},
-    "bakery":       {"x": 0.465, "y": 0.400, "w": 0.032, "h": 0.040, "label": "Bakery", "kind": "dressing"},
-    "pharmacy":     {"x": 0.490, "y": 0.385, "w": 0.038, "h": 0.044, "label": "Pharmacy / Apothecary", "kind": "shop"},
-    "diner":        {"x": 0.516, "y": 0.366, "w": 0.038, "h": 0.044, "label": "Local Diner / Cafe", "kind": "shop"},
-    "barber":       {"x": 0.525, "y": 0.450, "w": 0.036, "h": 0.042, "label": "Barbershop / Salon", "kind": "shop"},
-    "hardware":     {"x": 0.560, "y": 0.485, "w": 0.040, "h": 0.048, "label": "Hardware & Supply", "kind": "shop"},
-    "drycleaner":   {"x": 0.595, "y": 0.516, "w": 0.038, "h": 0.046, "label": "Dry Cleaners / Laundromat", "kind": "shop"},
-    "cinema":       {"x": 0.630, "y": 0.550, "w": 0.040, "h": 0.048, "label": "Cinema", "kind": "dressing"},
-    "baittackle":   {"x": 0.665, "y": 0.585, "w": 0.040, "h": 0.046, "label": "Bait & Tackle / Beach Outfitter", "kind": "shop"},
-    "bank":         {"x": 0.710, "y": 0.620, "w": 0.046, "h": 0.056, "label": "First Packet Bank & Trust", "kind": "bank"},
-    "cityhall":     {"x": 0.490, "y": 0.560, "w": 0.052, "h": 0.100, "label": "Town Hall", "kind": "civic"},
-    "police":       {"x": 0.385, "y": 0.700, "w": 0.055, "h": 0.070, "label": "Police Station", "kind": "civic"},
-    "fire":         {"x": 0.600, "y": 0.730, "w": 0.052, "h": 0.070, "label": "Fire Department", "kind": "civic"}
+    "power": {
+      "x": 0.36,
+      "y": 0.275,
+      "w": 0.1,
+      "h": 0.1,
+      "label": "Power Substation",
+      "kind": "utility",
+      "port": 8093,
+      "technique": "power_modbus_feeder"
+    },
+    "water": {
+      "x": 0.665,
+      "y": 0.335,
+      "w": 0.058,
+      "h": 0.095,
+      "label": "Packet River Water Company",
+      "kind": "utility",
+      "port": 8093,
+      "technique": "water_modbus_pump"
+    },
+    "watertower": {
+      "x": 0.905,
+      "y": 0.145,
+      "w": 0.045,
+      "h": 0.15,
+      "label": "Water Tower",
+      "kind": "dressing"
+    },
+    "sewage": {
+      "x": 0.575,
+      "y": 0.175,
+      "w": 0.08,
+      "h": 0.08,
+      "label": "Sewage Plant",
+      "kind": "utility"
+    },
+    "factory": {
+      "x": 0.53,
+      "y": 0.145,
+      "w": 0.09,
+      "h": 0.11,
+      "label": "Widget Factory",
+      "kind": "dressing"
+    },
+    "tavern": {
+      "x": 0.405,
+      "y": 0.435,
+      "w": 0.042,
+      "h": 0.048,
+      "label": "Tavern / Watering Hole",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/tavern/",
+      "technique": "tavern_defaultcreds"
+    },
+    "generalstore": {
+      "x": 0.44,
+      "y": 0.415,
+      "w": 0.04,
+      "h": 0.046,
+      "label": "General Store",
+      "kind": "shop",
+      "port": 8090,
+      "technique": "generalstore_sqli",
+      "path": "/generalstore/"
+    },
+    "bakery": {
+      "x": 0.465,
+      "y": 0.4,
+      "w": 0.032,
+      "h": 0.04,
+      "label": "Bakery",
+      "kind": "dressing"
+    },
+    "pharmacy": {
+      "x": 0.49,
+      "y": 0.385,
+      "w": 0.038,
+      "h": 0.044,
+      "label": "Pharmacy / Apothecary",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/pharmacy/",
+      "technique": "pharmacy_authbypass"
+    },
+    "diner": {
+      "x": 0.516,
+      "y": 0.366,
+      "w": 0.038,
+      "h": 0.044,
+      "label": "Local Diner / Cafe",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/diner/",
+      "technique": "diner_backup"
+    },
+    "barber": {
+      "x": 0.525,
+      "y": 0.45,
+      "w": 0.036,
+      "h": 0.042,
+      "label": "Barbershop / Salon",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/barber/",
+      "technique": "barber_xss"
+    },
+    "hardware": {
+      "x": 0.56,
+      "y": 0.485,
+      "w": 0.04,
+      "h": 0.048,
+      "label": "Hardware & Supply",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/hardware/",
+      "technique": "hardware_idor"
+    },
+    "drycleaner": {
+      "x": 0.595,
+      "y": 0.516,
+      "w": 0.038,
+      "h": 0.046,
+      "label": "Dry Cleaners / Laundromat",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/drycleaner/",
+      "technique": "drycleaner_gitleak"
+    },
+    "cinema": {
+      "x": 0.63,
+      "y": 0.55,
+      "w": 0.04,
+      "h": 0.048,
+      "label": "Cinema",
+      "kind": "dressing"
+    },
+    "baittackle": {
+      "x": 0.665,
+      "y": 0.585,
+      "w": 0.04,
+      "h": 0.046,
+      "label": "Bait & Tackle / Beach Outfitter",
+      "kind": "shop",
+      "port": 8090,
+      "path": "/baittackle/",
+      "technique": "baittackle_ssrf"
+    },
+    "bank": {
+      "x": 0.71,
+      "y": 0.62,
+      "w": 0.046,
+      "h": 0.056,
+      "label": "First Packet Bank & Trust",
+      "kind": "bank"
+    },
+    "cityhall": {
+      "x": 0.49,
+      "y": 0.56,
+      "w": 0.052,
+      "h": 0.1,
+      "label": "Town Hall",
+      "kind": "civic"
+    },
+    "police": {
+      "x": 0.385,
+      "y": 0.7,
+      "w": 0.055,
+      "h": 0.07,
+      "label": "Police Station",
+      "kind": "civic"
+    },
+    "fire": {
+      "x": 0.6,
+      "y": 0.73,
+      "w": 0.052,
+      "h": 0.07,
+      "label": "Fire Department",
+      "kind": "civic"
+    }
   },
   "intersections": [
-    {"id": 1, "x": 0.375, "y": 0.475},
-    {"id": 2, "x": 0.400, "y": 0.550},
-    {"id": 3, "x": 0.465, "y": 0.665},
-    {"id": 4, "x": 0.535, "y": 0.700}
+    {
+      "id": 1,
+      "x": 0.375,
+      "y": 0.475
+    },
+    {
+      "id": 2,
+      "x": 0.4,
+      "y": 0.55
+    },
+    {
+      "id": 3,
+      "x": 0.465,
+      "y": 0.665
+    },
+    {
+      "id": 4,
+      "x": 0.535,
+      "y": 0.7
+    }
   ],
   "houses": [
-    {"x": 0.110, "y": 0.530}, {"x": 0.230, "y": 0.540}, {"x": 0.090, "y": 0.630}, {"x": 0.200, "y": 0.670},
-    {"x": 0.100, "y": 0.770}, {"x": 0.240, "y": 0.750}, {"x": 0.150, "y": 0.900}, {"x": 0.270, "y": 0.870}
+    {
+      "x": 0.11,
+      "y": 0.53
+    },
+    {
+      "x": 0.23,
+      "y": 0.54
+    },
+    {
+      "x": 0.09,
+      "y": 0.63
+    },
+    {
+      "x": 0.2,
+      "y": 0.67
+    },
+    {
+      "x": 0.1,
+      "y": 0.77
+    },
+    {
+      "x": 0.24,
+      "y": 0.75
+    },
+    {
+      "x": 0.15,
+      "y": 0.9
+    },
+    {
+      "x": 0.27,
+      "y": 0.87
+    }
   ],
   "streetlights": [
-    {"x": 0.140, "y": 0.480}, {"x": 0.260, "y": 0.520}, {"x": 0.080, "y": 0.660},
-    {"x": 0.300, "y": 0.620}, {"x": 0.110, "y": 0.820}, {"x": 0.280, "y": 0.800}
+    {
+      "x": 0.14,
+      "y": 0.48
+    },
+    {
+      "x": 0.26,
+      "y": 0.52
+    },
+    {
+      "x": 0.08,
+      "y": 0.66
+    },
+    {
+      "x": 0.3,
+      "y": 0.62
+    },
+    {
+      "x": 0.11,
+      "y": 0.82
+    },
+    {
+      "x": 0.28,
+      "y": 0.8
+    }
   ],
   "_railNote": "railPath is just the visible top run: the train enters from off the left edge, crosses the Main Rail Line, and exits off the right; it stays hidden the rest of the cycle before re-entering.",
   "railPath": [
-    [-0.03, 0.100], [0.100, 0.045], [0.450, 0.045], [0.660, 0.048],
-    [0.780, 0.090], [0.900, 0.170], [1.06, 0.280]
+    [
+      -0.03,
+      0.1
+    ],
+    [
+      0.1,
+      0.045
+    ],
+    [
+      0.45,
+      0.045
+    ],
+    [
+      0.66,
+      0.048
+    ],
+    [
+      0.78,
+      0.09
+    ],
+    [
+      0.9,
+      0.17
+    ],
+    [
+      1.06,
+      0.28
+    ]
   ],
-  "spurBranch": [0.420, 0.048],
-  "spurEnd": [0.470, 0.160],
-  "river": {"x": 0.680, "y": 0.000, "w": 0.200, "h": 1.000},
-  "outfall": [[0.578, 0.190], [0.640, 0.170], [0.700, 0.148]],
-  "swimmers": [[0.790, 0.440], [0.820, 0.480], [0.780, 0.520], [0.840, 0.530], [0.810, 0.570]],
-  "waterMain": [[0.635, 0.420], [0.400, 0.500], [0.220, 0.600]],
-  "powerFeeder": [[0.360, 0.300], [0.280, 0.480], [0.180, 0.620]]
+  "spurBranch": [
+    0.42,
+    0.048
+  ],
+  "spurEnd": [
+    0.47,
+    0.16
+  ],
+  "river": {
+    "x": 0.68,
+    "y": 0.0,
+    "w": 0.2,
+    "h": 1.0
+  },
+  "outfall": [
+    [
+      0.578,
+      0.19
+    ],
+    [
+      0.64,
+      0.17
+    ],
+    [
+      0.7,
+      0.148
+    ]
+  ],
+  "swimmers": [
+    [
+      0.79,
+      0.44
+    ],
+    [
+      0.82,
+      0.48
+    ],
+    [
+      0.78,
+      0.52
+    ],
+    [
+      0.84,
+      0.53
+    ],
+    [
+      0.81,
+      0.57
+    ]
+  ],
+  "waterMain": [
+    [
+      0.635,
+      0.42
+    ],
+    [
+      0.4,
+      0.5
+    ],
+    [
+      0.22,
+      0.6
+    ]
+  ],
+  "powerFeeder": [
+    [
+      0.36,
+      0.3
+    ],
+    [
+      0.28,
+      0.48
+    ],
+    [
+      0.18,
+      0.62
+    ]
+  ]
 }

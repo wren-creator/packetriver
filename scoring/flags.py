@@ -23,12 +23,46 @@ SCHEMA = pathlib.Path(__file__).with_name("schema.sql")
 # a valid flag for this technique is submitted.
 TECHNIQUES = {
     "generalstore_sqli": {
-        "subsystem": "shop",
-        "target": "generalstore",
-        "effect": "shop_sqli_dump",
-        "severity": "medium",
-        "base": 150,
+        "subsystem": "shop", "target": "generalstore", "effect": "shop_sqli_dump",
+        "severity": "medium", "base": 150,
         "hint": "UNION out of the product search (3 columns) into staff_notes",
+    },
+    "hardware_idor": {
+        "subsystem": "shop", "target": "hardware", "effect": "shop_sqli_dump",
+        "severity": "quiet", "base": 100,
+        "hint": "receipt.php?id= has no ownership check; receipts start at 1001",
+    },
+    "pharmacy_authbypass": {
+        "subsystem": "shop", "target": "pharmacy", "effect": "shop_sqli_dump",
+        "severity": "medium", "base": 125,
+        "hint": "concatenated login query; username  ' OR role='staff' LIMIT 1 -- -",
+    },
+    "diner_backup": {
+        "subsystem": "shop", "target": "diner", "effect": "shop_sqli_dump",
+        "severity": "quiet", "base": 100,
+        "hint": "a database backup was left in the web root: /diner/db_backup.sql",
+    },
+    "barber_xss": {
+        "subsystem": "shop", "target": "barber", "effect": "shop_xss_deface",
+        "severity": "medium", "base": 100,
+        "hint": "stored XSS in the appointment note; the manager 'bot' writes its "
+                "flag back onto your booking when the script fires",
+    },
+    "tavern_defaultcreds": {
+        "subsystem": "shop", "target": "tavern", "effect": "shop_carded",
+        "severity": "medium", "base": 125,
+        "hint": "the POS/jukebox admin ships as admin / admin",
+    },
+    "drycleaner_gitleak": {
+        "subsystem": "shop", "target": "drycleaner", "effect": "shop_sqli_dump",
+        "severity": "quiet", "base": 100,
+        "hint": "/drycleaner/.git/ is browsable; git-dumper it and read config.php's history",
+    },
+    "baittackle_ssrf": {
+        "subsystem": "shop", "target": "baittackle", "effect": "shop_sqli_dump",
+        "severity": "medium", "base": 150,
+        "hint": "fetch.php?url= is an open SSRF; reach the localhost-only "
+                "/baittackle/_internal/inv.php",
     },
     "water_modbus_pump": {
         "subsystem": "utility",

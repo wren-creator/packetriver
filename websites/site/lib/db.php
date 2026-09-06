@@ -1,10 +1,16 @@
 <?php
-// General Store database access.
+// Shared database access for the Main Street sites.
 //
-// Lifted from widgetorium/webapp/src/lib/db.php. On a query failure the handler
-// prints the failing SQL, the driver message, and a backtrace straight into the
-// response when VERBOSE_ERRORS=1 - which is exactly what leaks table and column
-// names to someone probing the search box.
+// Each shop lives in its own directory (/hardware/, /pharmacy/, ...) and gets
+// its own MariaDB schema of the same name. On a query failure the handler
+// prints the failing SQL, the driver message, and a backtrace when
+// VERBOSE_ERRORS=1 - which is what leaks table and column names.
+
+function pr_shop(): string
+{
+    // the shop key is the directory the running script lives in
+    return basename(dirname($_SERVER['SCRIPT_FILENAME']));
+}
 
 function pr_config(): array
 {
@@ -13,7 +19,7 @@ function pr_config(): array
         $c = [
             'db' => [
                 'host' => getenv('DB_HOST') ?: 'db',
-                'name' => getenv('DB_NAME') ?: 'generalstore',
+                'name' => pr_shop(),
                 'user' => getenv('DB_USER') ?: 'shop',
                 'pass' => getenv('DB_PASS') ?: 'shop',
             ],
@@ -25,21 +31,22 @@ function pr_config(): array
 
 function pr_db(): PDO
 {
-    static $pdo = null;
-    if ($pdo instanceof PDO) {
-        return $pdo;
+    static $pool = [];
+    $name = pr_config()['db']['name'];
+    if (isset($pool[$name])) {
+        return $pool[$name];
     }
     $c = pr_config()['db'];
     $dsn = "mysql:host={$c['host']};dbname={$c['name']};charset=utf8mb4";
     $last = null;
     for ($i = 0; $i < 30; $i++) {
         try {
-            $pdo = new PDO($dsn, $c['user'], $c['pass'], [
+            $pool[$name] = new PDO($dsn, $c['user'], $c['pass'], [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => true,
             ]);
-            return $pdo;
+            return $pool[$name];
         } catch (PDOException $e) {
             $last = $e;
             sleep(1);
@@ -60,7 +67,7 @@ function pr_query(string $sql): PDOStatement
     }
 }
 
-/** Parameterised statement - used by the safe paths (register, portal login). */
+/** Parameterised statement - the safe path (register, some portals). */
 function pr_prepare(string $sql): PDOStatement
 {
     return pr_db()->prepare($sql);
@@ -80,4 +87,10 @@ function pr_sql_error(string $sql, PDOException $e): void
         echo "<p>Sorry, something went wrong.</p>";
     }
     exit;
+}
+
+function pr_flag(?string $shop = null): string
+{
+    $f = '/run/secret/' . ($shop ?? pr_shop()) . '/flag.txt';
+    return is_readable($f) ? trim((string) file_get_contents($f)) : 'flag-not-planted';
 }

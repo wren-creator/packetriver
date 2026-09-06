@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/lib/portal.php';
+require __DIR__ . '/../lib/portal.php';
 pr_start();
 
 $error = null;
@@ -12,13 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Password must be at least 4 characters.';
     } else {
         try {
-            // parameterised: the safe path
-            $st = pr_prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
+            $st = pr_prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, "customer")');
             $st->execute([$u, md5($p)]);
             $st2 = pr_prepare('SELECT * FROM users WHERE username = ?');
             $st2->execute([$u]);
             pr_login_user($st2->fetch());
-            header('Location: /');
+            header('Location: .');
             exit;
         } catch (PDOException $e) {
             $error = 'That username is taken.';
@@ -31,12 +30,12 @@ pr_head('Register');
 <section class="portal">
   <h1>Create an account</h1>
   <?php if ($error): ?><p class="portal-err"><?= htmlspecialchars($error) ?></p><?php endif; ?>
-  <form method="post" action="/register.php">
+  <form method="post" action="register.php">
     <label>Username <input type="text" name="username" autofocus required></label>
     <label>Password <input type="password" name="password" required></label>
     <button type="submit">Register</button>
   </form>
-  <p class="portal-alt"><a href="/">Back to login</a></p>
+  <p class="portal-alt"><a href=".">Back to login</a></p>
 </section>
 <?php
 pr_foot();
