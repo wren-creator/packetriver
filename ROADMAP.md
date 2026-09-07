@@ -177,8 +177,12 @@ reuse map live in the design doc.
   the factory being a pure consequence entity.
 - [x] `ttyd` browser terminal in the `player` box - added in Phase 3c (the map's
   "green screen ↗" link on Town Hall opens it).
-- [ ] Timed events beyond the news crew: a state inspector visit, a Founder's
-  Day parade that fills the crossroads.
+- [x] Timed events. `PKT_EVENTS=off|calm|lively` drives a news crew (loud
+  incidents on camera hit Alert heat 1.6x), a state inspector (an incident
+  during the visit = a citation + 45 heat), and a Founder's Day parade (a
+  signal hijack during the parade racks crashes ~4x faster). Snapshot `events`
+  block, `pkt/sim/event/*`, `POST /api/debug/event` to fire one on demand. See
+  `docs/districts/timed-events.md`.
 - [ ] Closer-to-real RF for the Wi-Fi lane would be its own wireless range, not
   this repo.
 

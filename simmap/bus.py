@@ -77,7 +77,9 @@ class Bus:
                 if effect:
                     from effects import apply
                     apply(self.town, effect, payload)
-                self.town.add_heat(SEVERITY_HEAT.get(payload.get("severity", "medium"), 10))
+                heat = SEVERITY_HEAT.get(payload.get("severity", "medium"), 10)
+                heat *= self.town.event_heat_mult(payload.get("subsystem"))
+                self.town.add_heat(heat)
             elif msg.topic == "pkt/reset":
                 scope = payload.get("scope", "all")
                 self.town.reset(scope)

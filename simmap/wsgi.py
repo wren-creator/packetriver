@@ -49,7 +49,15 @@ def _loop() -> None:
             level = _town.alert.level
             for lv in range(prev_level + 1, level + 1):
                 blueteam.respond(_town, lv, _bus.publish)
+            events_out = _town.events.pending[:]
+            _town.events.pending.clear()
             snap = _town.snapshot()
+        for e in events_out:
+            try:
+                import json as _json
+                _bus.publish(f"pkt/sim/event/{e['name']}", _json.dumps(e))
+            except Exception:
+                pass
         if level != prev_level:
             try:
                 _bus.publish("pkt/alert/level", '{"level": %d}' % level, retain=True)

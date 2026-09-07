@@ -4,6 +4,18 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Timed events
+
+- `PKT_EVENTS=off|calm|lively` gives the town a clock. A **news crew** parks at
+  whatever's most broken and any Alert heat from an incident on that subsystem
+  is multiplied by 1.6 while they film. A **state inspector** visits on a
+  timer, and an incident that's active when they leave costs +45 heat and a
+  citation (an incident you started during the visit is worst-case; one you
+  cleaned up costs nothing). A **Founder's Day parade** fills the crossroads,
+  and a signal hijacked to ALL-GREEN during it racks up crashes about 4x as
+  fast. Snapshot `events` block, `pkt/sim/event/*`, `POST /api/debug/event`,
+  a HUD pill and a camera marker on the map. `docs/districts/timed-events.md`.
+
 ### Phase 5 — network-attack lanes
 
 - **Diner open Wi-Fi (`diner_wifi`, base 125).** New internal `lan-net`.

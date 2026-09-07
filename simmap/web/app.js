@@ -78,6 +78,8 @@ function buildOverlay(layout) {
   REFS.spur = el("polyline", {
     points: spur.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
+  REFS.newsvan = el("text", { class: "newsvan", "text-anchor": "middle",
+    "font-size": 15, visibility: "hidden" }, svg);
   REFS.train = el("g", { class: "train" }, svg);
   // fatter across the track (heights +3) without lengthening it (widths / x unchanged)
   el("rect", { x: -17, y: -6.5, width: 12, height: 13, fill: "#8a3b2f", stroke: "#3a1c16" }, REFS.train);
@@ -229,6 +231,31 @@ function render(s) {
   if (last && last !== render._lastSoc) {
     render._lastSoc = last;
     toast("SOC: " + last);
+  }
+
+  // timed events: a HUD pill, a toast on arrival, a camera over the news focus
+  const ev = s.events || {};
+  const active = ["news_crew", "inspector", "parade"].filter(k => ev[k]);
+  const pill = $("hud-evt");
+  if (active.length) {
+    pill.hidden = false;
+    $("hud-evt-lbl").textContent = active.map(k => k.replace("_", " ")).join(" · ");
+  } else {
+    pill.hidden = true;
+  }
+  const prevSet = render._evSet || new Set();
+  active.filter(k => !prevSet.has(k)).forEach(k => toast("\u{1F4E3} " + k.replace("_", " ") + " in town"));
+  render._evSet = new Set(active);
+
+  const focusMap = { rail: "railcontrol" };
+  const fb = ev.news_crew && LAYOUT.buildings[focusMap[ev.news_focus] || ev.news_focus];
+  if (fb) {
+    REFS.newsvan.setAttribute("x", X(fb.x));
+    REFS.newsvan.setAttribute("y", Y(fb.y) - Y(fb.h) / 2 - 6);
+    REFS.newsvan.textContent = "\u{1F4F9}";
+    REFS.newsvan.setAttribute("visibility", "visible");
+  } else {
+    REFS.newsvan.setAttribute("visibility", "hidden");
   }
 }
 

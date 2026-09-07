@@ -50,6 +50,8 @@ body {
 .hud .alert[data-lvl="3"] span, .hud .alert[data-lvl="4"] span, .hud .alert[data-lvl="5"] span { color: var(--bad); }
 .hud .conn[data-up="no"] span { color: var(--bad); }
 .hud .conn[data-up="yes"] span { color: var(--ok); }
+.hud .evt span { color: var(--accent); text-transform: capitalize; font-size: 12px; }
+.newsvan { paint-order: stroke; stroke: #0006; stroke-width: 3px; }
 
 .layout {
   display: grid;

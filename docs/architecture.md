@@ -136,6 +136,16 @@ The `dns` container is authoritative for `packetriver.range` and is the
 `packetriver-<svc>.` and CoreDNS forwards those (and bare container names) to
 Docker's embedded resolver. See [`districts/recon.md`](districts/recon.md).
 
+## Timed events (`models/town.py` `Events`)
+
+`_step_events` runs a wall-clock schedule off `PKT_EVENTS` (`off` / `calm` /
+`lively`). A news crew multiplies Alert heat on the filmed subsystem (via
+`town.event_heat_mult`, applied in `bus.py`), a state inspector penalises an
+incident that is active on their way out, and a Founder's Day parade doubles
+crash accrual on a hijacked signal. The `events` snapshot block and
+`pkt/sim/event/*` carry the state; `POST /api/debug/event` fires one.
+See [`districts/timed-events.md`](districts/timed-events.md).
+
 ## The town state model (`simmap/models/town.py`)
 
 One `@dataclass` per subsystem, golden defaults, plain floats and bools:

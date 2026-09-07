@@ -101,6 +101,25 @@ def api_debug_effect():
     return {"ok": ok}
 
 
+@app.post("/api/debug/event")
+def api_debug_event():
+    """Fire (or clear) a timed event now. {name: news_crew|inspector|parade,
+    action: start|end}. For testing and instructor demos."""
+    data = request.get_json(force=True, silent=True) or {}
+    name = data.get("name", "")
+    action = data.get("action", "start")
+    with STATE["lock"]:
+        ev = STATE["town"].events
+        if name not in ("news_crew", "inspector", "parade"):
+            return {"ok": False, "error": "unknown event"}, 400
+        if action == "start":
+            ev._next[name] = ev.clock          # fire on the next tick
+        else:
+            ev._ends[name] = ev.clock
+    broadcast()
+    return {"ok": True, "name": name, "action": action}
+
+
 @app.post("/api/debug/reset")
 def api_debug_reset():
     data = request.get_json(force=True, silent=True) or {}

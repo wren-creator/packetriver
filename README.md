@@ -105,6 +105,9 @@ Early build. See `ROADMAP.md`. **Phases 0-5** are in:
   reused into the rail console (residential to OT)
 - the **Alert Level** meter and a **blue-team** response (credential rotation,
   auto-restore) that reacts to how loud you are
+- **timed events** (`PKT_EVENTS`): a news crew that makes loud incidents on
+  camera hit harder, a state inspector that penalises an incident during the
+  visit, and a Founder's Day parade that turns a signal hijack into a pile-up
 - the score / run / leaderboard loop, the reset panel, the `?edit=1` overlay
   editor, and the boxed-in attacker box with a browser terminal
 - `./start.sh --segmented` - the hardened town: run the same attacks, watch

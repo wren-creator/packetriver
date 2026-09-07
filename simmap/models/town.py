@@ -8,6 +8,8 @@ and drive `apply_effect` from real flag submissions on pkt/score/events.
 """
 from __future__ import annotations
 
+import os
+import random
 import time
 from dataclasses import dataclass, field
 
@@ -43,9 +45,17 @@ SHOPS = [
 
 RESET_SCOPES = (
     ["all", "traffic", "rail", "factory", "water", "sewage", "power",
-     "cityhall", "bank", "police", "fire"]
+     "cityhall", "bank", "police", "fire", "events"]
     + [k for k, _ in SHOPS]
 )
+
+# --- timed events -----------------------------------------------------
+# PKT_EVENTS: off | calm (default) | lively. The gap between events is drawn
+# uniformly from the band; each event runs for a fixed window.
+EVENT_MODE = os.environ.get("PKT_EVENTS", "calm").lower()
+EVENT_BANDS = {"calm": (300.0, 540.0), "lively": (120.0, 260.0)}
+EVENT_DURATION = {"news_crew": 90.0, "inspector": 75.0, "parade": 60.0}
+EVENT_NAMES = ("news_crew", "inspector", "parade")
 
 
 @dataclass
@@ -151,6 +161,29 @@ class Alert:
     blue_actions: list = field(default_factory=list)   # SOC responses, newest last
 
 
+@dataclass
+class Events:
+    """Scheduled goings-on that make the town feel lived-in and raise the
+    stakes. `clock` is seconds since this Events object was created."""
+    clock: float = 0.0
+    news_crew: bool = False
+    inspector: bool = False
+    parade: bool = False
+    news_focus: str | None = None       # building the van is parked at
+    _ends: dict = field(default_factory=dict)      # name -> clock time it ends
+    _next: dict = field(default_factory=dict)      # name -> clock time it fires
+    _unsafe_at_arrival: bool = False              # inspector: was anything bad?
+    log: list = field(default_factory=list)        # recent "what happened", newest last
+    pending: list = field(default_factory=list)    # drained by wsgi -> pkt/sim/event/*
+
+    def __post_init__(self):
+        if EVENT_MODE in EVENT_BANDS:
+            lo, hi = EVENT_BANDS[EVENT_MODE]
+            # stagger the first occurrences so they don't all fire together
+            for i, name in enumerate(EVENT_NAMES):
+                self._next[name] = random.uniform(lo, hi) * (0.4 + 0.5 * i)
+
+
 # (rise_at, level). Falling back a level needs heat below the NEXT band's rise
 # point minus a margin, so the meter does not flap around a threshold.
 ALERT_THRESHOLDS = [(150, 5), (110, 4), (75, 3), (45, 2), (20, 1)]
@@ -202,9 +235,12 @@ class TownState:
             self.cityhall = CityHall()
         if s == "all":
             self.alert = Alert()
+        if s in ("all", "events"):
+            self.events = Events()
 
     # -- tick ----------------------------------------------------------
     def step(self, dt: float) -> None:
+        self._step_events(dt)
         self._step_traffic(dt)
         self._step_rail(dt)
         self._step_water(dt)
@@ -214,8 +250,83 @@ class TownState:
         self._step_alert(dt)
         self.state_seq += 1
 
+    # -- timed events --------------------------------------------------
+    def _worst_subsystem(self) -> str | None:
+        """The single most-damaged thing right now, or None if all is well."""
+        if getattr(self.rail, "derailed", False):
+            return "rail"
+        if self.factory.on_fire:
+            return "factory"
+        if self.sewage.effluent_path == "raw":
+            return "sewage"
+        if not all(self.power.feeders.values()):
+            return "power"
+        if self.water.quality == "dry":
+            return "water"
+        if any(x.mode == "ALL-GREEN" for x in self.traffic):
+            return "traffic"
+        for s in self.shops:
+            if s.site_status != "healthy":
+                return s.key
+        if self.bank.site_status != "healthy":
+            return "bank"
+        if self.cityhall.site_status != "healthy" or self.cityhall.admin_pwned:
+            return "cityhall"
+        return None
+
+    def event_heat_mult(self, subsystem: str | None) -> float:
+        """Extra Alert heat while a news crew is filming the affected system."""
+        ev = self.events
+        if ev.news_crew and subsystem and subsystem == ev.news_focus:
+            return 1.6
+        return 1.0
+
+    def _step_events(self, dt: float) -> None:
+        ev = self.events
+        if EVENT_MODE not in EVENT_BANDS:
+            return
+        ev.clock += dt
+        lo, hi = EVENT_BANDS[EVENT_MODE]
+        for name in EVENT_NAMES:
+            if not getattr(ev, name):
+                if ev._next.get(name, 1e18) <= ev.clock:
+                    setattr(ev, name, True)
+                    ev._ends[name] = ev.clock + EVENT_DURATION[name]
+                    if name == "news_crew":
+                        ev.news_focus = self._worst_subsystem() or "cityhall"
+                    elif name == "inspector":
+                        ev._unsafe_at_arrival = self._worst_subsystem() is not None
+                    ev.log.append(f"{int(ev.clock)}s  {name.replace('_', ' ')} arrived")
+                    ev.log[:] = ev.log[-6:]
+                    ev.pending.append({"name": name, "phase": "start",
+                                       "focus": ev.news_focus})
+                continue
+            if ev.clock >= ev._ends.get(name, 0.0):
+                setattr(ev, name, False)
+                note = f"{name.replace('_', ' ')} ended"
+                if name == "news_crew":
+                    ev.news_focus = None
+                elif name == "inspector":
+                    still_bad = self._worst_subsystem()
+                    if still_bad and not ev._unsafe_at_arrival:
+                        self.add_heat(45)
+                        self.note_blue_action(
+                            "Inspector on site during an active incident - citation issued")
+                        note = "inspector cited an active incident (+heat)"
+                    elif still_bad:
+                        self.add_heat(20)
+                        note = "inspector left; findings noted"
+                    else:
+                        note = "inspector left; all clear"
+                ev.log.append(f"{int(ev.clock)}s  {note}")
+                ev.log[:] = ev.log[-6:]
+                ev.pending.append({"name": name, "phase": "end"})
+                ev._next[name] = ev.clock + random.uniform(lo, hi)
+
     def _step_traffic(self, dt: float) -> None:
         business_up = self.power.feeders["business"]
+        # a hijacked signal during the parade racks up crashes twice as fast
+        crash_period = 1.5 if self.events.parade else 3.0
         for x in self.traffic:
             if not business_up:
                 x.phase = "dark"
@@ -223,9 +334,9 @@ class TownState:
             if x.mode == "ALL-GREEN":
                 x.phase = "ALL-GREEN"
                 x._crash_t += dt
-                if x._crash_t >= 3.0:
+                if x._crash_t >= crash_period:
                     x._crash_t = 0.0
-                    x.crash_count += 1
+                    x.crash_count += 2 if self.events.parade else 1
                 continue
             x.mode = "auto"
             x._t += dt
@@ -390,5 +501,14 @@ class TownState:
                 "level": self.alert.level,
                 "heat": round(self.alert.heat, 1),
                 "blue_actions": list(self.alert.blue_actions),
+            },
+            "events": {
+                "mode": EVENT_MODE,
+                "clock": int(self.events.clock),
+                "news_crew": self.events.news_crew,
+                "inspector": self.events.inspector,
+                "parade": self.events.parade,
+                "news_focus": self.events.news_focus,
+                "log": list(self.events.log),
             },
         }
