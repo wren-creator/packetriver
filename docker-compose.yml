@@ -259,6 +259,8 @@ services:
       MQTT_HOST: "bus"
       CONSOLE_USER: "${RAIL_CONSOLE_USER:-maint}"
       CONSOLE_PASS: "${RAIL_CONSOLE_PASS:-maint}"
+      RAIL_CREW_USER: "${RAIL_CREW_USER:-rse.kmiller}"     # reused on the SOHO crew portal (5b)
+      RAIL_CREW_PASS: "${RAIL_CREW_PASS:-Sw1tchboard!}"
     volumes:
       - pkt-flags:/run/secret:ro
     ports:
@@ -292,12 +294,90 @@ services:
       timeout: 5s
       retries: 6
 
+  # --- the Diner's open Wi-Fi (Phase 5a): a sniffable LAN standing in for 802.11 ---
+  netlab:
+    <<: *common
+    build: ./netlab
+    container_name: packetriver-netlab
+    depends_on:
+      bus:     { condition: service_healthy }
+      scoring: { condition: service_healthy }
+    environment:
+      MQTT_HOST: "bus"
+      PORTAL_USER: "diner_guest"
+      PORTAL_PASS: "${DINER_PORTAL_PASS:-Rewards2026}"
+    volumes:
+      - pkt-flags:/run/secret:ro
+    networks:
+      lan-net:
+        ipv4_address: 172.31.60.10
+      bus-net: {}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  netlab-patron:
+    <<: *common
+    build: ./netlab
+    container_name: packetriver-netlab-patron
+    depends_on:
+      netlab: { condition: service_healthy }
+    environment:
+      ROLE: "patron"
+      AP_HOST: "172.31.60.10"
+      PORTAL_USER: "diner_guest"
+      PORTAL_PASS: "${DINER_PORTAL_PASS:-Rewards2026}"
+    networks:
+      lan-net:
+        ipv4_address: 172.31.60.20
+
+  # --- a house on the edge of town + its consumer router (Phase 5b) -----
+  soho-router:
+    <<: *common
+    build: ./soho-router
+    container_name: packetriver-soho-router
+    depends_on:
+      scoring: { condition: service_healthy }
+    environment:
+      ADMIN_USER: "admin"
+      ADMIN_PASS: "${SOHO_ADMIN_PASS:-admin}"
+    volumes:
+      - pkt-flags:/run/secret:ro
+    networks:
+      home-net:
+        ipv4_address: 172.31.61.10    # the home LAN's router (.1 is the bridge gateway)
+      it-net: {}                      # WAN-side admin reachable from town (part of the bug)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  soho-resident:
+    <<: *common
+    build: ./soho-router
+    container_name: packetriver-soho-resident
+    command: ["python", "resident.py"]
+    depends_on:
+      soho-router: { condition: service_healthy }
+    environment:
+      PORTAL_URL: "http://172.31.61.10/portal/rail/login"
+      CREW_USER: "${RAIL_CREW_USER:-rse.kmiller}"
+      CREW_PASS: "${RAIL_CREW_PASS:-Sw1tchboard!}"
+    networks:
+      home-net:
+        ipv4_address: 172.31.61.20
+
   # --- the boxed-in attacker workstation + in-browser terminal ---------
   player:
     <<: *common
     build: ./player
     container_name: packetriver-player
-    cap_add: [NET_ADMIN]
+    cap_add: [NET_ADMIN, NET_RAW]
+    sysctls:
+      - net.ipv4.ip_forward=1        # so the arpspoof MITM can forward, not black-hole
     depends_on:
       websites: { condition: service_healthy }
       dns:      { condition: service_healthy }
@@ -305,7 +385,7 @@ services:
     dns_search: ["packetriver.range"]
     ports:
       - "127.0.0.1:7681:7681"       # ttyd terminal (the map opens this for the mainframe targets)
-    networks: [it-net, edge-net]    # Phase 4 hardening moves this to edge-net + a real pivot
+    networks: [it-net, edge-net, lan-net]  # lan-net = the Diner Wi-Fi segment (Phase 5a)
     healthcheck:
       test: ["CMD-SHELL", "command -v sqlmap >/dev/null || exit 1"]
       interval: 30s
@@ -342,6 +422,14 @@ networks:
     driver: bridge
     internal: true
     ipam: { config: [{ subnet: 172.31.40.0/24 }] }
+  lan-net:                           # the Diner's open Wi-Fi segment (Phase 5a)
+    driver: bridge
+    internal: true
+    ipam: { config: [{ subnet: 172.31.60.0/24 }] }
+  home-net:                          # a resident's home LAN behind the SOHO router (Phase 5b)
+    driver: bridge
+    internal: true
+    ipam: { config: [{ subnet: 172.31.61.0/24 }] }
 
 volumes:
   scoring-data:

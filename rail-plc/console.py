@@ -28,6 +28,10 @@ MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 USER = os.environ.get("CONSOLE_USER", "maint")
 PASS = os.environ.get("CONSOLE_PASS", "maint")   # rotated by the blue team at Alert L2
 _ORIG_PASS = PASS
+# a second operator account - the rail engineer's, reused on the crew web portal
+# the SOHO-router lane sniffs (Phase 5b). Static: credential reuse is the lesson.
+CREW_USER = os.environ.get("RAIL_CREW_USER", "rse.kmiller")
+CREW_PASS = os.environ.get("RAIL_CREW_PASS", "Sw1tchboard!")
 PORT = 2323
 
 try:
@@ -104,7 +108,10 @@ def handle(conn, addr):
             if cmd == "help":
                 conn.sendall(HELP.encode())
             elif cmd == "login":
-                if len(parts) >= 3 and parts[1] == USER and parts[2] == PASS:
+                ok = len(parts) >= 3 and (
+                    (parts[1] == USER and parts[2] == PASS)
+                    or (parts[1] == CREW_USER and parts[2] == CREW_PASS))
+                if ok:
                     authed = True
                     conn.sendall(b"OK - signed on\r\n")
                 else:

@@ -226,6 +226,29 @@ TECHNIQUES = {
                 "never shell out on operator input.",
     },
 
+    # --- network-attack lanes (Phase 5) ---
+    "diner_wifi": {
+        "subsystem": "network", "target": "diner", "effect": "shop_carded",
+        "severity": "medium", "base": 125,
+        "hint": "The Diner's guest Wi-Fi is open and everything on it is "
+                "cleartext. A switch won't hand you someone else's unicast, so "
+                "get between a patron and the AP (ARP spoof) and read the "
+                "traffic. The flag is sitting in the patron's POP3 inbox. "
+                "tcpdump / arpspoof. Fix: WPA2-Enterprise or client isolation, "
+                "and TLS on the portal and mail.",
+    },
+    "soho_router_pcap": {
+        "subsystem": "network", "target": "rail", "effect": "noop",
+        "severity": "medium", "base": 150,
+        "hint": "A house on the edge of town runs a consumer router with its "
+                "shipped admin login. Its built-in diagnostics can capture "
+                "traffic - and the resident, a rail engineer, signs in to a "
+                "crew portal over plain HTTP on a loop. Pull the capture, read "
+                "the credential, and it's reused on the rail console. Fix: "
+                "disable WAN-side admin, change the default, TLS the portal, "
+                "and don't reuse operator creds.",
+    },
+
     # --- recon ---
     "dns_axfr": {
         "subsystem": "recon", "target": "dns", "effect": "noop",
