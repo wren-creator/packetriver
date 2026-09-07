@@ -65,10 +65,11 @@ function buildOverlay(layout) {
     x1: X(sb[0]), y1: Y(sb[1]), x2: X(layout.spurEnd[0]), y2: Y(layout.spurEnd[1]),
     stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
   REFS.train = el("g", { class: "train" }, svg);
-  el("rect", { x: -17, y: -5, width: 12, height: 10, fill: "#8a3b2f", stroke: "#3a1c16" }, REFS.train);
-  el("rect", { x: -15, y: -9, width: 4, height: 4, fill: "#3a1c16" }, REFS.train);
-  el("rect", { x: -4, y: -4.5, width: 9, height: 9, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
-  el("rect", { x: 5, y: -4.5, width: 9, height: 9, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
+  // fatter across the track (heights +3) without lengthening it (widths / x unchanged)
+  el("rect", { x: -17, y: -6.5, width: 12, height: 13, fill: "#8a3b2f", stroke: "#3a1c16" }, REFS.train);
+  el("rect", { x: -15, y: -11, width: 4, height: 5, fill: "#3a1c16" }, REFS.train);
+  el("rect", { x: -4, y: -6, width: 9, height: 12, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
+  el("rect", { x: 5, y: -6, width: 9, height: 12, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
 
   for (const [id, b] of Object.entries(layout.buildings)) {
     const w = X(b.w), h = Y(b.h), x = X(b.x) - w / 2, y = Y(b.y) - h / 2;
