@@ -203,6 +203,14 @@
       "port": 8090,
       "path": "/fire/",
       "technique": "fire_defaultcreds"
+    },
+    "railstation": {
+      "x": 0.33,
+      "y": 0.1,
+      "w": 0.06,
+      "h": 0.055,
+      "label": "Railroad Station",
+      "kind": "rail"
     }
   },
   "intersections": [
@@ -259,6 +267,30 @@
     {
       "x": 0.27,
       "y": 0.87
+    },
+    {
+      "x": 0.34,
+      "y": 0.6
+    },
+    {
+      "x": 0.33,
+      "y": 0.66
+    },
+    {
+      "x": 0.3,
+      "y": 0.8
+    },
+    {
+      "x": 0.4,
+      "y": 0.85
+    },
+    {
+      "x": 0.46,
+      "y": 0.88
+    },
+    {
+      "x": 0.2,
+      "y": 0.44
     }
   ],
   "streetlights": [
@@ -285,6 +317,30 @@
     {
       "x": 0.28,
       "y": 0.8
+    },
+    {
+      "x": 0.44,
+      "y": 0.44
+    },
+    {
+      "x": 0.52,
+      "y": 0.4
+    },
+    {
+      "x": 0.58,
+      "y": 0.52
+    },
+    {
+      "x": 0.4,
+      "y": 0.7
+    },
+    {
+      "x": 0.52,
+      "y": 0.72
+    },
+    {
+      "x": 0.3,
+      "y": 0.12
     }
   ],
   "_railNote": "railPath is just the visible top run: the train enters from off the left edge, crosses the Main Rail Line, and exits off the right; it stays hidden the rest of the cycle before re-entering.",

@@ -279,7 +279,7 @@ class TownState:
         w, p = self.water, self.power
         houses = [
             {"id": i, "has_water": w.mains_pressure_pct > 25, "has_power": p.feeders["residential"]}
-            for i in range(1, 9)
+            for i in range(1, 15)
         ]
         return {
             "state_seq": self.state_seq,
