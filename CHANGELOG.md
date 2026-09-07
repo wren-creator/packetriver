@@ -4,6 +4,21 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Map alignment pass + a feed-stability fix
+- The `/ws` feed no longer pulses live/down: `simmap` was on
+  `GeventWebSocketWorker` while flask-sock does its own WS framing, and the two
+  framers on one socket made the browser reconnect every few seconds. Now on
+  the plain `-k gevent` worker, no `ping_interval`, `gevent-websocket` dropped.
+- `overlay.json` aligned against the base art with the new `?edit=1` editor:
+  every building box, the flows, the river, houses, streetlights.
+- New on the map: a **Railroad Control** building (SE of the Police Station,
+  `kind: rail`, wired in Phase 4), 6 more houses (8 -> 14) and 5 more
+  streetlights, a 5th crossroads, and ~2x the rail-line vertices for curves.
+- Traffic signals are one dot per crossroads now, green-weighted (6 s green
+  each way, 2 s all-red on the change), the corners seeded out of phase so
+  they don't all blink at once; hijack still locks solid green.
+- The train sprite is +3 px across the track (not longer) so it reads better.
+
 ### Overlay editor (`?edit=1`)
 - `simmap/web/edit.js`: a drag-and-copy editor for `overlay.json`. Loads for
   everyone, inert without `?edit=1` on the URL, so players never see it. With
