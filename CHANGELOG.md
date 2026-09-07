@@ -4,6 +4,25 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Segmented build - coverage extended
+
+- `docker-compose.segmented.yml` now hardens the web tier and the Phase 5
+  lanes, not just the OT / broker weaknesses:
+  - `JWT_STRICT` - the bank rejects `alg:none` and pins HS256.
+  - `RECEIPT_AUTH` - the card gateway requires a bearer token on `/receipt`.
+  - `MOCK_AS400_HARDENED` (blank sign-on rejected) / `MOCK_Z16_HARDENED`
+    (the never-revoked IBMUSER is revoked). Deeper RACF / library-authority
+    hardening stays on the roadmap.
+  - `NETLAB_TLS` - the Diner portal goes HTTPS and mail goes POP3S, so the
+    MITM only sees ciphertext. `WAN_ADMIN=0` + a rotated `ADMIN_PASS` +
+    `PORTAL_TLS` on the SOHO router: admin is off the WAN interface, the
+    default is dead, and the capture is opaque.
+- Fixed the segmented `bus` healthcheck: it published anonymously to a broker
+  that now requires auth, so the container reported unhealthy and took
+  simmap / scoring down with it. It authenticates as `simmap` now.
+- A real span-port IDS is still open (see ROADMAP - a bridge can't tap another
+  container's traffic without a topology change).
+
 ### Timed events
 
 - `PKT_EVENTS=off|calm|lively` gives the town a clock. A **news crew** parks at

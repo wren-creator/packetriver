@@ -1365,6 +1365,10 @@ function handleConnection(socket) {
     'DEMO':    'DEMO',
     'USER1':   'PASS1',
   };
+  // segmented build: the never-revoked default admin is finally revoked
+  // (the deeper RACF hardening - UACC(NONE), out of WARNING mode - is a
+  // roadmap item).
+  if (process.env.MOCK_Z16_HARDENED === '1') delete VALID_CREDENTIALS['IBMUSER'];
 
   // Send initial negotiation — offer TN3270E, BINARY, EOR
   socket.write(Buffer.from([

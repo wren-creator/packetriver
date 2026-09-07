@@ -2174,7 +2174,14 @@ function handleConnection(socket) {
       if (!typedUser) {
         // Blank Enter just redraws the Sign On screen.
       } else if (!typedPass) {
-        accept();
+        // segmented build: a password is required (QSECURITY 40+). The
+        // deeper hardening - rotating QSECOFR, *PUBLIC *EXCLUDE on PAYROLL -
+        // is a roadmap item.
+        if (process.env.MOCK_AS400_HARDENED === '1') {
+          signonMessage = 'CPF1107 - Password not correct for user profile.';
+        } else {
+          accept();
+        }
       } else {
         // Order mirrors a real IBM i Sign On: no-password first, then
         // existence, then the password itself, then profile status. A

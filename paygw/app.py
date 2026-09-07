@@ -9,6 +9,7 @@ carries this session's flag; walk the ids from 5001.
 """
 from __future__ import annotations
 
+import os
 import pathlib
 
 from flask import Flask, jsonify, request
@@ -68,10 +69,15 @@ def charge():
 
 @app.get("/receipt/<int:txn>")
 def receipt(txn: int):
+    # the segmented build requires a bearer token scoped to the merchant
+    if os.environ.get("RECEIPT_AUTH") == "1":
+        tok = request.headers.get("Authorization", "")
+        if not tok.startswith("Bearer ") or len(tok) < 24:
+            return jsonify({"error": "unauthorized"}), 401
     r = RECEIPTS.get(txn)
     if not r:
         return jsonify({"error": "no such transaction"}), 404
-    return jsonify(r)   # no auth, no ownership check
+    return jsonify(r)   # flat build: no auth, no ownership check
 
 
 if __name__ == "__main__":

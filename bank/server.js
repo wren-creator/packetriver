@@ -62,7 +62,12 @@ function verify(token) {
     payload = JSON.parse(Buffer.from(p, 'base64url').toString());
   } catch { return null; }
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
-  if (header.alg === 'none') return payload;            // <-- the bug
+  // <-- the bug: alg:none accepted. The segmented build pins the algorithm.
+  if (header.alg === 'none') {
+    if (process.env.JWT_STRICT === '1') return null;
+    return payload;
+  }
+  if (header.alg !== 'HS256') return null;
   const expect = crypto.createHmac('sha256', SECRET).update(`${h}.${p}`).digest('base64url');
   if (s !== expect) return null;
   return payload;

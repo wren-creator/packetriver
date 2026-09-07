@@ -58,8 +58,21 @@ reuse map live in the design doc.
   (L2 credential rotation that actually bites, L5 auto-restore) + `logtail.py`
   turning scan noise into heat. `docker-compose.segmented.yml` +
   `bus/*.segmented` (authenticated broker with per-topic ACLs, all weaknesses
-  off). Follow-ups: campaign codes (Phase 6, EPUB-tied), web-tier + mainframe
-  hardening flags in the segmented build, a real Suricata `ids` service.
+  off).
+  - [x] Segmented build extended: `JWT_STRICT` (bank rejects `alg:none`),
+    `RECEIPT_AUTH` (paygw), `MOCK_AS400_HARDENED` (blank sign-on rejected),
+    `MOCK_Z16_HARDENED` (IBMUSER revoked), Phase 5 lane overrides (`NETLAB_TLS`
+    encrypts the Diner portal + mail, `WAN_ADMIN=0` + rotated `ADMIN_PASS` +
+    `PORTAL_TLS` on the SOHO router). Also fixed the segmented `bus`
+    healthcheck (it published anonymously to an auth-required broker).
+  - [ ] Deeper mainframe hardening: rotate QSECOFR, `*PUBLIC *EXCLUDE` on the
+    payroll library, take the RACF profile out of WARNING / `UACC(NONE)`.
+  - [ ] Campaign codes (Phase 6, EPUB-tied).
+  - [ ] A real span-port IDS. A Suricata container on a Docker bridge only
+    sees its own + broadcast traffic; an inline sensor that actually catches
+    the Modbus writes / MQTT publishes / the AXFR needs a mirror interface or
+    a router container. Today the counter-detection story is `logtail.py` +
+    the broker ACLs + the field-plc golden re-assert.
 - [x] **Recon layer - give every target a name (`*.packetriver.range`).**
   A `dns` container (CoreDNS) is the `player` box's only resolver, authoritative
   for `packetriver.range` and forwarding everything else to Docker's embedded

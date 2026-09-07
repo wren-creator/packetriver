@@ -8,7 +8,8 @@
 FROM python:3.12-alpine
 
 WORKDIR /app
-RUN pip install --no-cache-dir "Flask==3.0.3" "paho-mqtt==2.1.0"
+RUN apk add --no-cache openssl \
+ && pip install --no-cache-dir "Flask==3.0.3" "paho-mqtt==2.1.0"
 COPY ap.py patron.py entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 

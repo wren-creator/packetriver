@@ -23,6 +23,9 @@ from flask import Flask, make_response, redirect, request
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "admin")
+WAN_ADMIN = os.environ.get("WAN_ADMIN", "1") == "1"     # segmented build sets 0
+PORTAL_TLS = os.environ.get("PORTAL_TLS", "0") == "1"   # segmented build sets 1
+_HOME_NET = "172.31.61."
 
 FLAG = "PKTR{soho_router_pcap_flag_missing}"
 try:
@@ -37,6 +40,16 @@ _SESSION = "rtr_admin"
 _TOKEN = "let-me-in"
 
 app = Flask(__name__)
+
+
+@app.before_request
+def _wan_guard():
+    # segmented: administration is only reachable from the home LAN
+    if WAN_ADMIN:
+        return
+    if request.path.startswith(("/admin", "/login")) and \
+            not (request.remote_addr or "").startswith(_HOME_NET):
+        return "administration is disabled on the WAN interface\n", 403
 
 
 def _authed() -> bool:
@@ -128,17 +141,22 @@ def rail_portal_login():
     user = request.form.get("user", "")
     pw = request.form.get("pass", "")
     ts = time.strftime("%H:%M:%S")
-    CAPTURE.append(
-        f"[{ts}] 172.31.61.20 -> 172.31.61.10  HTTP  (home LAN)\n"
-        f"POST /portal/rail/login HTTP/1.1\n"
-        f"Host: crew.rail.local\n"
-        f"Content-Type: application/x-www-form-urlencoded\n\n"
-        f"user={user}&pass={pw}\n"
-        f"--- response ---\n"
-        f"HTTP/1.1 200 OK\n"
-        f"X-Reconcile: {FLAG}\n\n"
-        f"{{\"ok\": true, \"crew\": \"{user}\"}}"
-    )
+    if PORTAL_TLS:
+        CAPTURE.append(
+            f"[{ts}] 172.31.61.20 -> 172.31.61.10  TLSv1.3  (home LAN)\n"
+            f"SNI: crew.rail.local  cipher: TLS_AES_256_GCM_SHA384\n"
+            f"application data, 412 bytes, opaque")
+    else:
+        CAPTURE.append(
+            f"[{ts}] 172.31.61.20 -> 172.31.61.10  HTTP  (home LAN)\n"
+            f"POST /portal/rail/login HTTP/1.1\n"
+            f"Host: crew.rail.local\n"
+            f"Content-Type: application/x-www-form-urlencoded\n\n"
+            f"user={user}&pass={pw}\n"
+            f"--- response ---\n"
+            f"HTTP/1.1 200 OK\n"
+            f"X-Reconcile: {FLAG}\n\n"
+            f"{{\"ok\": true, \"crew\": \"{user}\"}}")
     return {"ok": True, "crew": user, "note": "roster synced"}
 
 

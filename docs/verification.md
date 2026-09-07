@@ -122,8 +122,9 @@ Register and start a run once (`/api/score/register`, `/api/score/run`), then
 | D2 | re-run B18–B21 (Modbus) | `MODBUS_WRITE_OPEN=0`, the PLC re-asserts golden every scan; the flag block stays locked |
 | D3 | re-run B22 (`traffic_attack.py`) | the broker `acl.segmented` + `passwd.segmented` refuse the anonymous publish |
 | D4 | re-run B23 (`rail_attack.py`) | the console credentials are rotated; default login refused |
-| D5 | re-check the web tier | `VERBOSE_ERRORS=0`, `WEAK_SESSIONS=0`; error-based extraction and weak-token paths are blunted |
-| D6 | re-run B25 / B26 (Phase 5 lanes) | the Diner portal + mail are TLS so the MITM gets ciphertext; the SOHO router's WAN admin is off and the default is rotated (segmented overrides, once written) |
+| D5 | re-check the web tier | `VERBOSE_ERRORS=0`, `WEAK_SESSIONS=0`; error-based extraction and weak-token paths are blunted. `JWT_STRICT=1`: a forged `alg:none` token does not reach the staff view. `RECEIPT_AUTH=1`: `GET /receipt/1` on `:8500` returns 401 without a bearer token |
+| D6 | re-run B25 / B26 (Phase 5 lanes) | `NETLAB_TLS=1`: `wifi_sniff.py` gets no flag (the MITM sees TLS). `WAN_ADMIN=0`: `soho_pcap.py` from the player gets `403 administration is disabled on the WAN interface`; `ADMIN_PASS` is rotated; `PORTAL_TLS=1` so even the capture is opaque |
+| D7 | mainframe | `MOCK_AS400_HARDENED=1`: a blank sign-on is rejected. `MOCK_Z16_HARDENED=1`: `IBMUSER/SYS1` no longer logs on. (Deeper RACF / library-authority hardening is roadmapped.) |
 
 ## Section E — ebook (Phase 6, not built yet)
 

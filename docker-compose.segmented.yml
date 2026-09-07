@@ -21,6 +21,10 @@ services:
       - ./bus/mosquitto.segmented.conf:/mosquitto/config/mosquitto.conf:ro
       - ./bus/passwd.segmented:/mosquitto/config/passwd:ro
       - ./bus/acl.segmented:/mosquitto/config/acl:ro
+    # the flat healthcheck publishes anonymously; the hardened broker refuses
+    # that, so authenticate as simmap (to a pkt/ topic it is ACL-allowed).
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -u simmap -P simmap-seg-2f9a1 -t pkt/healthcheck -m ok || exit 1"]
 
   simmap:
     environment:
@@ -54,8 +58,50 @@ services:
       MQTT_PASS: "railops-seg-9e6f2"
       CONSOLE_USER: "rsc_maint"
       CONSOLE_PASS: "sw1tch-Key-2026"
+      RAIL_CREW_USER: "rse.kmiller"
+      RAIL_CREW_PASS: "Sw-9931-Kf-rotated"   # so an old capture's cred is dead
 
-# Hardening the web-tier and mainframe targets in the segmented build (verbose
-# errors + weak sessions are already covered above; the JWT-none check, the AS/400
-# QSECURITY level, and the z16 RACF posture need per-service flags) is a
-# follow-up - see ROADMAP.md.
+  # --- web-tier + mainframe hardening flags ---
+  bank:
+    environment:
+      JWT_STRICT: "1"                # reject alg:none, pin HS256
+
+  paygw:
+    environment:
+      RECEIPT_AUTH: "1"             # bearer token required on /receipt/<txn>
+
+  as400:
+    environment:
+      MOCK_AS400_HARDENED: "1"      # blank sign-on rejected (QSECURITY 40+)
+
+  z16:
+    environment:
+      MOCK_Z16_HARDENED: "1"       # the never-revoked IBMUSER is revoked
+
+  # --- Phase 5 network-attack lanes ---
+  netlab:
+    environment:
+      NETLAB_TLS: "1"              # portal -> HTTPS :443, mail -> POP3S :995
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://127.0.0.1:443/health >/dev/null 2>&1 || exit 1"]
+
+  netlab-patron:
+    environment:
+      NETLAB_TLS: "1"
+
+  soho-router:
+    environment:
+      ADMIN_PASS: "hr24-9f2c-rotated"   # off the shipped default
+      WAN_ADMIN: "0"                    # admin only from the home LAN
+      PORTAL_TLS: "1"                   # crew portal is TLS; the capture is opaque
+
+  soho-resident:
+    environment:
+      CREW_PASS: "Sw-9931-Kf-rotated"
+
+# Still open (see ROADMAP.md): a real span-port IDS. A Suricata container on a
+# Docker bridge only sees its own + broadcast traffic, so an inline sensor that
+# actually catches the Modbus writes / the MQTT publishes / the AXFR needs a
+# different network topology (a mirror interface or a router container). Today
+# the "and here's what catches it" story is logtail.py on the gateway access
+# log + the broker ACLs + the field-plc golden re-assert.

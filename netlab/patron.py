@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import socket
+import ssl
 import time
 import urllib.parse
 import urllib.request
@@ -15,19 +16,26 @@ AP = os.environ.get("AP_HOST", "172.31.60.10")
 USER = os.environ.get("PORTAL_USER", "diner_guest")
 PASS = os.environ.get("PORTAL_PASS", "Rewards2026")
 EVERY = int(os.environ.get("EVERY_SECONDS", "4"))
+TLS = os.environ.get("NETLAB_TLS", "0") == "1"
+_SCHEME = "https" if TLS else "http"
+_POP_PORT = 995 if TLS else 110
+_NOVERIFY = ssl._create_unverified_context() if TLS else None   # self-signed lab cert
 
 
 def portal_login():
     data = urllib.parse.urlencode({"user": USER, "pass": PASS}).encode()
     try:
-        urllib.request.urlopen(f"http://{AP}/login", data=data, timeout=5).read()
+        urllib.request.urlopen(f"{_SCHEME}://{AP}/login", data=data, timeout=5,
+                               context=_NOVERIFY).read()
     except OSError as exc:
         print(f"[patron] portal: {exc}")
 
 
 def check_mail():
     try:
-        s = socket.create_connection((AP, 110), timeout=5)
+        s = socket.create_connection((AP, _POP_PORT), timeout=5)
+        if TLS:
+            s = _NOVERIFY.wrap_socket(s, server_hostname=AP)
     except OSError as exc:
         print(f"[patron] pop3: {exc}")
         return

@@ -14,11 +14,15 @@ from __future__ import annotations
 
 import os
 import socket
+import ssl
 import threading
 import time
 
 import paho.mqtt.client as mqtt
 from flask import Flask, request
+
+TLS = os.environ.get("NETLAB_TLS", "0") == "1"      # segmented build: encrypt everything
+_CERT, _KEY = "/app/tls.crt", "/app/tls.key"
 
 FLAG = "PKTR{diner_wifi_flag_missing}"
 try:
@@ -101,10 +105,20 @@ def arp_watch():
 def pop3_server():
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(("0.0.0.0", 110))
+    srv.bind(("0.0.0.0", 995 if TLS else 110))
     srv.listen(8)
+    ctx = None
+    if TLS:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(_CERT, _KEY)
     while True:
         conn, _ = srv.accept()
+        if ctx:
+            try:
+                conn = ctx.wrap_socket(conn, server_side=True)
+            except OSError:
+                conn.close()
+                continue
         threading.Thread(target=_pop3_session, args=(conn,), daemon=True).start()
 
 
@@ -173,5 +187,11 @@ if __name__ == "__main__":
     _mqtt_loop()
     threading.Thread(target=arp_watch, daemon=True).start()
     threading.Thread(target=pop3_server, daemon=True).start()
-    print(f"[netlab] AP up: portal :80 ({PORTAL_USER}), POP3 :110, flag in the mailbox")
-    app.run(host="0.0.0.0", port=80, threaded=True, use_reloader=False)
+    if TLS:
+        print(f"[netlab] AP up (TLS): portal :443, POP3S :995 - MITM sees ciphertext")
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(_CERT, _KEY)
+        app.run(host="0.0.0.0", port=443, threaded=True, use_reloader=False, ssl_context=ctx)
+    else:
+        print(f"[netlab] AP up: portal :80 ({PORTAL_USER}), POP3 :110, flag in the mailbox")
+        app.run(host="0.0.0.0", port=80, threaded=True, use_reloader=False)
