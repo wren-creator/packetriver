@@ -53,10 +53,10 @@ THEMES = {
                    bg="#182016", screen="#eef1e8", ink="#28321f", accent="#5c7d3a",
                    bar="#3f5626", lbl="#28321f", vendor="Clarus Environmental"),
 }
-TITLES = {"water": "Packet River Water Company",
-          "power": "Packet River Municipal Power - Substation 1",
-          "factory": "Packet River Widget Factory - Line & Loading",
-          "sewage": "Packet River Water Reclamation Plant"}
+TITLES = {"water": "Packet River Municipal Water Authority",
+          "power": "Packet River Power & Light - Substation 1",
+          "factory": "Packet River Widget Works - Line & Loading",
+          "sewage": "Packet River Water Reclamation Facility"}
 
 # ---------------------------------------------------------------------------
 # Per-plant mimic definitions. Coordinates are in a 0..960 x 0..420 viewBox.
@@ -168,8 +168,9 @@ def shell(plant, heading, body_html):
    border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:baseline}}
  .bar small{{font-weight:600;letter-spacing:.14em;opacity:.85}}
  .screen{{background:var(--screen);color:#123;border:2px solid #0006;border-radius:0 0 6px 6px;padding:0}}
- nav{{background:#00000010;border-bottom:1px solid #0002;padding:5px 12px;font-size:12px}}
- nav a{{color:#1b5e8a;margin-right:14px;text-decoration:none}}
+ nav{{background:#00000010;border-bottom:1px solid #0002;padding:5px 12px;font-size:12px;
+   display:flex;justify-content:space-between;align-items:center}}
+ nav a{{color:#1b5e8a;text-decoration:none}}
  .alarmbar{{min-height:22px;background:#f5e9e9;color:#a11;padding:3px 12px;font-size:12px;
    font-weight:700;border-bottom:1px solid #0002}}
  .mimic{{position:relative}} svg{{display:block;width:100%;height:auto;background:var(--screen)}}
@@ -269,13 +270,12 @@ def _tags_html(plant):
 def dashboard(plant):
     import json
     d = PLANTS[plant]
-    nav = "".join(f'<a href="/{p}">{p.title()}</a>' for p in PLANTS)
     meta = dict(
         devices=[{k: dev[k] for k in dev} for dev in d["devices"]],
         tags=d["tags"], sp=d["sp"], tank=d.get("tank"), plant=plant,
     )
     body = f"""
-      <nav>{nav}<a href="/{plant}/logout">Log out</a></nav>
+      <nav><span>Operator: {plant}</span><a href="/{plant}/logout">Log out</a></nav>
       <div class=alarmbar id=alarmbar></div>
       <div class=mimic>{_svg(plant)}{_tags_html(plant)}</div>
       <div class=pop id=fp hidden><div class=box>
@@ -422,21 +422,19 @@ def api_cmd(plant):
 
 
 # -- routes -----------------------------------------------------------
+# No index of portals: each operator terminal stands alone. You reach a plant
+# because you already knew its name (recon), not by following a link from here.
 @app.get("/")
 def index():
-    links = "".join(f'<li><a href="/{p}">{TITLES[p]}</a></li>' for p in PLANTS)
-    return (f"<!doctype html><meta charset=utf-8><title>Packet River Field Operations</title>"
-            f"<style>body{{font:15px/1.7 system-ui;background:#f3ecdd;color:#3b3226;margin:0}}"
-            f".bar{{background:#fffdf7;border-bottom:2px solid #e4d8bf;padding:12px 20px;font-weight:800}}"
-            f"main{{max-width:520px;margin:24px auto;padding:0 20px}}a{{color:#2f8fbf}}</style>"
-            f"<div class=bar>PACKET RIVER FIELD OPERATIONS</div><main>"
-            f"<p>Operator terminals:</p><ul>{links}</ul></main>")
+    return ("<!doctype html><meta charset=utf-8><title>Field Operations</title>"
+            "<p style=\"font:15px system-ui;margin:40px\">Packet River Field Operations. "
+            "Operator terminals are not listed here.</p>"), 404
 
 
 @app.get("/<plant>")
 def plant_page(plant):
     if plant not in PLANTS:
-        return redirect("/")
+        return "not found", 404
     if not session.get(f"op_{plant}"):
         return login_form(plant)
     return dashboard(plant)
@@ -445,7 +443,7 @@ def plant_page(plant):
 @app.post("/<plant>/login")
 def plant_login(plant):
     if plant not in PLANTS:
-        return redirect("/")
+        return "not found", 404
     u, p = plant_creds(plant)
     if request.form.get("user") == u and request.form.get("password") == p:
         session[f"op_{plant}"] = u

@@ -1,0 +1,58 @@
+$ORIGIN packetriver.range.
+$TTL 300
+@   IN  SOA ns.packetriver.range. hostmaster.packetriver.range. (
+        @@SERIAL@@  ; serial
+        3600        ; refresh
+        900         ; retry
+        1209600     ; expire
+        300 )       ; minimum
+@   IN  NS  ns.packetriver.range.
+
+ns              IN  A       172.31.20.253
+
+; ======================================================================
+;  Town of Packet River - internal name space
+;  Names are CNAMEs onto the container network. Follow one and port-scan
+;  what it lands on.
+; ======================================================================
+
+; --- Utilities & public works ----------------------------------------
+water           IN  CNAME   packetriver-field-plc.       ; Packet River Municipal Water Authority
+reclamation     IN  CNAME   packetriver-field-plc.       ; Packet River Water Reclamation Facility
+power           IN  CNAME   packetriver-field-plc.       ; Packet River Power & Light - Substation 1
+widgetworks     IN  CNAME   packetriver-field-plc.       ; Packet River Widget Works - line & loading
+signals         IN  CNAME   packetriver-traffic-plc.     ; Packet River DOT - Signal Operations
+dispatch        IN  CNAME   packetriver-rail-plc.        ; Packet River & Southern Railroad - Dispatch
+
+; --- Finance --------------------------------------------------------
+firstpacketbank IN  CNAME   packetriver-bank.            ; First Packet Bank & Trust - online banking
+core.firstpacketbank IN CNAME packetriver-z16.           ; FPB&T core banking (z/OS)
+payroll         IN  CNAME   packetriver-as400.           ; Packet River Payroll Bureau (IBM i)
+merchant        IN  CNAME   packetriver-paygw.           ; Packet River Merchant Services
+
+; --- Civic ---------------------------------------------------------
+townhall        IN  CNAME   packetriver-websites.        ; Town of Packet River - Borough Hall
+pd              IN  CNAME   packetriver-websites.         ; Packet River Police Department
+fd              IN  CNAME   packetriver-websites.         ; Packet River Fire & Rescue
+
+; --- Main Street (one shared host, Host:-routed at the edge) -------
+generalstore    IN  CNAME   packetriver-websites.        ; Packet River General Store
+hardware        IN  CNAME   packetriver-websites.        ; Riverside Hardware & Supply
+pharmacy        IN  CNAME   packetriver-websites.        ; Packet River Pharmacy
+diner           IN  CNAME   packetriver-websites.        ; The Packet River Diner
+barber          IN  CNAME   packetriver-websites.        ; Riverbend Barber & Salon
+tavern          IN  CNAME   packetriver-websites.        ; The Broken Packet Tavern
+cleaners        IN  CNAME   packetriver-websites.        ; Packet River Cleaners
+baittackle      IN  CNAME   packetriver-websites.        ; Packet River Bait & Tackle
+
+; --- Operations --------------------------------------------------
+www             IN  CNAME   packetriver-gateway.
+ops             IN  CNAME   packetriver-gateway.         ; SOC console (not a target)
+
+; --- service records --------------------------------------------
+_recon          IN  TXT     "packet river municipal network - authorised testing only - soc@packetriver.range"
+_zone           IN  TXT     "v=pktr1; scope=lab; note: zone transfer should not be open to the world"
+
+; --- decommissioned kit that never got cleaned out ------------
+;  (only visible if you pull the whole zone)
+scada-legacy-07 IN  TXT     "retired RTU at the old intake house. maintenance token @@FLAG@@"

@@ -225,6 +225,18 @@ TECHNIQUES = {
                 "drop the console or put it behind auth + an allowlist, and "
                 "never shell out on operator input.",
     },
+
+    # --- recon ---
+    "dns_axfr": {
+        "subsystem": "recon", "target": "dns", "effect": "noop",
+        "severity": "quiet", "base": 75,
+        "hint": "The municipal name server answers zone-transfer (AXFR) "
+                "requests from anyone. Pull the whole zone: every host in "
+                "town by name, plus a stray record from a box that was "
+                "supposed to be decommissioned. dig, or a resolver library. "
+                "Fix: restrict AXFR to known secondaries, split internal and "
+                "external views.",
+    },
 }
 
 

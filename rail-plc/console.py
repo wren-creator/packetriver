@@ -74,7 +74,7 @@ _cli.on_message = _on_message
 
 
 BANNER = (
-    "\r\n=== PACKET RIVER RAIL - LOOP/SPUR SWITCH CONTROLLER ===\r\n"
+    "\r\n=== PACKET RIVER & SOUTHERN RAILROAD - DISPATCH - LOOP/SPUR SWITCH ===\r\n"
     "  model RSC-2 firmware 1.4    unit: MAIN-LOOP-SW\r\n"
     "  type 'login <user> <pass>' to sign on, 'help' for commands\r\n\r\n"
 )
@@ -170,11 +170,11 @@ def api_state():
 @app.get("/")
 def index():
     return (
-        "<!doctype html><meta charset=utf-8><title>Packet River Rail Switch</title>"
+        "<!doctype html><meta charset=utf-8><title>Packet River &amp; Southern Railroad - Dispatch</title>"
         "<style>body{font:15px/1.5 system-ui;background:#f3ecdd;color:#3b3226;margin:0}"
         ".bar{background:#fffdf7;border-bottom:2px solid #e4d8bf;padding:12px 20px;font-weight:800}"
         "main{max-width:480px;margin:24px auto;padding:0 20px}</style>"
-        "<div class=bar>PACKET RIVER RAIL &mdash; loop/spur switch</div>"
+        "<div class=bar>PACKET RIVER &amp; SOUTHERN RAILROAD &mdash; Dispatch &middot; loop/spur switch</div>"
         f"<main><p>Unit <b>{switch['label']}</b></p>"
         f"<p>Switch position: <b>{switch['position'].upper()}</b></p>"
         "<p style=color:#8c7d64>Read-only. The switch is set from the field console (TCP 2323).</p></main>")

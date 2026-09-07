@@ -121,12 +121,12 @@ def index():
         f"<tr><td>Intersection {i}</td><td>{s['mode']}</td></tr>"
         for i, s in state.items())
     return (
-        "<!doctype html><meta charset=utf-8><title>Packet River Traffic Control</title>"
+        "<!doctype html><meta charset=utf-8><title>Packet River DOT - Signal Operations</title>"
         "<style>body{font:15px/1.5 system-ui;background:#f3ecdd;color:#3b3226;margin:0}"
         ".bar{background:#fffdf7;border-bottom:2px solid #e4d8bf;padding:12px 20px;font-weight:800}"
         "main{max-width:520px;margin:24px auto;padding:0 20px}"
         "table{width:100%;border-collapse:collapse}td{padding:6px 10px;border-bottom:1px solid #efe6d0}</style>"
-        "<div class=bar>PACKET RIVER TRAFFIC CONTROL &mdash; signal status</div>"
+        "<div class=bar>PACKET RIVER DOT &mdash; Signal Operations &middot; status</div>"
         f"<main><table>{rows}</table>"
         "<p style=color:#8c7d64>Read-only. Signal timing is set from the field bus.</p></main>")
 

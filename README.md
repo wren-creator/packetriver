@@ -58,6 +58,7 @@ reset panel puts any building, or the whole town, back to golden state.
 | Traffic control | 4 crossroads + an open message broker | lights hijacked to all-green, crashes |
 | Rail | loop track + a switch into the widget factory | switch thrown, train derailed, factory fire |
 | Police & Fire | dispatch screens, alarm panels | minor targets, one bug each |
+| Municipal DNS | the town name server, `*.packetriver.range` | zone transfer is wide open: one request maps the whole town |
 | Local Diner Wi-Fi | an open, unencrypted network | a different lane: sniff cleartext credentials off the air |
 
 Exactly one bug class per storefront, so no two teach the same thing. Every
@@ -94,6 +95,9 @@ Early build. See `ROADMAP.md`. **Phases 0-4** are in:
   the Bank (TN3270, `:8991`), both real green screens with curated bugs -
   drive them from the map's `ttyd` link, the bundled Python clients, or your
   own TN5250/TN3270 terminal (see `docs/districts/mainframe.md`)
+- a **municipal DNS** server: the `player` box's only resolver, authoritative
+  for `*.packetriver.range`, with zone transfer left wide open so `recon.py
+  dns` maps the whole town (and turns up a stray record with a flag in it)
 - the **Alert Level** meter and a **blue-team** response (credential rotation,
   auto-restore) that reacts to how loud you are
 - the score / run / leaderboard loop, the reset panel, the `?edit=1` overlay

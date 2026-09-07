@@ -4,6 +4,30 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Recon layer — every target has a name
+
+- New `dns` container (CoreDNS) is the `player` box's only resolver: authoritative
+  for `packetriver.range`, forwarding everything else to Docker's embedded DNS.
+  Wired via compose `dns:` / `dns_search:`, so the attacker box starts with just
+  a resolver IP and works the town by business name
+  (`nmap water.packetriver.range`, `curl firstpacketbank.packetriver.range`).
+  Names are CNAMEs onto the container network so lookups follow through.
+- The zone **answers AXFR from anyone** — a new low-value `dns_axfr` recon
+  technique (base 75, `quiet`). `recon.py dns` (or `dig axfr packetriver.range
+  @dns`) dumps every host plus a stray TXT record from a "decommissioned" box
+  that carries this run's flag. `_recon` / `_zone` TXT breadcrumbs season it.
+  `recon.py` now runs the DNS sweep first; `player` image gains `dnsutils`.
+- **Official-sounding names** applied across the board: HMI portal titles, the
+  traffic-plc / rail-plc portal headers, the map hover labels, and the
+  zone-file comments now use one municipal / corporate scheme. Full table in
+  `docs/districts/recon.md`.
+- **No cross-portal navigation**: the field-plc HMI `<nav>` no longer links the
+  other three plants, and `GET /` on `field-plc:8093` no longer lists the
+  portals (returns 404). You land on each target independently.
+- Still open (tracked in `ROADMAP.md`): `gateway` real `Host:`-header vhost
+  routing so the 8 shops get distinct `Server` / 404 fingerprints; PTR / reverse
+  sweep; a mock whois / corporate directory.
+
 ### Map pass before going public
 
 - **Sewage contamination visual**: the full-height green river wash is gone.

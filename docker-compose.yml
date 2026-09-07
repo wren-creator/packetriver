@@ -271,6 +271,27 @@ services:
       timeout: 5s
       retries: 6
 
+  # --- the municipal name server (authoritative + AXFR left wide open) ---
+  dns:
+    <<: *common
+    build: ./dns
+    container_name: packetriver-dns
+    depends_on:
+      scoring: { condition: service_healthy }
+    volumes:
+      - pkt-flags:/run/secret:ro      # reads /run/secret/dns_axfr/flag.txt at boot
+    # it-net ONLY: CoreDNS binds its it-net address, and every CNAME target
+    # (packetriver-*) is reachable on it-net, so a second NIC would just give
+    # `dig @dns` an address CoreDNS isn't listening on.
+    networks:
+      it-net:
+        ipv4_address: 172.31.20.253   # fixed: player points its resolver here
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8054/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- the boxed-in attacker workstation + in-browser terminal ---------
   player:
     <<: *common
@@ -279,6 +300,9 @@ services:
     cap_add: [NET_ADMIN]
     depends_on:
       websites: { condition: service_healthy }
+      dns:      { condition: service_healthy }
+    dns: ["172.31.20.253"]           # every lookup goes through the town name server
+    dns_search: ["packetriver.range"]
     ports:
       - "127.0.0.1:7681:7681"       # ttyd terminal (the map opens this for the mainframe targets)
     networks: [it-net, edge-net]    # Phase 4 hardening moves this to edge-net + a real pivot

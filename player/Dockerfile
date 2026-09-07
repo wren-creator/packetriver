@@ -5,7 +5,7 @@ FROM python:3.12-slim
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      sqlmap nmap curl jq iproute2 ca-certificates less git ncat mosquitto-clients \
+      sqlmap nmap curl jq iproute2 ca-certificates less git ncat mosquitto-clients dnsutils \
  && rm -rf /var/lib/apt/lists/*
 
 # ttyd isn't in Debian trixie; grab the upstream static binary

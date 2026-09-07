@@ -1,0 +1,30 @@
+# Packet River municipal name server.
+#
+# It is authoritative for packetriver.range and, deliberately, answers zone
+# transfers (AXFR) from anyone - the recon lesson. Everything else is forwarded
+# to Docker's embedded resolver so the CNAME targets (packetriver-<svc>.) and
+# bare container names still resolve.
+#
+# CoreDNS binds ONLY the fixed it-net address here. If it listened on 0.0.0.0
+# it would also grab 127.0.0.11:53 inside the container and shadow Docker's own
+# resolver, breaking the forward path.
+
+packetriver.range:53 {
+    bind 172.31.20.253
+    file /etc/coredns/db.packetriver.range
+    transfer {
+        to *
+    }
+    log
+    errors
+}
+
+.:53 {
+    bind 172.31.20.253
+    forward . 127.0.0.11
+    cache 30
+    errors
+    # bind-less HTTP endpoints, reachable on 127.0.0.1 for the healthcheck
+    health :8054
+    ready :8055
+}

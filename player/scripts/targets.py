@@ -15,13 +15,16 @@ import sys
 ALLOWED_NAMES = {
     "gateway", "simmap", "scoring", "bus", "db", "websites", "paygw",
     "bank", "as400", "z16", "netlab", "traffic-plc", "rail-plc", "field-plc",
-    "generalstore.town.local",
+    "dns", "generalstore.town.local",
 }
+# the town's own name space - every one of these resolves to a 172.31/16
+# container anyway, but allow the names so a lookup failure reads clearly
+ALLOWED_SUFFIXES = (".packetriver.range",)
 ALLOWED_NETS = [ipaddress.ip_network("172.31.0.0/16")]
 
 
 def guard(host: str) -> None:
-    if host in ALLOWED_NAMES:
+    if host in ALLOWED_NAMES or host.endswith(ALLOWED_SUFFIXES):
         return
     try:
         ip = ipaddress.ip_address(host)

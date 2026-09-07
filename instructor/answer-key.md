@@ -197,3 +197,16 @@ PLC, authenticated protocol, re-assert safe state (the hardened build's
   `rail_attack.py flag | inject "<cmd>" | spur`.
 - Fix: drop the console or gate it with auth + an allowlist; never shell out on
   operator input.
+
+## Recon
+
+### `dns_axfr` — open zone transfer (map: nothing; pure recon) — Phase 4.5
+- The move: the `player` box's resolver is `172.31.20.253` (the `dns`
+  container). The `packetriver.range` zone allows AXFR from anyone:
+  `dig axfr packetriver.range @dns` or `recon.py dns`. The flag is in a
+  `TXT` record for `scada-legacy-07.packetriver.range` ("maintenance token
+  PKTR{...}") — only visible in the full transfer, not by guessing names.
+- Everything else in the zone is a CNAME onto `packetriver-<svc>.`; follow one
+  and port-scan it (`nmap firstpacketbank.packetriver.range`).
+- Fix: `transfer { to <secondaries> }` only, split internal/external views,
+  keep secrets out of DNS.
