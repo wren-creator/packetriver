@@ -221,6 +221,52 @@ services:
       timeout: 5s
       retries: 8
 
+  # --- the traffic signal controllers (commanded over the open MQTT bus) ---
+  traffic-plc:
+    <<: *common
+    build: ./traffic-plc
+    container_name: packetriver-traffic-plc
+    depends_on:
+      bus:     { condition: service_healthy }
+      scoring: { condition: service_healthy }
+    environment:
+      MQTT_HOST: "bus"
+      ENG_PIN: "${TRAFFIC_ENG_PIN:-0000}"
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:8095:8095"    # read-only signal status
+    networks: [bus-net, it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8095/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  # --- the loop-track switch + spur controller (raw-TCP console) -------
+  rail-plc:
+    <<: *common
+    build: ./rail-plc
+    container_name: packetriver-rail-plc
+    depends_on:
+      bus:     { condition: service_healthy }
+      scoring: { condition: service_healthy }
+    environment:
+      MQTT_HOST: "bus"
+      CONSOLE_USER: "${RAIL_CONSOLE_USER:-maint}"
+      CONSOLE_PASS: "${RAIL_CONSOLE_PASS:-maint}"
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:2323:2323"    # maintenance console (raw TCP)
+      - "127.0.0.1:8096:8096"    # read-only switch status
+    networks: [bus-net, it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8096/health')\" || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- the boxed-in attacker workstation + in-browser terminal ---------
   player:
     <<: *common

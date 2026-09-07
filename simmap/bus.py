@@ -45,7 +45,8 @@ class Bus:
         self._client.loop_start()
 
     def _on_connect(self, client, userdata, flags, reason_code, properties):
-        for topic in ("pkt/score/events", "pkt/reset", "pkt/campaign"):
+        for topic in ("pkt/score/events", "pkt/reset", "pkt/campaign",
+                      "pkt/traffic/+/state", "pkt/rail/switch"):
             client.subscribe(topic)
 
     def _on_message(self, client, userdata, msg):
@@ -54,7 +55,21 @@ class Bus:
         except ValueError:
             payload = {}
         with self.lock:
-            if msg.topic == "pkt/score/events":
+            if msg.topic.startswith("pkt/traffic/") and msg.topic.endswith("/state"):
+                # traffic-plc holds each intersection's commanded mode; the
+                # green/red cycle + crash physics stay in models/town.py
+                try:
+                    tid = int(msg.topic.split("/")[2])
+                except (IndexError, ValueError):
+                    tid = 0
+                mode = payload.get("mode", "AUTO")
+                for x in self.town.traffic:
+                    if x.id == tid:
+                        x.mode = "ALL-GREEN" if mode == "ALL-GREEN" else "auto"
+            elif msg.topic == "pkt/rail/switch":
+                pos = payload.get("position", "loop")
+                self.town.rail.switch_position = "spur" if pos == "spur" else "loop"
+            elif msg.topic == "pkt/score/events":
                 effect = payload.get("effect")
                 if effect:
                     from effects import apply

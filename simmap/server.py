@@ -87,7 +87,7 @@ def api_config():
     return {
         "cashapp": os.environ.get("DONATION_CASHAPP", "britleywren"),
         "reset_scopes": RESET_SCOPES,
-        "phase": 3,
+        "phase": 4,
     }
 
 

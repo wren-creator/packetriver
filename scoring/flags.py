@@ -198,6 +198,33 @@ TECHNIQUES = {
                 "block unlocks in maintenance mode. Fix: segment OT, "
                 "source-allowlist, authenticated protocol.",
     },
+    "traffic_mqtt": {
+        "subsystem": "utility",
+        "target": "traffic",
+        "effect": "noop",
+        "severity": "loud",
+        "base": 175,
+        "hint": "The event broker carries the signal controllers' command "
+                "topic with no ACL and no auth - publish to it and a "
+                "crossroads locks ALL-GREEN. An 'engineering mode' unlock "
+                "topic takes a short PIN and coughs up the flag. "
+                "mosquitto_pub / mosquitto_sub. Fix: broker ACLs + auth, "
+                "signed commands, take the bus off any routable path.",
+    },
+    "rail_console": {
+        "subsystem": "utility",
+        "target": "rail",
+        "effect": "noop",
+        "severity": "loud",
+        "base": 200,
+        "hint": "The loop/spur switch has a raw-TCP maintenance console with "
+                "default credentials, and one of its commands hands your input "
+                "straight to a shell. Sign on and read the key, or use the "
+                "injection. Throw the switch as the train reaches the branch "
+                "to derail it into the factory. nc / a small script. Fix: "
+                "drop the console or put it behind auth + an allowlist, and "
+                "never shell out on operator input.",
+    },
 }
 
 
