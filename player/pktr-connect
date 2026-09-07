@@ -8,9 +8,15 @@ cat <<'BANNER'
  |  __/ (_| | (__|   <  __/ |_  |  _ <| |\ V /  __/ |
  |_|   \__,_|\___|_|\_\___|\__| |_| \_\_| \_/ \___|_|   terminal
 
-  1)  AS/400 payroll pull   (5250 -> sign on -> STRSQL -> flag)
-  2)  AS/400 SQL prompt     (pick your own SELECT * FROM lib.table)
-  3)  shell  (sqlmap, nmap, modbus_attack.py, git-dumper, ...)
+  AS/400  (City Hall / Widget Factory)
+    1)  payroll pull    (5250 -> sign on -> STRSQL -> flag)
+    2)  SQL prompt      (pick your own SELECT * FROM lib.table)
+
+  IBM z16  (First Packet Bank & Trust)
+    3)  RACF pull       (3270 -> logon -> RLIST the profile -> flag)
+    4)  TSO prompt      (run your own READY command)
+
+  5)  shell  (sqlmap, nmap, modbus_attack.py, git-dumper, ...)
   q)  quit
 
 BANNER
@@ -21,7 +27,11 @@ case "$choice" in
   2) printf 'SQL > SELECT * FROM '; read tbl
      python3 /opt/pktr/scripts/as400_5250.py "SELECT * FROM $tbl"
      printf '\n[enter to go back] '; read _; exec "$0" ;;
-  3) cd /opt/pktr && exec /bin/bash ;;
+  3) python3 /opt/pktr/scripts/z16_3270.py; printf '\n[enter to go back] '; read _; exec "$0" ;;
+  4) printf 'READY > '; read rc
+     python3 /opt/pktr/scripts/z16_3270.py "$rc"
+     printf '\n[enter to go back] '; read _; exec "$0" ;;
+  5) cd /opt/pktr && exec /bin/bash ;;
   q|Q) exit 0 ;;
   *) exec "$0" ;;
 esac

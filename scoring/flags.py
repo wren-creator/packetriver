@@ -115,6 +115,14 @@ TECHNIQUES = {
         "hint": "GET /api/accounts/<id> has no ownership check; the municipal "
                 "account's memo holds a reconciliation token",
     },
+    "z16_racf": {
+        "subsystem": "bank", "target": "bank", "effect": "bank_drain",
+        "severity": "loud", "base": 275,
+        "hint": "TN3270 to the z16 - IBMUSER/SYS1 still logs on. At READY: "
+                "RLIST FACILITY BANK.XFER.APPROVE - the profile is UACC(READ) "
+                "and in WARNING mode, and the recon key sits in its "
+                "INSTALLATION DATA",
+    },
     "water_modbus_pump": {
         "subsystem": "utility",
         "target": "water",

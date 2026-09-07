@@ -14,7 +14,7 @@ import sys
 
 ALLOWED_NAMES = {
     "gateway", "simmap", "scoring", "bus", "db", "websites", "paygw",
-    "bank", "as400", "netlab", "traffic-plc", "rail-plc", "field-plc",
+    "bank", "as400", "z16", "netlab", "traffic-plc", "rail-plc", "field-plc",
     "generalstore.town.local",
 }
 ALLOWED_NETS = [ipaddress.ip_network("172.31.0.0/16")]

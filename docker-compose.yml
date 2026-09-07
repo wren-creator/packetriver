@@ -141,6 +141,24 @@ services:
       timeout: 5s
       retries: 6
 
+  # --- the Packet River IBM z16 (core banking, behind First Packet Bank) ---
+  z16:
+    <<: *common
+    build: ./mainframe/z16
+    container_name: packetriver-z16
+    depends_on:
+      scoring: { condition: service_healthy }
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:8991:3270"    # TN3270E
+    networks: [it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3270 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- First Packet Bank & Trust (online banking) ---------------------
   bank:
     <<: *common

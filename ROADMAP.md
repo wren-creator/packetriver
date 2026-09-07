@@ -42,9 +42,12 @@ reuse map live in the design doc.
     `QSECOFR`, `PAYROLL` library `*PUBLIC *ALL`); flag pulled via `STRSQL`.
     Player-side client `as400_5250.py` (built - no arm64 `tn5250`). A full
     interactive in-browser 5250 (web3270 `session.js`) stays a follow-up.
-  - [ ] **3d** IBM z16 behind the Bank: green-screen TN3270 + a CICS inquiry +
-    a RACF panel + curated bugs (UACC, WARNING mode, magic SVC). Reuse
-    `web3270` mock LPARs.
+  - [x] **3d** IBM z16 behind the Bank: green-screen TN3270E + a RACF command
+    family (`LISTUSER` / `RLIST` / `SETROPTS`), three curated findings -
+    never-revoked `IBMUSER` with `SPECIAL`, `BANK.XFER.APPROVE` `UACC(READ)` +
+    `WARNING` mode, `NOPROTECTALL`; flag in the profile's `INSTALLATION DATA`.
+    Player-side client `z16_3270.py` (built - no arm64 `x3270`). A CICS
+    inquiry / CEMT lane and a full interactive in-browser 3270 stay follow-ups.
 - [ ] **Phase 4 - Sewage + traffic + rail + Alert Level + blue team.**
   `traffic-plc`, `rail-plc`, sewage on `field-plc`, the river + swimmers +
   swimming beach, the leaky-bucket Alert meter, the blue-team response
@@ -70,11 +73,12 @@ reuse map live in the design doc.
     the payroll path is SQL-only today), library-list / command-line injection,
     and a full interactive in-browser 5250 (web3270 `session.js` behind a Node
     renderer) instead of the built extraction client.
-  - [ ] an **IBM z16** behind **First Packet Bank & Trust** for core banking
-    (TN3270, z/OS, RACF, CICS) - Phase 3d. Reuse the mock-LPAR / TN3270 stack
-    from `web3270`. Bugs: RACF misconfig (universal access, WARNING mode, magic
-    SVC), CICS transaction abuse, APF / surrogat, TSO REXX. This is Britley's
-    home turf and the range's real differentiator.
+  - [x] an **IBM z16** behind **First Packet Bank & Trust** for core banking
+    (TN3270E, z/OS, RACF). Landed in Phase 3d - a RACF command family with
+    three curated findings. Remaining depth: CICS transaction abuse
+    (CEMT/CECI), APF / the writable-APF-library escalation the mock's `LISTAPF`
+    already hints at, TSO REXX, surrogat, and a full interactive in-browser
+    3270 instead of the built client.
   Both tie into the web front doors: pop the City Hall payroll portal then
   pivot to the AS/400; pop the bank's online banking then pivot to the z16.
 - [x] **Widget Factory PLC controls.** Assembly line (conveyor run/stop, line

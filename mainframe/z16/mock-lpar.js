@@ -1,0 +1,1977 @@
+/**
+ * mainframe/z16/mock-lpar.js  (vendored into Packet River)
+ * ─────────────────────────────────────────────────────────────────
+ * Source: web3270 (github.com/wren-creator/web3270), GPL-3.0, by Britley Hoff.
+ * Vendored here with one small addition (below): a RACF command family at the
+ * TSO READY prompt - LISTUSER / RLIST / SETROPTS LIST. The FACILITY profile
+ * BANK.XFER.APPROVE is deliberately UACC(READ) + WARNING, and someone stashed
+ * a reconciliation key in its INSTALLATION DATA - this session's flag, read at
+ * startup from /run/secret/z16_racf/flag.txt. Log on (IBMUSER/SYS1 still
+ * works), then: RLIST FACILITY BANK.XFER.APPROVE.
+ * ─────────────────────────────────────────────────────────────────
+ * Fixed: screen is sent only after full TN3270E negotiation completes
+ * (after client sends FUNCTIONS REQUEST, not after mock sends FUNCTIONS IS)
+ */
+
+'use strict';
+
+const net  = require('net');
+const fs   = require('fs');
+const path = require('path');
+
+const PORT    = parseInt(process.env.MOCK_PORT  || '3270', 10);
+const LOG     = (process.env.LOG_LEVEL || 'info') === 'debug';
+const LU_NAME = process.env.MOCK_LU    || 'MOCKLU01';
+const SYSNAME = process.env.MOCK_SYSID || 'MOCKPROD';
+
+// Packet River: the reconciliation key parked in the BANK.XFER.APPROVE
+// profile's INSTALLATION DATA. Read once at startup.
+let RACF_RECON_KEY = 'PKTR{z16_racf_flag_missing}';
+try {
+  RACF_RECON_KEY = fs.readFileSync('/run/secret/z16_racf/flag.txt', 'utf8').trim();
+} catch { /* flag not planted */ }
+
+// Packet River: curated RACF findings surfaced by the LISTUSER / RLIST /
+// SETROPTS commands added to the READY prompt below. All three are real,
+// common review findings: a never-revoked IBMUSER with SPECIAL+OPERATIONS,
+// a general-resource profile left UACC(READ) and in WARNING mode (a failed
+// access check is logged but still permitted), and NOPROTECTALL globally.
+function racfListuser(who) {
+  const u = (who || '').toUpperCase() || 'IBMUSER';
+  const privileged = (u === 'IBMUSER' || u === 'BANKADM');
+  const attrs = privileged ? 'SPECIAL      OPERATIONS  AUDITOR' : 'NONE';
+  const owner = privileged ? 'SYS1' : 'DEMOGRP';
+  return [
+    `USER=${u}  NAME=${privileged ? 'INSTALL DEFAULT ADMIN' : u + ' USER'}  OWNER=${owner}  CREATED=94.001`,
+    `  DEFAULT-GROUP=SYS1  PASSDATE=94.001  PASS-INTERVAL=N/A  PHRASEDATE=N/A`,
+    `  ATTRIBUTES=${attrs}`,
+    `  REVOKE DATE=NONE   RESUME DATE=NONE`,
+    `  LAST-ACCESS=UNKNOWN`,
+    `  CLASS AUTHORIZATIONS=NONE`,
+    privileged
+      ? `  NO-INSTALLATION-DATA`
+      : `  NO-INSTALLATION-DATA`,
+    `  LOGON ALLOWED   (DAYS)          (TIME)`,
+    `  ---------------------------------------------`,
+    `  ANYDAY                          ANYTIME`,
+    privileged
+      ? `IRR52011I  IBMUSER retains SPECIAL and OPERATIONS - never revoked after install.`
+      : `READY`,
+  ].join('\n');
+}
+
+function racfRlist(cmd) {
+  // RLIST <class> <profile>  /  RL <class> <profile>
+  const m = cmd.match(/^(?:RLIST|RL)\s+(\S+)\s+(\S+)/);
+  if (!m) return `IKJ56701I MISSING CLASS NAME+\nENTER: RLIST class-name profile-name`;
+  const cls  = m[1].toUpperCase();
+  const prof = m[2].toUpperCase();
+  const isTheOne = (cls === 'FACILITY' || cls === 'XFACILIT') &&
+                   /^BANK\.XFER\.APPROVE/.test(prof);
+  if (!isTheOne) {
+    return `${cls} ${prof}\nIKJ56712I PROFILE NOT FOUND - NO ENTRIES MEET SEARCH CRITERIA`;
+  }
+  return [
+    `CLASS      NAME`,
+    `-----      ----`,
+    `${cls.padEnd(10)} BANK.XFER.APPROVE`,
+    ``,
+    `LEVEL  OWNER    UNIVERSAL ACCESS   YOUR ACCESS   WARNING`,
+    `-----  -------- ----------------   -----------   -------`,
+    ` 00    BANKADM  READ               READ          YES`,
+    ``,
+    `INSTALLATION DATA`,
+    `-----------------`,
+    RACF_RECON_KEY,
+    ``,
+    `AUDITING          FAILURES(READ)`,
+    `NOTIFY            NO USER TO BE NOTIFIED`,
+    `IRR52007I  Profile is in WARNING mode - access failures are logged but ALLOWED.`,
+  ].join('\n');
+}
+
+function racfSetropts() {
+  return [
+    `ATTRIBUTES = INITSTATS WHEN(PROGRAM)`,
+    `STATISTICS = NONE`,
+    `ACTIVE CLASSES = DATASET USER GROUP FACILITY TSOPROC ACCTNUM`,
+    `GENERIC PROFILE CLASSES = DATASET FACILITY`,
+    `SETR NOPROTECTALL      - datasets with no covering profile default to allow`,
+    `SETR NOERASE           - deleted dataset extents are not scratched`,
+    `SETR WARNING HONORED   - WARNING-mode profiles permit-and-log on failure`,
+    `PASSWORD PROCESSING OPTIONS:`,
+    `  RULE1 LENGTH(1:8)    NO HISTORY   NO REVOKE   NO MIXED CASE`,
+    `IRR52009I  NOPROTECTALL + WARNING honored = fail-open resource protection.`,
+  ].join('\n');
+}
+
+// Which external security manager this mock simulates: RACF (default), ACF2,
+// or TOPSECRET. Only the logon-panel header and the wrong-password / lockout
+// message IDs change — enough for the ESM Fingerprint classifier to tell them
+// apart.  MOCK_ESM=ACF2 npm run mock:lpar
+const MOCK_ESM = (process.env.MOCK_ESM || 'RACF').toUpperCase();
+const ESM_TEXT = {
+  RACF: {
+    logonHeader: 'RACF LOGON parameters:',
+    badPassword: 'IKJ56425I PASSWORD NOT CORRECT',
+    remaining:   n => `IKJ56477I ${n} ATTEMPT${n !== 1 ? 'S' : ''} REMAINING BEFORE RACF LOCKOUT`,
+    lockout: u => [
+      'IKJ56421I RACF AUTHORIZATION FAILURE',
+      `IKJ56422I USERID ${u} HAS BEEN REVOKED`,
+      'IKJ56423I CONTACT YOUR SECURITY ADMINISTRATOR TO RESET',
+    ],
+  },
+  ACF2: {
+    logonHeader: 'ACF2 LOGON       LOGONID ===>',
+    badPassword: 'ACF01004 INVALID PASSWORD',
+    remaining:   n => `ACF01013 ${n} ATTEMPT${n !== 1 ? 'S' : ''} LEFT BEFORE LOGONID SUSPEND`,
+    lockout: u => [
+      `ACF01013 LOGONID ${u} SUSPENDED`,
+      'ACF01234 SECURITY VIOLATION HAS BEEN LOGGED',
+      'ACF00002 CONTACT YOUR ACF2 SECURITY ADMINISTRATOR',
+    ],
+  },
+  TOPSECRET: {
+    logonHeader: 'TOP SECRET/MVS LOGON',
+    badPassword: 'TSS7101E PASSWORD IS INCORRECT',
+    remaining:   n => `TSS7102E ${n} VIOLATION${n !== 1 ? 'S' : ''} BEFORE ACCESSORID SUSPEND`,
+    lockout: u => [
+      `TSS7000E ACCESSORID ${u} HAS BEEN SUSPENDED`,
+      'TSS7051E SECURITY VIOLATION - ACCESS DENIED',
+      'TSS9999I CONTACT YOUR TOP SECRET ADMINISTRATOR',
+    ],
+  },
+};
+// `let`, not `const`: the `ESM` command at the TSO READY prompt switches this
+// at runtime so you can test the ESM Fingerprint classifier against all three
+// products in one session without restarting the daemon.
+let ESM_NAME = ESM_TEXT[MOCK_ESM] ? MOCK_ESM : 'RACF';
+let ESM = ESM_TEXT[ESM_NAME];
+
+const IAC  = 0xFF, DONT = 0xFE, DO   = 0xFD;
+const WONT = 0xFC, WILL = 0xFB, SB   = 0xFA, SE = 0xF0;
+const EOR  = 0xEF, NOP  = 0xF1;
+
+const OPT_BINARY  = 0x00;
+const OPT_EOR     = 0x19;
+const OPT_TTYPE   = 0x18;
+const OPT_TN3270E = 0x28;
+
+const TN3E_CONNECT     = 0x01;
+const TN3E_DEVICE_TYPE = 0x02;
+const TN3E_FUNCTIONS   = 0x03;
+const TN3E_IS          = 0x04;
+const TN3E_REQUEST     = 0x07;
+const TN3E_SEND        = 0x08;
+
+const CMD_ERASE_WRITE     = 0xF5;
+const CMD_ERASE_WRITE_ALT = 0x7E;
+const CMD_WRITE           = 0xF1;
+const CMD_WSF             = 0xF3;  // Write Structured Field (SNA encoding)
+const ORDER_SF  = 0x1D;
+const ORDER_SFE = 0x29;  // Start Field Extended (with color/highlight pairs)
+const ORDER_SA  = 0x28;  // Set Attribute (character-level color/highlight)
+const ORDER_SBA = 0x11;
+const ORDER_IC  = 0x13;
+
+const FA_PROTECTED        = 0x60;
+const FA_PROTECTED_HIGH   = 0xE0;
+const FA_UNPROTECTED      = 0x40;
+const FA_UNPROTECTED_NUM  = 0x50;
+const FA_UNPROTECTED_HIDDEN = 0x4C;  // unprotected + nondisplay (bits 3-2 = 11) — real password-field FA
+
+// 3270 extended color codes (SFE/SA type 0x42)
+const COL_BLUE   = 0xF1;
+const COL_RED    = 0xF2;
+const COL_PINK   = 0xF3;
+const COL_GREEN  = 0xF4;
+const COL_TURQ   = 0xF5;
+const COL_YELLOW = 0xF6;
+const COL_WHITE  = 0xF7;
+
+// 3270 highlight codes (SFE/SA type 0x41)
+const HL_BLINK   = 0xF1;
+const HL_REVERSE = 0xF2;
+const HL_UNDER   = 0xF4;
+const HL_INTENS  = 0xF8;
+
+const AID_ENTER = 0x7D;
+const AID_CLEAR = 0x6D;
+const AID_PF3   = 0xF3;
+const AID_PF7   = 0xF7;
+const AID_PF8   = 0xF8;
+
+const EBCDIC_TO_ASCII = Buffer.from([
+  0x00,0x01,0x02,0x03,0x9C,0x09,0x86,0x7F,0x97,0x8D,0x8E,0x0B,0x0C,0x0D,0x0E,0x0F,
+  0x10,0x11,0x12,0x13,0x9D,0x0A,0x08,0x87,0x18,0x19,0x92,0x8F,0x1C,0x1D,0x1E,0x1F,
+  0x80,0x81,0x82,0x83,0x84,0x85,0x17,0x1B,0x88,0x89,0x8A,0x8B,0x8C,0x05,0x06,0x07,
+  0x90,0x91,0x16,0x93,0x94,0x95,0x96,0x04,0x98,0x99,0x9A,0x9B,0x14,0x15,0x9E,0x1A,
+  0x20,0xA0,0xE2,0xE4,0xE0,0xE1,0xE3,0xE5,0xE7,0xF1,0xA2,0x2E,0x3C,0x28,0x2B,0x7C,
+  0x26,0xE9,0xEA,0xEB,0xE8,0xED,0xEE,0xEF,0xEC,0xDF,0x21,0x24,0x2A,0x29,0x3B,0x5E,
+  0x2D,0x2F,0xC2,0xC4,0xC0,0xC1,0xC3,0xC5,0xC7,0xD1,0xA6,0x2C,0x25,0x5F,0x3E,0x3F,
+  0xF8,0xC9,0xCA,0xCB,0xC8,0xCD,0xCE,0xCF,0xCC,0x60,0x3A,0x23,0x40,0x27,0x3D,0x22,
+  0xD8,0x61,0x62,0x63,0x64,0x65,0x66,0x67,0x68,0x69,0xAB,0xBB,0xF0,0xFD,0xFE,0xB1,
+  0xB0,0x6A,0x6B,0x6C,0x6D,0x6E,0x6F,0x70,0x71,0x72,0xAA,0xBA,0xE6,0xB8,0xC6,0xA4,
+  0xB5,0x7E,0x73,0x74,0x75,0x76,0x77,0x78,0x79,0x7A,0xA1,0xBF,0xD0,0x5B,0xDE,0xAE,
+  0xAC,0xA3,0xA5,0xB7,0xA9,0xA7,0xB6,0xBC,0xBD,0xBE,0xDD,0xA8,0xAF,0x5D,0xB4,0xD7,
+  0x7B,0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0xAD,0xF4,0xF6,0xF2,0xF3,0xF5,
+  0x7D,0x4A,0x4B,0x4C,0x4D,0x4E,0x4F,0x50,0x51,0x52,0xB9,0xFB,0xFC,0xF9,0xFA,0xFF,
+  0x5C,0xF7,0x53,0x54,0x55,0x56,0x57,0x58,0x59,0x5A,0xB2,0xD4,0xD6,0xD2,0xD3,0xD5,
+  0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0xB3,0xDB,0xDC,0xD9,0xDA,0x9F,
+]);
+
+const ASCII_TO_EBCDIC = Buffer.alloc(256, 0x3F);
+for (let eb = 0; eb < 256; eb++) {
+  const asc = EBCDIC_TO_ASCII[eb];
+  if (ASCII_TO_EBCDIC[asc] === 0x3F) ASCII_TO_EBCDIC[asc] = eb;
+}
+
+function toEbcdic(str) {
+  const buf = Buffer.alloc(str.length);
+  for (let i = 0; i < str.length; i++) buf[i] = ASCII_TO_EBCDIC[str.charCodeAt(i)] ?? 0x3F;
+  return buf;
+}
+
+// Screen dims by negotiated device type — mirrors tn3270/session.js's MODEL_DIMS
+const MODEL_DIMS = {
+  '3278-2':   { rows: 24, cols: 80  },
+  '3278-3':   { rows: 32, cols: 80  },
+  '3278-4':   { rows: 43, cols: 80  },
+  '3278-5':   { rows: 27, cols: 132 },
+  '3178':     { rows: 24, cols: 80  },
+  '3279-2':   { rows: 24, cols: 80  },
+  '3279-2-E': { rows: 24, cols: 80  },
+  '3279-3':   { rows: 32, cols: 80  },
+  '3279-3-E': { rows: 32, cols: 80  },
+  '3279-4':   { rows: 43, cols: 132 },
+  '3279-4-E': { rows: 43, cols: 132 },
+  '3279-5':   { rows: 27, cols: 132 },
+  '3279-5-E': { rows: 27, cols: 132 },
+};
+
+// Set from the connection's negotiated device type just before each screen is
+// built (see sendCurrentScreen) — buildScreen/sba run synchronously off that,
+// so this is safe despite being module-level shared state.
+let mockCols = 80;
+
+// ── Cross-session buffer bleed simulation ──────────────────────────────
+// A real 3270 controller only clears its buffer on an Erase command; if a
+// pooled LU is handed to a new logical session before the app issues its
+// own Erase/Write, whatever was left in the old field data (incl. MDT-set,
+// nondisplay fields) can still be present for a brief window. We model that
+// here: on disconnect, cache the last-typed userid/password for the LU the
+// client requested; on the next connection that asks for the *same* LU
+// within BUFFER_BLEED_WINDOW_MS, replay that stale field data as a non-
+// erasing Write before the fresh (erased) logon screen goes out.
+const _luBufferCache = new Map(); // luName -> { user, pass, ts }
+const BUFFER_BLEED_WINDOW_MS = 90000;
+
+function encodeAddr(addr) {
+  const hi = (addr >> 6) & 0x3F;
+  const lo =  addr       & 0x3F;
+  const encode6 = n => n < 0x3F ? 0x40 + n : 0xC0 + (n - 0x3F);
+  return [encode6(hi), encode6(lo)];
+}
+
+function sba(row, col) {
+  return [ORDER_SBA, ...encodeAddr(row * mockCols + col)];
+}
+
+function buildScreen(eraseFirst, fields) {
+  // Per the 3270 datastream spec, plain Erase Write selects the DEFAULT
+  // 24×80 screen; only Erase Write Alternate activates the model's wider
+  // geometry. So when addressing a non-80-col screen we must send EWA,
+  // or a conforming client (x3270, our bridge) will decode at stride 80.
+  const eraseCmd = mockCols !== 80 ? CMD_ERASE_WRITE_ALT : CMD_ERASE_WRITE;
+  const parts = [eraseFirst ? eraseCmd : CMD_WRITE, 0xC3];
+  // Screens below commonly declare a field's attribute and its label text as
+  // two separate entries at the SAME row/col (attribute occupies that cell;
+  // the label is meant to start right after it). Track the most recent FA
+  // placement so a text-only entry reusing those exact coordinates skips its
+  // own SBA and lands on the content cell the FA's implicit advance already
+  // points at, instead of re-targeting the FA byte's own cell and stepping
+  // on it — which used to just silently eat the label's first character, but
+  // now (session.js clearing stale .fa on overwrite, see #19) blows away the
+  // field boundary itself and lets one field's color bleed across the rest
+  // of the screen.
+  let lastFaPos = null;
+  for (const f of fields) {
+    const attachedToFa = f.fa === undefined && lastFaPos && f.row === lastFaPos.row && f.col === lastFaPos.col;
+    if (!attachedToFa) parts.push(...sba(f.row, f.col));
+    if (f.fa !== undefined) {
+      if (f.color !== undefined || f.highlight !== undefined) {
+        // SFE: pair count, then [type, value] pairs
+        const pairs = [[0xC0, f.fa]];                          // basic FA pair
+        if (f.color     !== undefined) pairs.push([0x42, f.color]);
+        if (f.highlight !== undefined) pairs.push([0x41, f.highlight]);
+        parts.push(ORDER_SFE, pairs.length);
+        for (const [t, v] of pairs) parts.push(t, v);
+      } else {
+        parts.push(ORDER_SF, f.fa);
+      }
+      lastFaPos = { row: f.row, col: f.col };
+    } else if (!attachedToFa) {
+      lastFaPos = null;
+    }
+    if (f.ic) parts.push(ORDER_IC);
+    // Inline SA — character-level color/highlight before text, reset after
+    if (f.saColor     !== undefined) parts.push(ORDER_SA, 0x42, f.saColor);
+    if (f.saHighlight !== undefined) parts.push(ORDER_SA, 0x41, f.saHighlight);
+    if (f.text) for (const b of toEbcdic(f.text)) parts.push(b);
+    if (f.saColor !== undefined || f.saHighlight !== undefined) parts.push(ORDER_SA, 0x00, 0x00);
+  }
+  return Buffer.from(parts);
+}
+
+// ── JCL / SUBMIT / SDSF ─────────────────────────────────────────────
+// Real fixed-form JCL on disk (jcl/programs/*.jcl), parsed at startup for
+// //stepname EXEC PGM=x lines. This is not a JCL language interpreter, no
+// conditionals, no DD-level processing, just enough of one that a known
+// PGM name maps to a canned return code, the same scoped-real approach as
+// the AS/400 mock's RPG interpreter: edit a step's EXEC PGM= to a
+// different known program in PGM_OUTCOMES, restart the mock, resubmit,
+// and SDSF's output actually changes.
+const PGM_OUTCOMES = {
+  IEFBR14:  { rc: 0,  msg: null },
+  IEBGENER: { rc: 0,  msg: 'KEPT' },
+  SORT:     { rc: 0,  msg: null },
+  REPORT:   { rc: 0,  msg: 'KEPT' },
+  VALIDATE: { rc: 0,  msg: null },
+  PROCESS:  { rc: 12, msg: 'RETURN CODE 0012 -- CHECK PROCESS STEP INPUT' },
+  // Mainframe 105 (Book 5) cross-platform token chain, hop 1 of 4: this
+  // fixed Batch Control Number is what a student carries into the IBM i
+  // mock's CHKBCN command next. Fixed, not derived from anything at
+  // runtime, so every hop can validate it independently with no shared
+  // datastore between mocks — see Bridge_server/ROADMAP.md's "Cross-
+  // Platform Token Chain" section.
+  DATACHK:  { rc: 0,  msg: 'BATCH CONTROL NUMBER BCN-7742 ISSUED -- DATA INTEGRITY CHECK COMPLETE' },
+  // Mainframe 201 (200 series) Differential-Diagnosis vignette: RC=04 is
+  // real MVS's own "completed with warnings" convention, not a hard
+  // failure. The dataset in STEP2's DISP=(NEW,CATLG,...) already exists
+  // from an earlier run, a genuinely common, usually-harmless real-world
+  // RC=4 cause — the point of this job is that the RC alone doesn't say
+  // that, the student has to read the real JCL source to find it.
+  CATLGCHK: { rc: 4,  msg: 'PROD.NIGHTLY.OUTPUT ALREADY CATALOGED -- STEP COMPLETED RC=04' },
+  // Mainframe 203 (200 series) Differential-Diagnosis vignette: RC=8 plus a
+  // real "DATA SET NOT FOUND" message reads like the payroll master file
+  // itself is gone. It isn't — PAYROLL.MASTER.FILE is sitting fine in the
+  // catalog (confirmed via the new LISTCAT LEVEL() support below). This
+  // job's own PAYIN DD just points at PAYROLL.MASTER.CURRENT, a name that
+  // stopped existing when the real file got renamed and nobody updated
+  // this JCL, a coordination gap, not a data-loss incident.
+  PAYVER:   { rc: 8,  msg: 'IEF212I PAYVER STEP1 PAYIN - DATA SET NOT FOUND' },
+  // Mainframe 205 (200 series capstone) vignette: RC=4, real MVS's own
+  // "completed with warnings" convention (same as CATLGCHK), reads like
+  // routine texture next to it. The real story is sequencing, not a
+  // technical failure: this job reads FINANCE.LEDGER.CURRENT (the LISTCAT
+  // entry seeded for Book 203, never otherwise used) before IBM i's
+  // MAINTJOB, running long that same night under the same CYC-0826 label
+  // (see mock-as400.js's seedMessages()), has actually finished refreshing
+  // it. Confirmed via LISTCAT LEVEL(FINANCE) that the dataset itself is
+  // fine, just not current yet.
+  MENDFEED: { rc: 4,  msg: 'FINANCE.LEDGER.CURRENT READ AT CYC-0826 -- REFRESH NOT YET COMPLETE' },
+};
+
+// Mainframe 203 (200 series) light security touch: canned dataset catalog
+// backing LISTCAT LEVEL(prefix), matching public/js/recon.js's Dataset
+// Recon Scanner, which already issues this exact command but had nothing
+// server-side to answer it. Prefixes match recon.js's own
+// _DATASET_PREFIXES default list. PROD.NIGHTLY.OUTPUT is a deliberate
+// callback to Book 201's CATLGCHK message. SECURITY.AUDIT.LOG is a
+// deliberate non-hit: an ominous-sounding qualifier that doesn't itself
+// contain a sensitive keyword, proving the scanner flags real content,
+// not just scary-looking names.
+const CATALOG = {
+  SYS1:     ['SYS1.PARMLIB', 'SYS1.PROCLIB'],
+  SYS2:     ['SYS2.LINKLIB'],
+  IBMUSER:  ['IBMUSER.PRIVATE.KEYS'],
+  ADMIN:    ['ADMIN.CONFIG.PARMS'],
+  PROD:     ['PROD.NIGHTLY.OUTPUT', 'PROD.APPL.LOADLIB'],
+  PAYROLL:  ['PAYROLL.MASTER.FILE'],
+  FINANCE:  ['FINANCE.LEDGER.CURRENT'],
+  HR:       ['HR.EMPLOYEE.SSN.FILE'],
+  SECURITY: ['SECURITY.AUDIT.LOG'],
+};
+
+// Recognizes LISTCAT LEVEL(prefix), the one real IDCAMS command the
+// Dataset Recon Scanner issues. Returns null for anything else so callers
+// can fall through to the generic COMMAND NOT FOUND response.
+function tryListcat(cmd) {
+  const m = cmd.match(/^LISTCAT\s+LEVEL\(([\w$#@]+)\)$/i);
+  if (!m) return null;
+  const prefix = m[1].toUpperCase();
+  const entries = CATALOG[prefix] || [];
+  const lines = [
+    'IDCAMS  SYSTEM SERVICES',
+    `LISTCAT LEVEL(${prefix})`,
+    ...entries,
+    entries.length
+      ? `THE NUMBER OF ENTRIES PROCESSED WAS ${entries.length}`
+      : `IDC3012I ENTRY ${prefix} NOT FOUND`,
+  ];
+  return lines.join('\n');
+}
+
+function parseJclSteps(jclText) {
+  const steps = [];
+  const re = /^\/\/(\S+)\s+EXEC\s+PGM=(\S+)/gm;
+  let m;
+  while ((m = re.exec(jclText)) !== null) {
+    const [, stepName, pgm] = m;
+    const outcome = PGM_OUTCOMES[pgm] || { rc: 0, msg: null };
+    steps.push({ name: stepName, pgm, rc: outcome.rc, msg: outcome.msg });
+  }
+  return steps;
+}
+
+function loadJclMember(file) {
+  const text = fs.readFileSync(path.join(__dirname, 'jcl/programs', file), 'utf8');
+  return { text, steps: parseJclSteps(text) };
+}
+
+// Submittable members under DEMO.JCL.CNTL. MYJOB's real source mirrors the
+// pre-existing static Edit/SDSF demo screens below (unchanged, so Book 1's
+// documented MYJOB/JOB07432 walkthrough stays exactly accurate) — this is
+// a second, independently-submittable path to the same JCL, not a
+// replacement for it. QTRRPT and BADJOB are new.
+const JCL_MEMBERS = {
+  MYJOB:    { ...loadJclMember('myjob.jcl'),    desc: 'Demo batch job (IEBGENER copy)' },
+  QTRRPT:   { ...loadJclMember('qtrrpt.jcl'),   desc: 'Quarterly report (2-step)' },
+  BADJOB:   { ...loadJclMember('badjob.jcl'),   desc: 'Return code demo (non-zero RC)' },
+  DATACHK:  { ...loadJclMember('datachk.jcl'),  desc: 'Data Integrity Night check (issues a Batch Control Number)' },
+  NIGHTRUN: { ...loadJclMember('nightrun.jcl'), desc: 'Nightly refresh (RC=04, not the job it looks like next to)' },
+  PAYVER:   { ...loadJclMember('payver.jcl'),   desc: 'Payroll verification (RC=8 -- is the data really missing?)' },
+  MENDFEED: { ...loadJclMember('mendfeed.jcl'), desc: 'Month-end feed, CYC-0826 (RC=04, timing not technical)' },
+};
+
+// Job queue is module-level/shared, same convention as the AS/400 mock's
+// SPLFILES/BCHJOBS tables — system-wide, not per-connection. Seeded with a
+// short history so SDSF has real breadth before anyone submits anything;
+// JOB07432/MYJOB deliberately is NOT in here, it stays the pre-existing
+// static screenSDSF() detail reached via ISPF option M exactly as before.
+let nextJobNum = 7433;
+const JOB_QUEUE = [
+  { jobnum: 'JOB07429', name: 'BADRUN',   user: 'APPUSR',  submittedAt: Date.now() - 3600_000,
+    steps: [{ name: 'STEP1', pgm: 'VALIDATE', rc: 0, msg: null },
+            { name: 'STEP2', pgm: 'PROCESS',  rc: 12, msg: 'RETURN CODE 0012 -- CHECK PROCESS STEP INPUT' }] },
+  { jobnum: 'JOB07430', name: 'NIGHTBAK', user: 'SYSPROG', submittedAt: Date.now() - 3600_000,
+    steps: [{ name: 'STEP1', pgm: 'IEBGENER', rc: 0, msg: 'KEPT' }] },
+  { jobnum: 'JOB07431', name: 'PAYRUN',   user: 'APPUSR',  submittedAt: Date.now() - 3600_000,
+    steps: [{ name: 'STEP1', pgm: 'SORT', rc: 0, msg: null },
+            { name: 'STEP2', pgm: 'REPORT', rc: 0, msg: 'KEPT' }] },
+];
+
+// Status is computed off elapsed time since submission rather than mutated
+// by a timer, so re-checking SDSF a few seconds after SUBMIT genuinely
+// shows the job having moved along the pipeline with no extra plumbing.
+function jobStatus(job) {
+  const elapsed = Date.now() - job.submittedAt;
+  if (elapsed < 1500) return 'QUEUED';
+  if (elapsed < 3000) return 'ACTIVE';
+  return 'OUTPUT';
+}
+
+function maxRc(steps) { return steps.reduce((m, s) => Math.max(m, s.rc), 0); }
+
+// Accepts SUBMIT/SUB/S followed by a bare member name or the real ISPF
+// 'DSN(MEMBER)' quoted form. Returns the confirmation/error string, or
+// null if the input isn't a submit-shaped command at all.
+function trySubmit(cmd, user = 'DEMO') {
+  const m = cmd.match(/^(SUBMIT|SUB|S)\s+(?:'?[\w.]+\(([\w]+)\)'?|([\w]+))$/i);
+  if (!m) return null;
+  const member = (m[2] || m[3] || '').toUpperCase();
+  const jcl = JCL_MEMBERS[member];
+  if (!jcl) return `IKJ54317I DATA SET DEMO.JCL.CNTL(${member}) NOT FOUND`;
+  const jobnum = `JOB0${nextJobNum++}`;
+  JOB_QUEUE.push({ jobnum, name: member, user, submittedAt: Date.now(), steps: jcl.steps });
+  return `${jobnum} SUBMITTED`;
+}
+
+function screenLogon() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+  const dateStr = now.toLocaleDateString('en-GB');
+  return buildScreen(true, [
+    { row:1,  col:20, fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:1,  col:21, text: `IBM z/OS  -  ${SYSNAME}  -  TSO/E LOGON` },
+    { row:3,  col:2,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:3,  col:2,  text: 'Enter LOGON parameters below:' },
+    { row:3,  col:40, text: ESM.logonHeader },
+    { row:5,  col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:5,  col:2,  text: 'Userid  ===>' },
+    { row:5,  col:14, fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:5,  col:14, text: '        ' },
+    { row:6,  col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:6,  col:2,  text: 'Password===>' },
+    { row:6,  col:14, fa: FA_UNPROTECTED_HIDDEN, color: COL_GREEN },
+    { row:6,  col:14, text: '        ' },
+    { row:7,  col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:7,  col:2,  text: 'Procedure==> TSOPROC' },
+    { row:7,  col:40, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:7,  col:40, text: 'Acct Nmbr===> DEMO01' },
+    { row:10, col:2,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:10, col:2,  text: "Enter an 'S' before each option desired below:" },
+    { row:11, col:18, text: '-Nomail         -Nonotice       -Reconnect' },
+    { row:13, col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:13, col:2,  text: 'PF1/PF13 ==> Help   PF3/PF15 ==> Logoff   PA1 ==> Attention' },
+    { row:15, col:2,  fa: FA_PROTECTED, color: COL_GREEN },
+    { row:15, col:2,  text: `${SYSNAME} - Mock LPAR Daemon v1.0  ${dateStr}  ${timeStr}` },
+  ]);
+}
+
+// Non-erasing Write that pokes stale userid/password bytes into the logon
+// screen's field coordinates with MDT forced on — simulates a controller
+// buffer that still holds a prior session's modified fields.
+function screenBufferBleed(cached) {
+  const fields = [];
+  if (cached.user) fields.push({ row:5, col:14, fa: FA_UNPROTECTED | 0x01,        color: COL_GREEN, text: cached.user.padEnd(8, ' ').slice(0, 8) });
+  if (cached.pass) fields.push({ row:6, col:14, fa: FA_UNPROTECTED_HIDDEN | 0x01, color: COL_GREEN, text: cached.pass.padEnd(8, ' ').slice(0, 8) });
+  return buildScreen(false, fields); // false = Write, not Erase/Write — buffer is not cleared
+}
+
+function screenISPF(userid = 'DEMO') {
+  const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
+  return buildScreen(true, [
+    { row:0,  col:24, fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_UNDER },
+    { row:0,  col:25, text: 'ISPF Primary Option Menu' },
+    { row:2,  col:2,  fa: FA_PROTECTED_HIGH, color: COL_WHITE },
+    { row:2,  col:2,  text: 'Option ===>' },
+    { row:2,  col:13, fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:2,  col:13, text: '    ' },
+    // Each option: yellow number, turquoise description — two SFE fields per row
+    { row:4,  col:2,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:4,  col:5,  saColor: COL_YELLOW, text: '0' },
+    { row:4,  col:8,  text: 'Settings       Terminal and user parameters' },
+    { row:5,  col:5,  saColor: COL_YELLOW, text: '1' },
+    { row:5,  col:8,  text: 'View           Display source data or listings' },
+    { row:6,  col:5,  saColor: COL_YELLOW, text: '2' },
+    { row:6,  col:8,  text: 'Edit           Create or change source data' },
+    { row:7,  col:5,  saColor: COL_YELLOW, text: '3' },
+    { row:7,  col:8,  text: 'Utilities      Perform utility functions' },
+    { row:7,  col:40, saColor: COL_PINK, text: '3.4 Dataset List' },
+    { row:8,  col:5,  saColor: COL_YELLOW, text: '4' },
+    { row:8,  col:8,  text: 'Foreground     Interactive language processing' },
+    { row:9,  col:5,  saColor: COL_YELLOW, text: '5' },
+    { row:9,  col:8,  text: 'Batch          Submit job for language processing' },
+    { row:10, col:5,  saColor: COL_YELLOW, text: '6' },
+    { row:10, col:8,  text: 'Command        Enter TSO or Workstation commands' },
+    { row:11, col:5,  saColor: COL_YELLOW, text: 'M' },
+    { row:11, col:8,  text: 'SDSF           System Display and Search Facility' },
+    { row:13, col:5,  saColor: COL_YELLOW, text: 'X' },
+    { row:13, col:8,  text: 'Exit           Terminate ISPF using log/list defaults' },
+    { row:20, col:1,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:20, col:1,  text: ` User ID . : ${userid.padEnd(8)}    Time. . .: ${timeStr}` },
+    { row:21, col:1,  text: ` System ID : ${SYSNAME.padEnd(8)}    Terminal .: 3278` },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F1=Help   F2=Split  F3=Exit   F7=Backward  F8=Forward  F12=Cancel' },
+  ]);
+}
+
+function screenISPF34(userid = 'DEMO', dsLevel = '') {
+  const level = dsLevel || userid.toUpperCase();
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'ISPF  Data Set List Utility' },
+    { row:0,  col:55, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:0,  col:55, text: 'Row 1 of 10' },
+    { row:1,  col:0,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:1,  text: 'Command ==>' },
+    { row:1,  col:12, fa: FA_UNPROTECTED, color: COL_GREEN },
+    { row:1,  col:12, text: '                                    ' },
+    { row:1,  col:49, fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:49, text: 'Scroll ===> CSR' },
+    { row:2,  col:1,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:2,  col:1,  text: 'Dsname Level. . ' + level.padEnd(8) },
+    { row:3,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:3,  col:1,  text: 'Volume serial .        Optionally enter a volume serial' },
+    { row:4,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_YELLOW },
+    { row:4,  col:1,  text: 'Name                             Tracks  XT Used  XT Dsorg Recfm Lrecl BlkSz' },
+    { row:5,  col:0,  fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:5,  col:0,  text: ' ' },
+    { row:5,  col:2,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:5,  col:2,  text: level + '.JCL.CNTL                       15   1   15   1 PO    FB       80 27920' },
+    { row:6,  col:1,  text: ' ' + level + '.REXX.EXEC                        5   1    5   1 PO    VB       80  6160' },
+    { row:7,  col:1,  text: ' ' + level + '.DATA.INPUT                      20   1   18   1 PS    FB       80 27920' },
+    { row:8,  col:1,  text: ' ' + level + '.DATA.OUTPUT                     20   1    0   0 PS    FB       80 27920' },
+    { row:9,  col:1,  text: ' ' + level + '.LOAD                            30   1   22   1 PO    U         0 32760' },
+    { row:10, col:1,  text: ' ' + level + '.PROCLIB                         10   1    8   1 PO    FB       80 27920' },
+    { row:11, col:1,  text: ' ' + level + '.CLIST                            5   1    4   1 PO    VB      255  6160' },
+    { row:12, col:1,  text: ' ' + level + '.PANELS                           5   1    5   1 PO    FB       80  6160' },
+    { row:13, col:1,  text: ' ' + level + '.MSGS                             5   1    5   1 PO    FB       80  6160' },
+    { row:14, col:1,  text: ' ' + level + '.WORK.DATA                       10   1    3   1 PS    FB       80 27920' },
+    { row:15, col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE },
+    { row:15, col:1,  text: '**END**' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F1=Help  F2=Split  F3=Exit  F5=Reset  F7=Up  F8=Down  F10=Left  F11=Right' },
+  ]);
+}
+
+// Member list for DEMO.JCL.CNTL, reached by typing S on that dataset's row
+// in ISPF 3.4. Only this one dataset gets real member content, the same
+// "don't fake depth you don't have" restraint the AS/400 mock applies to
+// which libraries got real PDM content. Selection is a single typed
+// "S membername" on the Command line rather than a per-row Opt column —
+// deriving which row a per-row field belongs to would mean decoding this
+// mock's own simplified cursor-address encoding against whatever a real
+// client actually sends back, not something to guess at.
+function screenJclMembers(msg) {
+  const names = Object.keys(JCL_MEMBERS);
+  const fields = [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'Edit Entry Panel -- DEMO.JCL.CNTL' },
+    { row:2,  col:0,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:2,  col:1,  text: 'Command ===>' },
+    { row:2,  col:13, fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:2,  col:13, text: '                                    ' },
+    { row:3,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:3,  col:1,  text: 'Type S membername to submit, e.g. S QTRRPT' },
+    { row:5,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_YELLOW },
+    { row:5,  col:1,  text: 'Member    Description' },
+  ];
+  names.forEach((name, idx) => {
+    const row = 7 + idx;
+    fields.push({ row, col: 0, fa: FA_PROTECTED, color: COL_TURQ });
+    fields.push({ row, col: 1, text: `${name.padEnd(9)} ${JCL_MEMBERS[name].desc}` });
+  });
+  if (msg) {
+    fields.push({ row: 20, col: 0, fa: FA_PROTECTED, color: COL_GREEN });
+    fields.push({ row: 20, col: 1, text: msg });
+  }
+  fields.push(
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F3=Exit  F12=Cancel' },
+  );
+  return buildScreen(true, fields);
+}
+
+function screenEdit() {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'Edit - DEMO.JCL.CNTL(MYJOB) - 01.00          Columns 00001 00072' },
+    { row:1,  col:1,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:1,  text: 'Command ===>' },
+    { row:1,  col:13, fa: FA_UNPROTECTED, color: COL_GREEN },
+    { row:1,  col:13, text: '                                    ' },
+    { row:1,  col:50, fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:50, text: 'Scroll ===> CSR' },
+    // Line numbers in green, JCL text in turquoise via SA
+    { row:2,  col:0,  fa: FA_PROTECTED, color: COL_GREEN },
+    { row:2,  col:0,  saColor: COL_GREEN,  text: '000001' },
+    { row:2,  col:7,  saColor: COL_TURQ,   text: '//MYJOB    JOB (DEMO),' },
+    { row:3,  col:0,  saColor: COL_GREEN,  text: '000002' },
+    { row:3,  col:7,  saColor: COL_TURQ,   text: "//             'DEMO BATCH JOB'," },
+    { row:4,  col:0,  saColor: COL_GREEN,  text: '000003' },
+    { row:4,  col:7,  saColor: COL_TURQ,   text: '//             CLASS=A,MSGCLASS=X,' },
+    { row:5,  col:0,  saColor: COL_GREEN,  text: '000004' },
+    { row:5,  col:7,  saColor: COL_TURQ,   text: '//             NOTIFY=&SYSUID' },
+    { row:6,  col:0,  saColor: COL_GREEN,  text: '000005' },
+    { row:6,  col:7,  saColor: COL_YELLOW, text: '//*' },
+    { row:7,  col:0,  saColor: COL_GREEN,  text: '000006' },
+    { row:7,  col:7,  saColor: COL_TURQ,   text: '//COPY     EXEC PGM=IEBGENER' },
+    { row:8,  col:0,  saColor: COL_GREEN,  text: '000007' },
+    { row:8,  col:7,  saColor: COL_TURQ,   text: '//SYSPRINT DD SYSOUT=*' },
+    { row:9,  col:0,  saColor: COL_GREEN,  text: '000008' },
+    { row:9,  col:7,  saColor: COL_TURQ,   text: '//SYSUT1   DD DSN=PROD.INPUT.DATA,DISP=SHR' },
+    { row:10, col:0,  saColor: COL_GREEN,  text: '000009' },
+    { row:10, col:7,  saColor: COL_TURQ,   text: '//SYSUT2   DD DSN=WORK.OUTPUT.DATA,' },
+    { row:11, col:0,  saColor: COL_GREEN,  text: '000010' },
+    { row:11, col:7,  saColor: COL_TURQ,   text: '//             DISP=(NEW,CATLG,DELETE),' },
+    { row:12, col:0,  saColor: COL_GREEN,  text: '000011' },
+    { row:12, col:7,  saColor: COL_TURQ,   text: '//             SPACE=(CYL,(5,2),RLSE),' },
+    { row:13, col:0,  saColor: COL_GREEN,  text: '000012' },
+    { row:13, col:7,  saColor: COL_TURQ,   text: '//             DCB=(RECFM=FB,LRECL=80,BLKSIZE=27920)' },
+    { row:14, col:0,  saColor: COL_GREEN,  text: '000013' },
+    { row:14, col:7,  saColor: COL_TURQ,   text: '//SYSIN    DD DUMMY' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F2=Split  F3=Exit  F5=Rfind  F6=Rchange  F7=Up  F8=Down  F14=Save' },
+  ]);
+}
+
+function screenSDSF() {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'SDSF OUTPUT DISPLAY MYJOB   JOB07432  DSID   2 LINE 0    COLUMNS 02-81' },
+    { row:1,  col:1,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:1,  text: 'COMMAND INPUT ===>' },
+    { row:1,  col:18, fa: FA_UNPROTECTED, color: COL_GREEN },
+    { row:1,  col:18, text: '                              ' },
+    { row:1,  col:49, fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:49, text: 'SCROLL ===> PAGE' },
+    { row:3,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:3,  col:9,  text: '1 //MYJOB    JOB (DEMO),CLASS=A,MSGCLASS=X' },
+    { row:4,  col:9,  text: '2 //*' },
+    { row:5,  col:9,  text: '3 //STEP1    EXEC PGM=IEFBR14' },
+    { row:8,  col:1,  saColor: COL_GREEN, text: 'IEF142I MYJOB STEP1 - STEP WAS EXECUTED - COND CODE 0000' },
+    { row:9,  col:1,  saColor: COL_GREEN, text: 'IEF285I   PROD.DATA.FILE                             KEPT' },
+    { row:18, col:1,  fa: FA_PROTECTED_HIGH, color: COL_YELLOW },
+    { row:18, col:1,  text: '*** END OF DATA ***' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F1=Help  F3=End  F5=RFind  F7=Up  F8=Down  F10=Left  F11=Right' },
+  ]);
+}
+
+// Job list, reached by typing ST or DA at the existing SDSF screen's
+// COMMAND INPUT line (real SDSF primary commands for "status"/"display
+// active"). Includes the pre-existing static JOB07432/MYJOB alongside the
+// real queue so there's one list covering everything, but selecting
+// JOB07432 routes to the original unchanged screenSDSF() detail. Selection
+// is "S jobname" typed on the command line, same reasoning as
+// screenJclMembers on why this isn't a per-row Opt column.
+function screenSdsfList(msg) {
+  const rows = [
+    { jobnum: 'JOB07432', name: 'MYJOB', user: 'DEMO', status: 'OUTPUT', rc: 0 },
+    ...JOB_QUEUE.map(j => ({ jobnum: j.jobnum, name: j.name, user: j.user, status: jobStatus(j), rc: maxRc(j.steps) })),
+  ];
+  const fields = [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: `SDSF STATUS DISPLAY ALL CLASSES                          LINE 0 OF ${rows.length}` },
+    { row:1,  col:1,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:1,  text: 'COMMAND INPUT ===>' },
+    { row:1,  col:20, fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:1,  col:20, text: '                              ' },
+    { row:1,  col:49, fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:49, text: 'SCROLL ===> PAGE' },
+    { row:2,  col:1,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:2,  col:1,  text: 'Type S jobname to view, e.g. S MYJOB' },
+    { row:3,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_YELLOW },
+    { row:3,  col:1,  text: 'JOBNAME  JobID     Owner    Status   C RC' },
+  ];
+  rows.forEach((r, idx) => {
+    const row = 5 + idx;
+    const rcText = r.status === 'OUTPUT' ? String(r.rc).padStart(4, '0') : '----';
+    fields.push({ row, col: 1, fa: FA_PROTECTED, color: r.rc > 0 && r.status === 'OUTPUT' ? COL_RED : COL_TURQ });
+    fields.push({ row, col: 1, text: `${r.name.padEnd(9)}${r.jobnum.padEnd(10)}${r.user.padEnd(9)}${r.status.padEnd(9)}${rcText}` });
+  });
+  if (msg) {
+    fields.push({ row: 18, col: 1, fa: FA_PROTECTED, color: COL_RED });
+    fields.push({ row: 18, col: 1, text: msg });
+  } else {
+    fields.push(
+      { row:18, col:1, fa: FA_PROTECTED_HIGH, color: COL_YELLOW },
+      { row:18, col:1, text: '*** END OF DATA ***' },
+    );
+  }
+  fields.push(
+    { row:23, col:0, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0, text: 'F1=Help  F3=Return  F5=RFind  F7=Up  F8=Down' },
+  );
+  return buildScreen(true, fields);
+}
+
+// Generic detail screen for anything in JOB_QUEUE (not the static
+// JOB07432/MYJOB, which keeps using the original screenSDSF() below
+// unchanged). Built from the job's own real steps, parsed off its JCL
+// source, not hardcoded per job.
+function screenSdsfDetail(job) {
+  const status = jobStatus(job);
+  const fields = [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: `SDSF OUTPUT DISPLAY ${job.name.padEnd(8)} ${job.jobnum}  DSID   2 LINE 0    COLUMNS 02-81` },
+    { row:1,  col:1,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:1,  text: 'COMMAND INPUT ===>' },
+    { row:1,  col:20, fa: FA_UNPROTECTED, color: COL_GREEN },
+    { row:1,  col:20, text: '                              ' },
+    { row:1,  col:49, fa: FA_PROTECTED, color: COL_WHITE },
+    { row:1,  col:49, text: 'SCROLL ===> PAGE' },
+    { row:3,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:3,  col:9,  text: `1 //${job.name}   JOB (DEMO),CLASS=A,MSGCLASS=X` },
+    { row:4,  col:9,  text: '2 //*' },
+  ];
+  let row = 6;
+  if (status === 'QUEUED') {
+    fields.push({ row, col: 1, saColor: COL_YELLOW, text: `$HASP373 ${job.name.padEnd(8)} STARTED -- JOB IS ON THE QUEUE, NOT YET RUNNING` });
+  } else if (status === 'ACTIVE') {
+    fields.push({ row, col: 1, saColor: COL_YELLOW, text: `$HASP373 ${job.name.padEnd(8)} STARTED -- INIT 1 -- CLASS A` });
+  } else {
+    job.steps.forEach(s => {
+      fields.push({ row, col: 1, saColor: s.rc > 0 ? COL_RED : COL_GREEN,
+        text: `IEF142I ${job.name} ${s.name} - STEP WAS EXECUTED - COND CODE ${String(s.rc).padStart(4, '0')}` });
+      row++;
+      if (s.msg) {
+        // Most canned messages are plain text meant to sit under the
+        // generic IEF285I "step disposition" wrapper (e.g. "KEPT",
+        // "PROD.NIGHTLY.OUTPUT ALREADY CATALOGED..."). A few (PAYVER's
+        // IEF212I) are real, complete messages with their own message ID
+        // and shouldn't get double-wrapped with a second one.
+        const hasOwnMsgId = /^[A-Z]{2,4}\d{3,4}[A-Z]?\s/.test(s.msg);
+        fields.push({ row, col: 1, saColor: COL_GREEN, text: hasOwnMsgId ? s.msg : `IEF285I   ${s.msg}` });
+        row++;
+      }
+    });
+    row++;
+    const rc = maxRc(job.steps);
+    fields.push({ row, col: 1, fa: FA_PROTECTED_HIGH, color: rc > 0 ? COL_RED : COL_GREEN,
+      text: `${job.name} ${job.jobnum} ENDED -- MAXIMUM CONDITION CODE ${String(rc).padStart(4, '0')}` });
+  }
+  fields.push(
+    { row:18, col:1,  fa: FA_PROTECTED_HIGH, color: COL_YELLOW },
+    { row:18, col:1,  text: '*** END OF DATA ***' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F1=Help  F3=Return  F5=RFind  F7=Up  F8=Down  F10=Left  F11=Right' },
+  );
+  return buildScreen(true, fields);
+}
+
+function screenError(cmd) {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_RED, highlight: HL_REVERSE },
+    { row:0,  col:1,  text: 'ISPF  ***  ERROR  ***' },
+    { row:2,  col:2,  fa: FA_PROTECTED, color: COL_RED },
+    { row:2,  col:2,  text: `Unknown option: '${(cmd || '').trim()}'` },
+    { row:4,  col:2,  saColor: COL_TURQ, text: 'Valid primary options: 0 1 2 3 4 5 6 M X' },
+    { row:5,  col:2,  saColor: COL_TURQ, text: 'Press PF3 to return to the Primary Option Menu.' },
+    { row:7,  col:2,  fa: FA_PROTECTED_HIGH, color: COL_RED, highlight: HL_INTENS },
+    { row:7,  col:2,  text: 'IKJ56500I COMMAND NOT FOUND' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'F3=Return  F12=Cancel' },
+  ]);
+}
+
+function screenReady(userid = 'DEMO', lastMsg = '') {
+  const fields = [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: `${SYSNAME} TSO/E - Ready` },
+    { row:0,  col:40, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:0,  col:40, text: `User: ${userid.padEnd(8)}` },
+  ];
+  if (lastMsg) {
+    fields.push({ row:2, col:0, fa: FA_PROTECTED, color: COL_GREEN });
+    fields.push({ row:2, col:1, text: lastMsg });
+  }
+  fields.push(
+    { row:4,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:4,  col:1,  text: 'Type a TSO command or ISPF to enter ISPF.' },
+    { row:4,  col:50, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:4,  col:50, text: 'PF3=Logoff' },
+    { row:6,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_GREEN, highlight: HL_INTENS },
+    { row:6,  col:1,  text: 'READY' },
+    { row:7,  col:0,  fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:7,  col:1,  text: '                                                ' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: `${SYSNAME}  TSO READY  PF3=Logoff` },
+  );
+  return buildScreen(true, fields);
+}
+
+function screenListapf() {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'LISTAPF Output' },
+    { row:1,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:1,  col:1,  text: 'APF-Authorized Libraries:' },
+    { row:3,  col:1,  saColor: COL_YELLOW, text: 'Volume  Dataset Name' },
+    { row:4,  col:1,  saColor: COL_YELLOW, text: '------  --------------------------------------------------------' },
+    { row:5,  col:1,  text: 'SYSRES  SYS1.LINKLIB' },
+    { row:6,  col:1,  text: 'SYSRES  SYS1.LPALIB' },
+    { row:7,  col:1,  text: 'SYSRES  SYS1.MIGLIB' },
+    { row:8,  col:1,  text: 'SYSRES  SYS1.SVCLIB' },
+    { row:9,  col:1,  text: 'PROD01  CEE.SCEERUN' },
+    { row:10, col:1,  text: 'PROD01  ISP.SISPLOAD' },
+    { row:11, col:1,  text: 'PROD01  SYS1.CSSLIB' },
+    // Writable APF entry — dataset name normal, warning text blinks red
+    { row:12, col:1,  text: 'WORK01  USER.LOADLIB                    ' },
+    { row:12, col:42, saColor: COL_RED, saHighlight: HL_BLINK, text: '*** WRITABLE ***' },
+    { row:14, col:0,  fa: FA_PROTECTED_HIGH, color: COL_RED, highlight: HL_INTENS },
+    { row:14, col:1,  text: 'IKJ56250I 8 entries found. USER.LOADLIB on WORK01 may be writable.' },
+    { row:16, col:0,  fa: FA_PROTECTED, color: COL_GREEN, highlight: HL_INTENS },
+    { row:16, col:1,  text: 'READY' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'Press ENTER or PF3 to return to READY prompt.' },
+  ]);
+}
+
+function screenLista(userid = 'DEMO') {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'LISTA Output - Allocated Datasets' },
+    { row:2,  col:0,  fa: FA_PROTECTED, color: COL_TURQ },
+    { row:2,  col:1,  saColor: COL_YELLOW, text: `DDNAME   DSNAME                           DISP` },
+    { row:3,  col:1,  saColor: COL_YELLOW, text: '-------- -------------------------------- ----' },
+    { row:4,  col:1,  text: `SYSPROC  ${userid.toUpperCase()}.CLIST                    SHR` },
+    { row:5,  col:1,  text: `ISPPLIB  ISP.SISPPENU                     SHR` },
+    { row:6,  col:1,  text: `ISPSLIB  ISP.SISPSLIB                     SHR` },
+    { row:7,  col:1,  text: `ISPTLIB  ISP.SISPTENU                     SHR` },
+    { row:8,  col:1,  text: `ISPLLIB  ISP.SISPLOAD                     SHR` },
+    { row:9,  col:1,  text: `SYSEXEC  ${userid.toUpperCase()}.REXX.EXEC               SHR` },
+    { row:10, col:1,  text: `SYSTSIN  NULLFILE                         OLD` },
+    { row:11, col:1,  text: `SYSTSPRT SYSOUT=*                         OLD` },
+    { row:13, col:0,  fa: FA_PROTECTED_HIGH, color: COL_GREEN },
+    { row:13, col:1,  text: 'IKJ56250I 8 DD allocations listed.' },
+    { row:15, col:0,  fa: FA_PROTECTED, color: COL_GREEN, highlight: HL_INTENS },
+    { row:15, col:1,  text: 'READY' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'Press ENTER or PF3 to return to READY prompt.' },
+  ]);
+}
+
+function screenLogonError(userid, attempts, maxAttempts = 3) {
+  const remaining = maxAttempts - attempts;
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: `IBM z/OS  -  ${SYSNAME}  -  TSO/E LOGON` },
+    { row:2,  col:2,  fa: FA_PROTECTED_HIGH, color: COL_RED, highlight: HL_INTENS },
+    { row:2,  col:2,  text: ESM.badPassword },
+    { row:3,  col:2,  fa: FA_PROTECTED, color: COL_RED },
+    { row:3,  col:2,  text: ESM.remaining(remaining) },
+    { row:5,  col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:5,  col:2,  text: 'Userid  ===>' },
+    { row:5,  col:14, fa: FA_UNPROTECTED, color: COL_GREEN },
+    { row:5,  col:15, text: userid.padEnd(8) },
+    { row:6,  col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:6,  col:2,  text: 'Password===>' },
+    { row:6,  col:14, fa: FA_UNPROTECTED_NUM, color: COL_GREEN, ic: true },
+    { row:6,  col:14, text: '        ' },
+    { row:13, col:2,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:13, col:2,  text: 'PF1/PF13 ==> Help   PF3/PF15 ==> Logoff   PA1 ==> Attention' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_RED },
+    { row:23, col:0,  text: 'Re-enter password and press ENTER.' },
+  ]);
+}
+
+function screenEsmLockout(userid) {
+  const [l1, l2, l3] = ESM.lockout(userid.toUpperCase().padEnd(8));
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: `IBM z/OS  -  ${SYSNAME}  -  TSO/E LOGON` },
+    { row:3,  col:2,  fa: FA_PROTECTED_HIGH, color: COL_RED, highlight: HL_REVERSE },
+    { row:3,  col:2,  text: l1 },
+    { row:4,  col:2,  fa: FA_PROTECTED, color: COL_RED },
+    { row:4,  col:2,  text: l2 },
+    { row:5,  col:2,  saColor: COL_RED, text: l3 },
+    { row:8,  col:2,  fa: FA_PROTECTED_HIGH, color: COL_RED, highlight: HL_BLINK },
+    { row:8,  col:2,  text: '*** LOGON REJECTED - ACCOUNT LOCKED ***' },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'PF3=Exit' },
+  ]);
+}
+// Back-compat alias — the old name is used elsewhere in this file.
+const screenRacfLockout = screenEsmLockout;
+
+// ── GDDM graphics demo ──────────────────────────────────────────────
+// Alphanumeric frame only in rows 0/23 — the graphics area (rows 1-22)
+// is left blank so the Object Data WSF's chart (drawn client-side as a
+// canvas overlay) doesn't compete with DOM text in the same screen
+// region, matching how a real GDDM operator window is a distinct area
+// from the surrounding alphanumeric chrome.
+function screenGDDM(userid) {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'GDDM GRAPHICS DEMO' },
+    { row:0,  col:40, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:0,  col:40, text: `User: ${userid.padEnd(8)}` },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'PF3=Exit to TSO READY' },
+  ]);
+}
+
+// GDF (Graphics Data Format) order encoders — GDDM Base Application
+// Programming Reference ch.10. Byte layouts match tn3270/gddm.js's
+// decoder exactly (both were validated against the manual's own worked
+// examples, e.g. "C1 08 0002 0003 0004 0006" = Line (2,3)->(4,6)).
+function gdfHalfwords(...nums) {
+  const buf = Buffer.alloc(nums.length * 2);
+  nums.forEach((n, i) => buf.writeInt16BE(n, i * 2));
+  return buf;
+}
+function gdfOrder(code, operand) {
+  return Buffer.concat([Buffer.from([code, operand.length]), operand]);
+}
+function gdfShortOrder(code, byte) {
+  return Buffer.from([code, byte]);
+}
+
+// A solid 8x8 raster (Image order), reused anywhere a small filled
+// square icon is needed — see tn3270/gddm.js's Image decoding.
+const SOLID_8 = Array(8).fill(0xFF);
+function gdfSolidSquare(parts, x0, y0, size, color) {
+  parts.push(gdfShortOrder(0x0A, color));
+  parts.push(gdfOrder(0xD1, gdfHalfwords(x0, y0, 0, 8, 8, size, size)));
+  for (const row of SOLID_8) parts.push(gdfOrder(0x92, Buffer.from([row])));
+  parts.push(gdfOrder(0x93, Buffer.from([0x00, 0x00])));
+}
+
+// Flat [x,y,x,y,...] coordinates for a closed N-pointed star outline
+// (alternating outer/inner radius vertices) — GDDM has no star order,
+// so this is hand-drawn as a closed Line polygon like the triangle
+// markers below.
+function starPoints(cx, cy, outerR, innerR, points = 5) {
+  const coords = [];
+  const step = Math.PI / points;
+  for (let i = 0; i <= points * 2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = -Math.PI / 2 + i * step;
+    coords.push(Math.round(cx + r * Math.cos(angle)), Math.round(cy + r * Math.sin(angle)));
+  }
+  return coords;
+}
+
+// Flat [x,y,x,y,...] coordinates for a closed upward-pointing triangle
+// outline, centered at (cx,cy) — a Line order polygon, same trick as
+// starPoints.
+function trianglePoints(cx, cy, size) {
+  return [cx, cy + size, cx - size, cy - size, cx + size, cy - size, cx, cy + size];
+}
+
+// Builds a full 3270 Write Structured Field (CMD_WSF + Object Data SF)
+// carrying a hand-authored GDF bar chart — "Q4 Regional Sales", four
+// colored bars with labels, an axis, and a trend-marker line. This is
+// the kind of output GDDM-PGF's Interactive Chart Utility historically
+// produced from a TSO/CMS session.
+function buildGddmObjectDataWsf() {
+  // Heights and label/title y-positions are kept below y=620 (out of the
+  // declared yU=700 picture boundary) on purpose — the canvas overlay
+  // spans the full terminal, and the alphanumeric frame's header row
+  // (row 0, "GDDM GRAPHICS DEMO ... User: ...") lives in roughly the top
+  // 8% of that same space (~y>642). Anything drawn above ~y=620 visibly
+  // collides with that DOM text (confirmed via screenshot — title and a
+  // bar's value label were overlapping "User: IBMUSER").
+  const bars = [
+    { name: 'NORTH', x: 100, h: 380, color: 0x01 }, // blue
+    { name: 'SOUTH', x: 350, h: 250, color: 0x02 }, // red
+    { name: 'EAST',  x: 600, h: 480, color: 0x04 }, // green
+    { name: 'WEST',  x: 850, h: 170, color: 0x06 }, // yellow
+  ];
+  const baseY = 100, barWidth = 150;
+  const COL_NEUTRAL_WHITE = 0x07, COL_GDF_YELLOW = 0x06;
+
+  const parts = [];
+  // Picture boundary (Comment order, coordType=2 → 2-byte integers)
+  parts.push(gdfOrder(0x01, Buffer.concat([gdfHalfwords(2), gdfHalfwords(0, 1000, 0, 700)])));
+
+  // Title
+  parts.push(gdfShortOrder(0x0A, COL_NEUTRAL_WHITE));
+  parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(280, 610), toEbcdic('Q4 REGIONAL SALES')])));
+
+  // Axes
+  parts.push(gdfOrder(0xC1, gdfHalfwords(50, baseY, 950, baseY))); // baseline
+  parts.push(gdfOrder(0xC1, gdfHalfwords(50, baseY, 50, 600)));    // left axis
+
+  const markerPoints = [];
+  for (const bar of bars) {
+    const top = baseY + bar.h;
+    parts.push(gdfShortOrder(0x0A, bar.color));
+    parts.push(gdfOrder(0xC1, gdfHalfwords(
+      bar.x, baseY,
+      bar.x, top,
+      bar.x + barWidth, top,
+      bar.x + barWidth, baseY,
+      bar.x, baseY,
+    )));
+    parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(bar.x + 20, baseY - 30), toEbcdic(bar.name)])));
+    parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(bar.x + 20, top + 15), toEbcdic(String(bar.h))])));
+    markerPoints.push(bar.x + barWidth / 2, top);
+  }
+
+  // Trend line across bar tops
+  parts.push(gdfShortOrder(0x0A, COL_GDF_YELLOW));
+  parts.push(gdfOrder(0xC2, gdfHalfwords(...markerPoints)));
+
+  // Decorative trend curve (Arc order, X'C6') — a gentle rise from the
+  // NORTH bar top through a point above the midpoint to the EAST bar
+  // top. Default arc parameters (identity — a true circle), since any
+  // 3 non-collinear points already lie on some circle.
+  parts.push(gdfShortOrder(0x0A, COL_NEUTRAL_WHITE));
+  parts.push(gdfOrder(0xC6, gdfHalfwords(175, 480, 425, 570, 675, 580)));
+
+  // Ellipse "badge" around the WEST bar's value label (Set Arc
+  // Parameters X'22' + Full Arc X'C7') — exercises the tilted-ellipse
+  // shape order, not just circles.
+  parts.push(gdfOrder(0x22, gdfHalfwords(60, 20, 0, 0))); // wide, flat ellipse (P=60,Q=20)
+  parts.push(gdfShortOrder(0x0A, COL_GDF_YELLOW));
+  parts.push(gdfOrder(0xC7, Buffer.concat([gdfHalfwords(895, 285), Buffer.from([0x01, 0x00])]))); // center, M=1.0
+
+  // Decorative underline "ribbon" beneath the whole chart (Fillet
+  // order, X'C5') — 5 points, so it exercises the multi-piece
+  // polyfillet smoothing (not just the 2/3-point special cases).
+  const COL_GDF_TURQ = 0x05;
+  parts.push(gdfShortOrder(0x0A, COL_GDF_TURQ));
+  parts.push(gdfOrder(0xC5, gdfHalfwords(60, 40, 300, 70, 550, 30, 800, 65, 950, 45)));
+
+  // "TOTAL" readout using a non-default character set (Character Set
+  // order X'38', LCID X'41') — the label itself stays in the default
+  // font, but the digits switch to the client's own vector symbol set
+  // (public/js/gddm.js's VECTOR_SYMBOL_SETS[0x41]), a 7-segment-style
+  // digit font, so it renders visibly differently from every other
+  // label on this screen.
+  const total = bars.reduce((sum, bar) => sum + bar.h, 0);
+  parts.push(gdfShortOrder(0x0A, COL_NEUTRAL_WHITE));
+  parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(60, 605), toEbcdic('TOTAL ')])));
+  parts.push(gdfShortOrder(0x38, 0x41)); // Set Character Set: user-defined LCID 0x41
+  parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(140, 605), toEbcdic(String(total))])));
+
+  // Color-mix demo — four groups of two overlapping filled squares
+  // (solid 8x8 Image raster, scaled up), each group setting the Color
+  // Mix order (X'0C') to a different mode before drawing the second
+  // (red) square over the first (blue) one, so the overlap band
+  // visibly shows how that mode resolves a new 1-bit over an existing
+  // 1-bit (AS/400 GDDM Reference, Appendix B "Color Mix Order" /
+  // "GSMIX"): OR blends to a lighter combined color, Overpaint lets red
+  // win, Underpaint lets the existing blue win, Exclusive OR cancels
+  // the overlap to background. No text labels — the strip between the
+  // x-axis (y=100) and the row-23 footer text (bottom ~2 rows, same
+  // collision the header text forces at the top of the boundary) is
+  // too thin to fit a label under each square without one edge or the
+  // other clipping, so the four results are left to speak for
+  // themselves, same as the arc/fillet demos elsewhere on this chart.
+  const COL_GDF_BLUE = 0x01, COL_GDF_RED = 0x02;
+  const drawMixSquare = (x0, y0, color) => gdfSolidSquare(parts, x0, y0, 50, color);
+  const MIX_MODES = [0x01, 0x02, 0x03, 0x04]; // OR, Overpaint, Underpaint, Exclusive OR
+  MIX_MODES.forEach((mode, i) => {
+    const gx = 60 + i * 230, gy = 35;
+    parts.push(gdfShortOrder(0x0C, 0x02)); // Overpaint — lay down the baseline square
+    drawMixSquare(gx, gy, COL_GDF_BLUE);
+    parts.push(gdfShortOrder(0x0C, mode)); // mode under test for the overlapping square
+    drawMixSquare(gx + 25, gy, COL_GDF_RED);
+  });
+  parts.push(gdfShortOrder(0x0C, 0x02)); // back to Overpaint for everything that follows
+
+  // "Growth" icon — an 8x8 monochrome bitmap (Begin Image X'D1' + 8x
+  // Image Data X'92' + End Image X'93'), an up-arrow, scaled up to
+  // 50x50 world units in the top-right corner. FORMAT must be 0
+  // (1 bit per display point); each row is one Image Data order.
+  const ARROW_ROWS = [0x18, 0x3C, 0x7E, 0xFF, 0x18, 0x18, 0x18, 0x18];
+  parts.push(gdfShortOrder(0x0A, COL_GDF_YELLOW));
+  parts.push(gdfOrder(0xD1, Buffer.concat([
+    gdfHalfwords(940, 550, 0, 8, 8, 50, 50), // x0,y0,FORMAT,WIDTH,DEPTH,IMAGEWIDTH,IMAGEDEPTH
+  ])));
+  for (const row of ARROW_ROWS) parts.push(gdfOrder(0x92, Buffer.from([row])));
+  parts.push(gdfOrder(0x93, Buffer.from([0x00, 0x00])));
+
+  const gdfData = Buffer.concat(parts);
+  const pid = 0x00, flags = 0x03, objtyp = 0x00; // first&last/immediate, Graphics
+  const sfBody = Buffer.concat([Buffer.from([pid, flags, objtyp]), gdfData]);
+  const sfid = Buffer.from([0x0F, 0x0F]); // Object Data (GA23-0059 ch.5)
+  const sfLen = 2 + sfid.length + sfBody.length; // length field counts itself
+  const lenBuf = Buffer.alloc(2); lenBuf.writeUInt16BE(sfLen, 0);
+  return Buffer.concat([Buffer.from([CMD_WSF]), lenBuf, sfid, sfBody]);
+}
+
+// ── "USA" easter egg — a WarGames/WOPR nod ──────────────────────────
+// Same alphanumeric-frame-only pattern as screenGDDM: the graphics
+// area (rows 1-22) stays blank so the canvas overlay owns that space.
+function screenUSA(userid) {
+  return buildScreen(true, [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'GLOBAL THERMONUCLEAR WAR' },
+    { row:0,  col:40, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:0,  col:40, text: `User: ${userid.padEnd(8)}` },
+    { row:23, col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0,  text: 'PF3=Exit to TSO READY' },
+  ]);
+}
+
+// A stylized continental-US outline (Line order, X'C1') with the key
+// landmarks that actually make it read as the US at a glance — Florida
+// peninsula, Texas/Gulf coast, Great Lakes notch, Maine's northeast
+// bulge — NORAD-style sector dividers and zone numbers, a "NORAD"/
+// "GRAND FORKS" callout, scattered radar-site triangles and
+// missile-silo clusters, and incoming (Line order) trajectory streaks
+// raining down from above the picture boundary — the classic WOPR
+// "Global Thermonuclear War" display. Hand-authored in a 1000x600
+// world-coordinate box; recognizable rather than cartographically or
+// organizationally precise (the real NORAD/SAC sector map isn't
+// public domain, and isn't the point — this is a nod, not a
+// reproduction).
+function buildUsaObjectDataWsf() {
+  const COL_WHITE_GDF = 0x07, COL_RED_GDF = 0x02, COL_YELLOW_GDF = 0x06, COL_TURQ_GDF = 0x05;
+
+  // Clockwise from Seattle, anchored to real city positions on a
+  // normalized 0-100 grid (Seattle 5,92 / San Diego 8,12 / Houston
+  // 48,16 / Miami 84,6 / Augusta ME 96,94), scaled x10/y6 onto this
+  // function's 1000x600 world box — the canvas stretches whatever box
+  // is declared to fill the screen regardless of true aspect ratio, so
+  // there's no need to preserve real lat/long proportions, just the
+  // relative positions. Everything between those five anchors is
+  // interpolated the same way, not measured, and kept to gentle single
+  // bends (Big Bend's dip, Florida's peninsula, one Great Lakes notch,
+  // Maine's bulge) rather than alternating in/out — a first pass tried
+  // more East Coast detail with x swinging back and forth between
+  // consecutive points and it rendered as a jagged sawtooth instead of
+  // a coastline, because a coordinate list needs each edge to
+  // generally advance rather than double back to read as smooth.
+  const outline = [
+    50, 552,   30, 360,   80, 72,    300, 48,   400, 40,   480, 60,
+    600, 54,   680, 60,   760, 30,   840, 15,    800, 180,  860, 252,
+    820, 312,  880, 372,  900, 468,  960, 564,   840, 540,  680, 456,
+    500, 528,  460, 576,  200, 540,  50, 552,
+  ];
+
+  // Sector dividers splitting the outline into rough NORAD-style zones
+  // (7 numbered regions, west-to-east across a north band, a large
+  // central sector, and an east-west split across a south band).
+  // Every endpoint below is verified inside the outline polygon
+  // (point-in-polygon check) — two originally sat a few units outside
+  // it (26|25's and 20|21's starting points), a stray-endpoint bug
+  // caught while point-in-polygon-testing a since-discarded coastline
+  // experiment against the same technique.
+  const dividers = [
+    [260, 540,  280, 320],  // 26 | 25
+    [470, 555,  440, 320],  // 25 | 24
+    [760, 440,  660, 340],  // 24 | 22
+    [280, 320,  330, 190],  // north band | central (27), west edge
+    [660, 340,  670, 220],  // north band | central (27), east edge
+    [330, 190,  360, 70],   // central (27) | south band, west edge
+    [670, 220,  660, 80],   // central (27) | south band, east edge
+    [520, 65,   550, 190],  // 20 | 21
+  ];
+
+  // Zone numbers, positioned inside each divider-bounded region.
+  const zoneNumbers = [
+    ['26', 110, 490], ['25', 300, 480], ['24', 520, 480], ['22', 760, 470],
+    ['27', 460, 220], ['20', 400, 90], ['21', 700, 110],
+  ];
+
+  const NORAD = [540, 300];
+  const GRAND_FORKS = [430, 510];
+
+  // Radar-site markers (closed triangle outlines) clustered mainly
+  // around the 24/25/27 sectors, echoing the reference display's
+  // density there.
+  const triangles = [
+    [160, 420], [330, 440], [400, 390], [470, 440], [540, 400],
+    [600, 440], [660, 420], [460, 250], [560, 230], [400, 310], [640, 290],
+  ];
+
+  // Missile-silo icon clusters (small grids of filled squares, Image
+  // order) near Grand Forks, NORAD, and one western sector.
+  const siloClusters = [
+    { x: 450, y: 460, cols: 3, rows: 2 },
+    { x: 480, y: 245, cols: 2, rows: 2 },
+    { x: 280, y: 400, cols: 2, rows: 2 },
+  ];
+  const SILO_SIZE = 10, SILO_SPACING = 16;
+
+  // Incoming streaks: short lines falling from above the picture
+  // boundary down onto scattered landing points, matching the
+  // reference display's raining trajectory lines. No outgoing
+  // strikes — the reference display only shows incoming fire.
+  const incoming = [
+    [150, 650,  220, 510], [300, 680,  350, 530], [450, 700,  460, 545],
+    [600, 690,  585, 535], [750, 660,  725, 505], [870, 640,  820, 480],
+  ];
+
+  const parts = [];
+  parts.push(gdfOrder(0x01, Buffer.concat([gdfHalfwords(2), gdfHalfwords(0, 1000, 0, 600)])));
+
+  parts.push(gdfShortOrder(0x0A, COL_TURQ_GDF));
+  parts.push(gdfOrder(0xC1, gdfHalfwords(...outline)));
+  for (const [x0, y0, x1, y1] of dividers) {
+    parts.push(gdfOrder(0xC1, gdfHalfwords(x0, y0, x1, y1)));
+  }
+  for (const [cx, cy] of triangles) {
+    parts.push(gdfOrder(0xC1, gdfHalfwords(...trianglePoints(cx, cy, 10))));
+  }
+
+  parts.push(gdfShortOrder(0x0A, COL_WHITE_GDF));
+  for (const [label, x, y] of zoneNumbers) {
+    parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(x, y), toEbcdic(label)])));
+  }
+  parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(GRAND_FORKS[0], GRAND_FORKS[1]), toEbcdic('GRAND FORKS')])));
+  parts.push(gdfOrder(0xC3, Buffer.concat([gdfHalfwords(NORAD[0] + 20, NORAD[1] - 5), toEbcdic('NORAD')])));
+
+  for (const { x, y, cols, rows } of siloClusters) {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        gdfSolidSquare(parts, x + c * SILO_SPACING, y + r * SILO_SPACING, SILO_SIZE, COL_WHITE_GDF);
+      }
+    }
+  }
+
+  parts.push(gdfShortOrder(0x0A, COL_YELLOW_GDF));
+  parts.push(gdfOrder(0xC1, gdfHalfwords(...starPoints(NORAD[0], NORAD[1], 14, 6)))); // NORAD star
+
+  parts.push(gdfShortOrder(0x0A, COL_RED_GDF));
+  for (const [x0, y0, x1, y1] of incoming) {
+    parts.push(gdfOrder(0xC1, gdfHalfwords(x0, y0, x1, y1)));
+  }
+
+  const gdfData = Buffer.concat(parts);
+  const pid = 0x00, flags = 0x03, objtyp = 0x00; // first&last/immediate, Graphics
+  const sfBody = Buffer.concat([Buffer.from([pid, flags, objtyp]), gdfData]);
+  const sfid = Buffer.from([0x0F, 0x0F]); // Object Data (GA23-0059 ch.5)
+  const sfLen = 2 + sfid.length + sfBody.length; // length field counts itself
+  const lenBuf = Buffer.alloc(2); lenBuf.writeUInt16BE(sfLen, 0);
+  return Buffer.concat([Buffer.from([CMD_WSF]), lenBuf, sfid, sfBody]);
+}
+
+function screenTsoCommand(userid = 'DEMO', lastOutput = '') {
+  const fields = [
+    { row:0,  col:0,  fa: FA_PROTECTED_HIGH, color: COL_WHITE, highlight: HL_INTENS },
+    { row:0,  col:1,  text: 'ISPF Command Shell' },
+    { row:1,  col:0,  fa: FA_PROTECTED, color: COL_BLUE },
+    { row:1,  col:1,  text: `Userid: ${userid.padEnd(8)}   System: ${SYSNAME}` },
+    { row:3,  col:0,  fa: FA_PROTECTED, color: COL_WHITE },
+    { row:3,  col:1,  text: 'TSO Command ===>' },
+    { row:3,  col:17, fa: FA_UNPROTECTED, color: COL_GREEN, ic: true },
+    { row:3,  col:17, text: '                                        ' },
+  ];
+  if (lastOutput) {
+    const lines = lastOutput.split('\n').slice(0, 14);
+    lines.forEach((line, i) => {
+      const isErr = line.startsWith('IKJ') && line.includes('NOT FOUND');
+      fields.push({ row: 5 + i, col: 0, fa: FA_PROTECTED, color: isErr ? COL_RED : COL_TURQ });
+      fields.push({ row: 5 + i, col: 1, text: line.slice(0, 78) });
+    });
+  }
+  fields.push(
+    { row:23, col:0, fa: FA_PROTECTED, color: COL_BLUE },
+    { row:23, col:0, text: 'ENTER=Execute  PF3=Exit to ISPF  PF12=Cancel' },
+  );
+  return buildScreen(true, fields);
+}
+
+function wrapEOR(data) {
+  const escaped = [];
+  for (const b of data) {
+    escaped.push(b);
+    if (b === IAC) escaped.push(IAC);
+  }
+  escaped.push(IAC, EOR);
+  return Buffer.from(escaped);
+}
+
+let connCount = 0;
+
+function handleConnection(socket) {
+  const id = ++connCount;
+  log(`[${id}] Connected from ${socket.remoteAddress}:${socket.remotePort}`);
+
+  let recvBuf       = Buffer.alloc(0);
+  let tn3270eMode   = false;
+  let cols          = 80;
+  let currentScreen = 'logon';
+  let lastScreen    = null;
+  let userid        = 'DEMO';
+  let negotiationComplete = false;
+  let requestedLu   = null;   // LU the client asked for via TN3270E CONNECT
+  let lastEnteredUser = '';   // last-typed logon fields, for buffer-bleed cache on disconnect
+  let lastEnteredPass = '';
+  let firstScreenSent = false;
+  let selectedJob      = null;  // jobnum currently shown by sdsfDetail
+  let sdsfViaList      = false; // true if 'sdsf' was reached from sdsfList (JOB07432 row), not directly from ISPF option M — decides where its own PF3 goes back to, without touching lastScreen
+
+  // Track what we've agreed to
+  let clientWillTN3270E  = false;
+  let clientFunctionsDone = false;
+
+  const state = { record: [], errorCmd: '', tsoOutput: '', jclMsg: '', sdsfMsg: '' };
+  let loginAttempts = 0;
+  let accountLocked = false;
+  const MAX_ATTEMPTS = 3;
+
+  // Valid credentials for the mock — userid: password (case-insensitive userid, exact password)
+  const VALID_CREDENTIALS = {
+    'IBMUSER': 'SYS1',
+    'DEMO':    'DEMO',
+    'USER1':   'PASS1',
+  };
+
+  // Send initial negotiation — offer TN3270E, BINARY, EOR
+  socket.write(Buffer.from([
+    IAC, DO,   OPT_TN3270E,
+    IAC, DO,   OPT_BINARY,
+    IAC, WILL, OPT_BINARY,
+    IAC, DO,   OPT_EOR,
+    IAC, WILL, OPT_EOR,
+  ]));
+  debug(`[${id}] → Initial negotiation sent`);
+
+  socket.on('data', chunk => {
+    recvBuf = Buffer.concat([recvBuf, chunk]);
+    processBuffer();
+  });
+
+  function cacheBufferOnExit() {
+    if (requestedLu && (lastEnteredUser || lastEnteredPass)) {
+      _luBufferCache.set(requestedLu, { user: lastEnteredUser, pass: lastEnteredPass, ts: Date.now() });
+      debug(`[${id}] Cached residual buffer for LU=${requestedLu}`);
+    }
+  }
+  socket.on('end',   () => { log(`[${id}] Disconnected`); cacheBufferOnExit(); });
+  socket.on('error', err => { log(`[${id}] Error: ${err.message}`); cacheBufferOnExit(); });
+
+  function processBuffer() {
+    // Strip and handle IAC telnet commands first, then find IAC EOR delimiters
+    let i = 0;
+    while (i < recvBuf.length) {
+      if (recvBuf[i] !== IAC) { i++; continue; }
+
+      const cmd = recvBuf[i + 1];
+      if (cmd === undefined) break;
+
+      if (cmd === NOP) { i += 2; continue; }
+
+      if (cmd === EOR) {
+        // IAC EOR — extract everything before this as a 3270 record
+        const record = [];
+        for (let j = 0; j < i; j++) {
+          // Un-escape IAC IAC → IAC
+          if (recvBuf[j] === IAC && recvBuf[j + 1] === IAC) { record.push(0xFF); j++; }
+          else record.push(recvBuf[j]);
+        }
+        recvBuf = recvBuf.slice(i + 2);
+        if (record.length > 0) handle3270Record(Buffer.from(record));
+        i = 0;
+        continue;
+      }
+
+      if ([DO, DONT, WILL, WONT].includes(cmd)) {
+        if (i + 2 >= recvBuf.length) break;
+        handleTelnetCmd(cmd, recvBuf[i + 2]);
+        // Remove the telnet command bytes from buffer
+        recvBuf = Buffer.concat([recvBuf.slice(0, i), recvBuf.slice(i + 3)]);
+        continue;
+      }
+
+      if (cmd === SB) {
+        const seIdx = findSE(i + 2);
+        if (seIdx === -1) break;
+        handleSubneg(recvBuf.slice(i + 2, seIdx));
+        recvBuf = Buffer.concat([recvBuf.slice(0, i), recvBuf.slice(seIdx + 2)]);
+        continue;
+      }
+
+      i += 2;
+    }
+  }
+
+  function findSE(start) {
+    for (let j = start; j < recvBuf.length - 1; j++) {
+      if (recvBuf[j] === IAC && recvBuf[j + 1] === SE) return j;
+    }
+    return -1;
+  }
+
+  function handleTelnetCmd(cmd, opt) {
+    const n = { [DO]:'DO',[DONT]:'DONT',[WILL]:'WILL',[WONT]:'WONT' };
+    const o = { [OPT_BINARY]:'BINARY',[OPT_EOR]:'EOR',[OPT_TTYPE]:'TTYPE',[OPT_TN3270E]:'TN3270E' };
+    debug(`[${id}] ← ${n[cmd]} ${o[opt] || '0x'+opt.toString(16)}`);
+
+    if (opt === OPT_TN3270E) {
+      if (cmd === WILL) {
+        // Client agreed to TN3270E — send device-type request
+        tn3270eMode = true;
+        clientWillTN3270E = true;
+        socket.write(Buffer.from([
+          IAC, SB, OPT_TN3270E, TN3E_DEVICE_TYPE, TN3E_REQUEST,
+          ...Buffer.from('IBM-3278-2'),
+          IAC, SE,
+        ]));
+        debug(`[${id}] → SB TN3270E DEVICE-TYPE REQUEST IBM-3278-2`);
+      } else if (cmd === WONT) {
+        // Client refused TN3270E — fall back to classic TN3270
+        tn3270eMode = false;
+        debug(`[${id}] Client refused TN3270E — classic TN3270 mode`);
+        // Ask for terminal type to complete classic negotiation
+        socket.write(Buffer.from([IAC, SB, OPT_TTYPE, TN3E_SEND, IAC, SE]));
+      }
+      return;
+    }
+
+    if (opt === OPT_TTYPE && cmd === WILL) {
+      socket.write(Buffer.from([IAC, SB, OPT_TTYPE, TN3E_SEND, IAC, SE]));
+      return;
+    }
+
+    if (opt === OPT_BINARY && cmd === WILL) {
+      socket.write(Buffer.from([IAC, DO, OPT_BINARY]));
+    }
+    if (opt === OPT_EOR && cmd === WILL) {
+      socket.write(Buffer.from([IAC, DO, OPT_EOR]));
+    }
+  }
+
+  function handleSubneg(data) {
+    const opt  = data[0];
+    const func = data[1];
+    debug(`[${id}] Subneg raw: ${[...data].map(b=>'0x'+b.toString(16)).join(' ')}`);
+
+    if (opt === OPT_TN3270E) {
+
+      if (func === TN3E_DEVICE_TYPE && data[2] === TN3E_IS) {
+        // Client confirmed device-type — pick up the real model it asked for
+        // so screen addressing (sba) matches the width the client will render at.
+        const deviceStr = data.slice(3).toString('ascii');
+        const match = deviceStr.match(/IBM-(3278|3279)-(\d)(-E)?/);
+        if (match) {
+          const model = `${match[1]}-${match[2]}${match[3] || ''}`;
+          const dims  = MODEL_DIMS[model];
+          if (dims) { cols = dims.cols; debug(`[${id}] Client device-type ${model} → cols=${cols}`); }
+        }
+        // Now host must send FUNCTIONS REQUEST
+        // (RFC 2355: host asks what functions client wants to use)
+        socket.write(Buffer.from([
+          IAC, SB, OPT_TN3270E, TN3E_FUNCTIONS, TN3E_REQUEST,
+          IAC, SE,
+        ]));
+        debug(`[${id}] → TN3270E FUNCTIONS REQUEST (asking client)`);
+        // Do NOT send screen yet — wait for client's FUNCTIONS IS
+      }
+
+      if (func === TN3E_DEVICE_TYPE && data[2] === TN3E_REQUEST) {
+        // Client requesting device type — accept whatever model it asked
+        // for by echoing it back, and adopt that model's screen width.
+        // Replying with a different type than requested desyncs clients
+        // (like x3270) that honor the server's IS.
+        const reqStr = data.slice(3).toString('ascii');
+        const match  = reqStr.match(/IBM-(3278|3279)-(\d)(-E)?/);
+        let accepted = 'IBM-3278-2';
+        if (match) {
+          const model = `${match[1]}-${match[2]}${match[3] || ''}`;
+          const dims  = MODEL_DIMS[model];
+          if (dims) { accepted = `IBM-${model}`; cols = dims.cols; }
+        }
+        // Client may ask for a specific LU via a CONNECT sub-marker after the
+        // device-type string — accept whatever it asks for (no allocation
+        // check) and echo it back, same as a real VTAM pool would.
+        const connIdx = data.indexOf(TN3E_CONNECT, 3);
+        if (connIdx !== -1) {
+          requestedLu = data.slice(connIdx + 1).toString('ascii');
+          debug(`[${id}] ← DEVICE-TYPE REQUEST CONNECT LU=${requestedLu}`);
+        }
+        const isParts = [IAC, SB, OPT_TN3270E, TN3E_DEVICE_TYPE, TN3E_IS, ...Buffer.from(accepted)];
+        if (requestedLu) isParts.push(TN3E_CONNECT, ...Buffer.from(requestedLu));
+        isParts.push(IAC, SE);
+        socket.write(Buffer.from(isParts));
+        debug(`[${id}] → TN3270E DEVICE-TYPE IS ${accepted}${requestedLu ? ' CONNECT LU=' + requestedLu : ''} (cols=${cols})`);
+      }
+
+      if (func === TN3E_FUNCTIONS && data[2] === TN3E_IS) {
+        // Client told us what functions it supports — negotiation complete!
+        const supported = data.slice(3);
+        debug(`[${id}] ← TN3270E FUNCTIONS IS [${[...supported].map(b=>'0x'+b.toString(16)).join(' ')}]`);
+        if (!negotiationComplete) {
+          negotiationComplete = true;
+          setImmediate(() => sendInitialScreen());
+        }
+      }
+
+      if (func === TN3E_FUNCTIONS && data[2] === TN3E_REQUEST) {
+        // Client requesting functions (unusual but handle gracefully)
+        const requested = data.slice(3);
+        socket.write(Buffer.from([
+          IAC, SB, OPT_TN3270E, TN3E_FUNCTIONS, TN3E_IS,
+          ...requested,
+          IAC, SE,
+        ]));
+        debug(`[${id}] → TN3270E FUNCTIONS IS (echoing client request)`);
+        if (!negotiationComplete) {
+          negotiationComplete = true;
+          setImmediate(() => sendInitialScreen());
+        }
+      }
+    }
+
+    if (opt === OPT_TTYPE && func === TN3E_IS) {
+      const ttype = data.slice(2).toString('ascii');
+      debug(`[${id}] ← TTYPE IS ${ttype}`);
+      const match = ttype.match(/IBM-(3278|3279)-(\d)(-E)?/);
+      if (match) {
+        const model = `${match[1]}-${match[2]}${match[3] || ''}`;
+        const dims  = MODEL_DIMS[model];
+        if (dims) { cols = dims.cols; debug(`[${id}] Client TTYPE ${model} → cols=${cols}`); }
+      }
+      if (!negotiationComplete) {
+        negotiationComplete = true;
+        setImmediate(() => sendInitialScreen());
+      }
+    }
+  }
+
+  function handle3270Record(data) {
+    // Once TN3270E is negotiated, the client prepends the same 5-byte header
+    // (DATA-TYPE/REQUEST-FLAG/RESPONSE-FLAG/SEQ-NUMBER) it expects to receive —
+    // strip it before parsing the AID record underneath.
+    const payload = tn3270eMode ? data.slice(5) : data;
+    if (payload.length === 0) return;
+
+    const aid = payload[0];
+    debug(`[${id}] ← AID 0x${aid.toString(16).toUpperCase()} screen='${currentScreen}'`);
+
+    let inputText = '';
+    if (payload.length > 3) {
+      // 3270 AID record: AID(1) + cursor-address(2) + [SBA(3) + data]...
+      // The cursor address after AID is raw 2 bytes, NOT wrapped in SBA
+      let j = 3; // skip AID + 2-byte cursor address
+      while (j < payload.length) {
+        const b = payload[j];
+        if (b === 0x11 && j + 2 < payload.length) {
+          // SBA — field boundary, inject space then skip 3 bytes
+          inputText += ' ';
+          j += 3;
+        } else if (b === 0x13 && j + 3 < payload.length) {
+          j += 4; // RA order
+        } else if ((b === 0x1C || b === 0x1D || b === 0x28 || b === 0x29) && j + 1 < payload.length) {
+          j += 2; // SA, SF, MF, SFE
+        } else if (b >= 0x40 || b === 0x00) {
+          inputText += String.fromCharCode(EBCDIC_TO_ASCII[b] || 0x20);
+          j++;
+        } else {
+          j++;
+        }
+      }
+      inputText = inputText.trim();
+    }
+
+    debug(`[${id}] Input: '${inputText}'`);
+
+    switch (currentScreen) {
+      case 'logon':
+      case 'logonError':
+        if (aid === AID_ENTER) {
+          if (accountLocked) { sendCurrentScreen(); break; }
+          // Parse userid from first field, password from second
+          // inputText contains all field data concatenated — split on whitespace
+          const parts = inputText.split(/\s+/).filter(Boolean);
+          const enteredUser = (parts[0] || 'DEMO').toUpperCase().slice(0, 8);
+          const enteredPass = parts[1] || '';
+          userid = enteredUser;
+          lastEnteredUser = enteredUser;
+          lastEnteredPass = enteredPass;
+          const validPass = VALID_CREDENTIALS[enteredUser];
+          // Case-insensitive on purpose: the real terminal deliberately does
+          // NOT force-uppercase nondisplay (password) fields client-side
+          // (see public/js/keyboard.js — that matters for real case-sensitive
+          // RACF passwords elsewhere), so this mock's own demo credentials
+          // shouldn't require the user to remember to type them in caps.
+          if (validPass && enteredPass.toUpperCase() === validPass) {
+            // Successful logon
+            loginAttempts = 0;
+            log(`[${id}] Logon success: userid='${userid}'`);
+            currentScreen = 'ready';
+            state.readyMsg = `IKJ56455I ${userid} LOGGED ON AT ${new Date().toLocaleTimeString('en-US',{hour12:false})}`;
+          } else {
+            loginAttempts++;
+            log(`[${id}] Logon failed for '${enteredUser}' — attempt ${loginAttempts}/${MAX_ATTEMPTS}`);
+            if (loginAttempts >= MAX_ATTEMPTS) {
+              accountLocked = true;
+              currentScreen = 'lockout';
+            } else {
+              currentScreen = 'logonError';
+            }
+          }
+          sendCurrentScreen();
+        } else if (aid === AID_PF3) {
+          socket.end();
+        }
+        break;
+
+      case 'lockout':
+        if (aid === AID_PF3 || aid === AID_ENTER) socket.end();
+        break;
+
+      case 'ready':
+      case 'readyOutput':
+        if (aid === AID_ENTER) {
+          const cmd = inputText.toUpperCase().trim();
+          if (!cmd) { sendCurrentScreen(); break; }
+          log(`[${id}] TSO command: '${cmd}'`);
+          if (cmd === 'ISPF' || cmd === 'ISRDDN') {
+            currentScreen = 'ispf'; sendCurrentScreen();
+          } else if (cmd === 'LISTAPF') {
+            currentScreen = 'listapf'; sendCurrentScreen();
+          } else if (cmd === 'LISTA' || cmd === 'LISTA STATUS') {
+            currentScreen = 'lista'; sendCurrentScreen();
+          } else if (cmd === 'ESM' || cmd.startsWith('ESM ') || cmd.startsWith('SET ESM ')) {
+            // Switch which external security manager this mock simulates,
+            // then re-present the logon screen so the new product's banner
+            // and message IDs are visible to the ESM Fingerprint classifier.
+            //   ESM            → report the current setting
+            //   ESM ACF2       → switch (RACF | ACF2 | TOPSECRET, or TSS)
+            let want = cmd.replace(/^SET\s+/, '').replace(/^ESM\s*/, '').replace(/\s+/g, '');
+            if (want === 'TSS' || want === 'TOPSECRET') want = 'TOPSECRET';
+            if (!want) {
+              state.readyMsg = `EXTERNAL SECURITY MANAGER IS ${ESM_NAME}`;
+              currentScreen = 'readyOutput'; sendCurrentScreen();
+            } else if (ESM_TEXT[want]) {
+              ESM = ESM_TEXT[want]; ESM_NAME = want;
+              loginAttempts = 0;
+              log(`[${id}] ESM switched to ${want} — presenting logon`);
+              currentScreen = 'logon'; sendCurrentScreen();
+            } else {
+              state.readyMsg = `ESM "${want}" NOT RECOGNIZED — TRY RACF, ACF2, OR TOPSECRET`;
+              currentScreen = 'readyOutput'; sendCurrentScreen();
+            }
+          } else if (cmd === 'GDDM') {
+            currentScreen = 'gddm'; sendCurrentScreen();
+            writeRaw(buildGddmObjectDataWsf());
+          } else if (cmd === 'USA') {
+            currentScreen = 'usa'; sendCurrentScreen();
+            writeRaw(buildUsaObjectDataWsf());
+          } else if (cmd === 'WHOAMI') {
+            state.tsoOutput = `USERID: ${userid}\nSYSTEM: ${SYSNAME}\nGROUPS: SYS1 DEMOGRP`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd === 'LISTUSER' || cmd === 'LU' || cmd.startsWith('LISTUSER ') || cmd.startsWith('LU ')) {
+            state.tsoOutput = racfListuser(cmd.replace(/^(LISTUSER|LU)\s*/, '') || userid);
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd.startsWith('RLIST ') || cmd.startsWith('RL ')) {
+            state.tsoOutput = racfRlist(cmd);
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd === 'SETROPTS LIST' || cmd === 'SETR LIST' || cmd === 'SETROPTS' || cmd === 'SETR') {
+            state.tsoOutput = racfSetropts();
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd.startsWith('PROFILE')) {
+            state.tsoOutput = `PROFILE NOINTERCOM MSGID NOPROMPT SIZE(32767) LINE(24)\n  MODE(LINE) WTPMSG INTERCOM NOHIGHLIGHT`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd.startsWith('SUBMIT') || cmd.startsWith('SUB ')) {
+            state.tsoOutput = trySubmit(cmd, userid) || `IKJ56500I COMMAND ${cmd} NOT FOUND`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd.startsWith('LISTCAT')) {
+            state.tsoOutput = tryListcat(cmd) || `IKJ56500I COMMAND ${cmd} NOT FOUND`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd === 'LOGOFF' || cmd.startsWith('LOGOFF ')) {
+            // Real TSO: bare LOGOFF ends the session and drops the terminal
+            // back to VTAM; LOGOFF HOLD (or an installation session manager)
+            // keeps the terminal connected and redisplays the logon panel.
+            // The probe's "keep going after a match" sweep sends LOGOFF HOLD
+            // and expects to land back on the logon screen, so mirror that.
+            log(`[${id}] LOGOFF — returning to logon panel`);
+            loginAttempts = 0;
+            state.readyMsg = '';
+            currentScreen = 'logon'; sendCurrentScreen();
+          } else {
+            state.tsoOutput = `IKJ56500I COMMAND ${cmd} NOT FOUND\nIKJ56501I ENTER HELP for list of valid commands`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          }
+        } else if (aid === AID_PF3) {
+          socket.end();
+        }
+        break;
+
+      case 'listapf':
+      case 'lista':
+        if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = 'ready'; state.readyMsg = ''; sendCurrentScreen();
+        }
+        break;
+
+      case 'tsoCmd':
+        if (aid === AID_ENTER) {
+          const cmd = inputText.toUpperCase().trim();
+          if (!cmd) { sendCurrentScreen(); break; }
+          log(`[${id}] TSO command shell: '${cmd}'`);
+          if (cmd === 'LISTAPF') {
+            currentScreen = 'listapf'; sendCurrentScreen();
+          } else if (cmd === 'LISTA' || cmd === 'LISTA STATUS') {
+            currentScreen = 'lista'; sendCurrentScreen();
+          } else if (cmd === 'ISPF') {
+            currentScreen = 'ispf'; sendCurrentScreen();
+          } else if (cmd === 'GDDM') {
+            currentScreen = 'gddm'; sendCurrentScreen();
+            writeRaw(buildGddmObjectDataWsf());
+          } else if (cmd === 'USA') {
+            currentScreen = 'usa'; sendCurrentScreen();
+            writeRaw(buildUsaObjectDataWsf());
+          } else if (cmd.startsWith('SUBMIT') || cmd.startsWith('SUB ')) {
+            state.tsoOutput = trySubmit(cmd, userid) || `IKJ56500I COMMAND ${cmd} NOT FOUND`;
+            sendCurrentScreen();
+          } else if (cmd.startsWith('LISTCAT')) {
+            state.tsoOutput = tryListcat(cmd) || `IKJ56500I COMMAND ${cmd} NOT FOUND`;
+            sendCurrentScreen();
+          } else if (cmd === 'LOGOFF' || cmd.startsWith('LOGOFF ')) {
+            log(`[${id}] LOGOFF from command shell — returning to logon panel`);
+            loginAttempts = 0;
+            state.readyMsg = '';
+            state.tsoOutput = '';
+            currentScreen = 'logon'; sendCurrentScreen();
+          } else {
+            state.tsoOutput = `IKJ56500I COMMAND ${cmd} NOT FOUND`;
+            sendCurrentScreen();
+          }
+        } else if (aid === AID_PF3) {
+          currentScreen = 'ispf'; sendCurrentScreen();
+        }
+        break;
+
+      case 'ispf':
+        if (aid === AID_ENTER) {
+          const opt = inputText.toUpperCase();
+          if      (opt === '2')                { lastScreen = 'ispf'; currentScreen = 'edit'; }
+          else if (opt === '3' || opt === '3.4') { lastScreen = 'ispf'; currentScreen = 'ispf34'; }
+          else if (opt === '6')                { lastScreen = 'ispf'; currentScreen = 'tsoCmd'; state.tsoOutput = ''; }
+          else if (opt === 'M' || opt === 'SDSF') { lastScreen = 'ispf'; currentScreen = 'sdsf'; }
+          else if (opt === 'X')                { socket.end(); return; }
+          else if (opt !== '')                 { lastScreen = 'ispf'; currentScreen = 'error'; state.errorCmd = opt; }
+          sendCurrentScreen();
+        } else if (aid === AID_PF3) {
+          socket.end();
+        }
+        break;
+
+      case 'edit':
+      case 'error':
+        if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = lastScreen || 'ispf';
+          sendCurrentScreen();
+        } else if (aid === AID_PF7 || aid === AID_PF8) {
+          sendCurrentScreen();
+        }
+        break;
+
+      case 'ispf34':
+        if (aid === AID_ENTER && inputText.trim().toUpperCase() === 'S') {
+          // Deliberately NOT touching lastScreen here — jclMembers always
+          // returns to ispf34 (hardcoded below), so reusing lastScreen for
+          // this would clobber the ispf->ispf34 pointer this same case
+          // depends on for its own PF3 a moment later.
+          currentScreen = 'jclMembers'; state.jclMsg = '';
+          sendCurrentScreen();
+        } else if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = lastScreen || 'ispf';
+          sendCurrentScreen();
+        } else if (aid === AID_PF7 || aid === AID_PF8) {
+          sendCurrentScreen();
+        }
+        break;
+
+      case 'jclMembers':
+        if (aid === AID_ENTER && inputText.trim()) {
+          const result = trySubmit(inputText.trim().toUpperCase(), userid);
+          state.jclMsg = result || `Unknown command: ${inputText.trim()}`;
+          sendCurrentScreen();
+        } else if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = 'ispf34';
+          sendCurrentScreen();
+        }
+        break;
+
+      case 'sdsf':
+        if (aid === AID_ENTER && (inputText.trim().toUpperCase() === 'ST' || inputText.trim().toUpperCase() === 'DA')) {
+          // Same reasoning as ispf34 above — sdsfList always returns to
+          // sdsf (hardcoded below), lastScreen stays untouched so a plain
+          // PF3 straight out of 'sdsf' (reached directly via ISPF option M,
+          // Book 1's documented path) still works exactly as before.
+          currentScreen = 'sdsfList';
+          sendCurrentScreen();
+        } else if (aid === AID_PF3 || aid === AID_ENTER) {
+          if (sdsfViaList) { sdsfViaList = false; currentScreen = 'sdsfList'; }
+          else { currentScreen = lastScreen || 'ispf'; }
+          sendCurrentScreen();
+        } else if (aid === AID_PF7 || aid === AID_PF8) {
+          sendCurrentScreen();
+        }
+        break;
+
+      case 'sdsfList': {
+        const sel = inputText.trim().toUpperCase().match(/^S\s+(\S+)$/);
+        if (aid === AID_ENTER && sel) {
+          const target = sel[1];
+          const rows = [{ jobnum: 'JOB07432', name: 'MYJOB' }, ...JOB_QUEUE];
+          const picked = rows.find(r => r.name === target || r.jobnum === target);
+          if (!picked) {
+            state.sdsfMsg = `Job not found: ${target}`;
+            sendCurrentScreen();
+          } else if (picked.jobnum === 'JOB07432') {
+            sdsfViaList = true; currentScreen = 'sdsf'; state.sdsfMsg = '';
+            sendCurrentScreen();
+          } else {
+            selectedJob = picked.jobnum; currentScreen = 'sdsfDetail'; state.sdsfMsg = '';
+            sendCurrentScreen();
+          }
+        } else if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = 'sdsf';
+          sendCurrentScreen();
+        }
+        break;
+      }
+
+      case 'sdsfDetail':
+        if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = 'sdsfList';
+          sendCurrentScreen();
+        }
+        break;
+
+      case 'gddm':
+      case 'usa':
+        if (aid === AID_PF3 || aid === AID_ENTER) {
+          currentScreen = 'ready'; state.readyMsg = ''; sendCurrentScreen();
+        }
+        break;
+    }
+  }
+
+  function writeRaw(ds) {
+    if (tn3270eMode) {
+      ds = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00]), ds]);
+    }
+    socket.write(wrapEOR(ds));
+  }
+
+  // First screen of the connection: if this LU had a residual buffer cached
+  // from a prior session (see cacheBufferOnExit), flash that stale content
+  // as a non-erasing Write before the real (erased) logon screen — see the
+  // BUFFER_BLEED comment near _luBufferCache above.
+  function sendInitialScreen() {
+    if (!firstScreenSent) {
+      firstScreenSent = true;
+      mockCols = cols;
+      const cached = requestedLu ? _luBufferCache.get(requestedLu) : null;
+      if (cached && Date.now() - cached.ts < BUFFER_BLEED_WINDOW_MS) {
+        _luBufferCache.delete(requestedLu); // one-shot — buffer is "read" now
+        log(`[${id}] Buffer bleed: replaying stale LU=${requestedLu} field data before fresh logon`);
+        writeRaw(screenBufferBleed(cached));
+        setTimeout(() => sendCurrentScreen(), 400);
+        return;
+      }
+    }
+    sendCurrentScreen();
+  }
+
+  function sendCurrentScreen() {
+    mockCols = cols;
+    let ds;
+    switch (currentScreen) {
+      case 'logon':     ds = screenLogon();                          break;
+      case 'logonError':ds = screenLogonError(userid, loginAttempts); break;
+      case 'lockout':   ds = screenRacfLockout(userid);              break;
+      case 'ready':
+      case 'readyOutput': ds = screenReady(userid, state.readyMsg || ''); state.readyMsg = ''; break;
+      case 'listapf':   ds = screenListapf();                        break;
+      case 'lista':     ds = screenLista(userid);                    break;
+      case 'tsoCmd':    ds = screenTsoCommand(userid, state.tsoOutput); break;
+      case 'ispf':      ds = screenISPF(userid);                     break;
+      case 'edit':      ds = screenEdit();                           break;
+      case 'ispf34':    ds = screenISPF34(userid);                   break;
+      case 'jclMembers':ds = screenJclMembers(state.jclMsg);         break;
+      case 'sdsf':      ds = screenSDSF();                           break;
+      case 'sdsfList':  ds = screenSdsfList(state.sdsfMsg);          break;
+      case 'sdsfDetail':ds = screenSdsfDetail(JOB_QUEUE.find(j => j.jobnum === selectedJob));break;
+      case 'error':     ds = screenError(state.errorCmd);            break;
+      case 'gddm':      ds = screenGDDM(userid);                     break;
+      case 'usa':       ds = screenUSA(userid);                      break;
+      default:          ds = screenISPF(userid);
+    }
+
+    if (tn3270eMode) {
+      // TN3270E 5-byte header: data-type=0x00 (3270-DATA), request=0x00, response=0x00, seq=0x00 0x00
+      ds = Buffer.concat([Buffer.from([0x00, 0x00, 0x00, 0x00, 0x00]), ds]);
+    }
+
+    socket.write(wrapEOR(ds));
+    log(`[${id}] → Screen: ${currentScreen} (tn3270e=${tn3270eMode})`);
+  }
+}
+
+function log(msg)   { console.log(`${new Date().toISOString()} [INFO ] ${msg}`); }
+function debug(msg) { if (LOG) console.log(`${new Date().toISOString()} [DEBUG] ${msg}`); }
+
+const server = net.createServer(handleConnection);
+server.listen(PORT, '0.0.0.0', () => {
+  log('─────────────────────────────────────────────────────');
+  log(`  WebTerm/3270 Mock LPAR Daemon`);
+  log(`  Listening on  tcp://0.0.0.0:${PORT}`);
+  log(`  System ID     ${SYSNAME}`);
+  log(`  LU Name       ${LU_NAME}`);
+  log(`  Protocol      TN3270E + classic TN3270 fallback`);
+  log('─────────────────────────────────────────────────────');
+});
+
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') log(`ERROR: Port ${PORT} already in use`);
+  else log(`ERROR: ${err.message}`);
+  process.exit(1);
+});
+
+process.on('SIGINT',  () => { log('Shutting down...'); server.close(() => process.exit(0)); });
+process.on('SIGTERM', () => { log('Shutting down...'); server.close(() => process.exit(0)); });

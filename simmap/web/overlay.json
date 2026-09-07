@@ -165,7 +165,9 @@
       "kind": "bank",
       "port": 8100,
       "path": "/",
-      "technique": "bank_jwt_none"
+      "technique": "bank_jwt_none",
+      "terminal": 7681,
+      "terminal_label": "z16 green screen"
     },
     "cityhall": {
       "x": 0.49,

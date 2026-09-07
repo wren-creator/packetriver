@@ -4,6 +4,39 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Phase 3d - the Packet River IBM z16 (RACF green screen)
+- `mainframe/z16/`: a real TN3270E host (RACF logon panel, TSO READY, ISPF,
+  SDSF, JCL/SUBMIT), vendored from web3270's `mock-lpar` (GPL-3.0, attribution
+  header, node builtins only, ships `jcl/programs/*.jcl`). One addition: a RACF
+  command family at the READY prompt - `LISTUSER` / `RLIST` / `SETROPTS LIST` -
+  surfacing three curated, genuine review findings.
+- `z16` compose service on `127.0.0.1:8991` (container port 3270), `it-net` +
+  `edge-net`, reads the flag from `/run/secret/z16_racf/flag.txt`.
+- The exploit: `IBMUSER`/`SYS1` (install default, never revoked - `LISTUSER`
+  shows it still holds `SPECIAL OPERATIONS AUDITOR`) logs on; the
+  `BANK.XFER.APPROVE` FACILITY profile is `UACC(READ)` and in `WARNING` mode
+  (access failures logged but allowed); the reconciliation key sits in that
+  profile's world-readable `INSTALLATION DATA`. `SETROPTS LIST` shows
+  `NOPROTECTALL` for texture.
+- `scoring/flags.py`: `z16_racf` technique (subsystem `bank`, effect
+  `bank_drain`, base 275, `loud`). Submitting it drains the bank on the map -
+  same effect as the web JWT-`none` path; WARNING-mode approval = fraudulent
+  transfers sail through.
+- `player`: `scripts/z16_3270.py`, a purpose-built TN3270E client (no arm64
+  `x3270`) - drives the host-side TN3270E negotiation, logs on, runs one READY
+  command, scrapes the flag off the panel (CP037; decodes the record and
+  regexes rather than parsing the 3270 order stream). `pktr-connect` gains it
+  as options 3 (RACF pull) and 4 (free-form READY command); the menu is now
+  grouped AS/400 / z16 / shell. `targets.py` allowlist += `z16`.
+- `overlay.json`: the Bank hotspot gains `terminal: 7681` - clicking it opens
+  the z16 terminal alongside the online-banking front door.
+- `docs/districts/mainframe.md`: promoted to cover both mainframes; z16
+  section added (surfaces, the three RACF findings, TN3270E wire notes,
+  hardening, real-world parallels).
+- Verified end to end from the player box: log on -> `RLIST` -> flag -> submit
+  -> `accepted`, 619 pts (275 x 1.5 speed x 1.5 stealth), the bank reads
+  `carded` / balance 0 / alarm cut on the map, alert level ticks to 1.
+
 ### Phase 3c - the Packet River AS/400 (payroll green screen)
 - `mainframe/as400/`: a real TN5250 host (SIGNON panel, menu tree, DSPMSG,
   WRKUSRPRF, Interactive SQL), vendored from web3270's mock-lpar (GPL-3.0,
