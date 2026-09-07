@@ -73,10 +73,10 @@ function buildOverlay(layout) {
   REFS.rail = el("polyline", {
     points: layout.railPath.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "none", opacity: 0 }, svg);
-  const sb = layout.spurBranch || layout.railPath[0];
-  REFS.spur = el("line", {
-    x1: X(sb[0]), y1: Y(sb[1]), x2: X(layout.spurEnd[0]), y2: Y(layout.spurEnd[1]),
-    stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
+  const spur = layout.spurPath || [layout.spurBranch || layout.railPath[0], layout.spurEnd];
+  REFS.spur = el("polyline", {
+    points: spur.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
+    fill: "none", stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
   REFS.train = el("g", { class: "train" }, svg);
   // fatter across the track (heights +3) without lengthening it (widths / x unchanged)
   el("rect", { x: -17, y: -6.5, width: 12, height: 13, fill: "#8a3b2f", stroke: "#3a1c16" }, REFS.train);
@@ -110,6 +110,14 @@ function buildOverlay(layout) {
   });
   REFS.streetlights = layout.streetlights.map(sp =>
     el("circle", { cx: X(sp.x), cy: Y(sp.y), r: 3, class: "streetlight" }, svg));
+
+  // distribution dots: coloured by feeder / main, dim when de-energised
+  const dots = (key, cls) => (layout[key] || []).map(pt =>
+    el("circle", { cx: X(pt.x), cy: Y(pt.y), r: 3.2, class: cls }, svg));
+  REFS.powerRes   = dots("powerResidential", "gdot res");
+  REFS.powerBiz   = dots("powerBusiness", "gdot biz");
+  REFS.powerPlant = dots("powerPlant", "gdot plant");
+  REFS.waterRes   = dots("waterResidential", "wdot");
 
   // hook for the ?edit=1 overlay editor (edit.js); inert otherwise
   window.PKTR_EDIT = { layout, VB, overlay: svg, rebuild: () => buildOverlay(layout) };
@@ -200,8 +208,14 @@ function render(s) {
   if (s.power) {
     const f = s.power.feeders || {};
     REFS.powerFeeder.classList.toggle("stopped", f.residential === false);
-    REFS.streetlights.forEach(sl => sl.classList.toggle("on", f.streetlights !== false));
+    const lit = (arr, up) => arr.forEach(d => d.classList.toggle("on", up));
+    lit(REFS.streetlights, f.streetlights !== false);
+    lit(REFS.powerRes, f.residential !== false);
+    lit(REFS.powerBiz, f.business !== false);
+    lit(REFS.powerPlant, f.industrial !== false);
   }
+  if (s.water)
+    REFS.waterRes.forEach(d => d.classList.toggle("on", s.water.quality !== "dry"));
   (s.houses || []).forEach((h, i) => {
     if (!REFS.houses[i]) return;
     REFS.houses[i].win.classList.toggle("on", !!h.has_power);

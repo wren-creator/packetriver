@@ -182,20 +182,21 @@
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
     (L.houses || []).forEach((p, i) => push({ id: "house " + i, kind: "point",
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
-    (L.streetlights || []).forEach((p, i) => push({ id: "light " + i, kind: "point",
+    const pts = (key, label) => (L[key] || []).forEach((p, i) => push({
+      id: label + " " + i, kind: "point",
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
+    pts("streetlights", "light");
+    pts("powerResidential", "P-res");
+    pts("powerBusiness", "P-biz");
+    pts("powerPlant", "P-plant");
+    pts("waterResidential", "W-res");
 
-    ["railPath", "outfall", "waterMain", "powerFeeder", "swimmers"].forEach((key) => {
+    ["railPath", "spurPath", "outfall", "waterMain", "powerFeeder", "swimmers"].forEach((key) => {
       const arr = L[key];
       if (!Array.isArray(arr)) return;
       arr.forEach((_, i) => push({ id: key + " " + i, kind: "vertex", arr, key,
         get: () => arr[i].slice(), set: (x, y) => { arr[i] = [r4(x), r4(y)]; },
         idx: () => arr.indexOf(arr[i]) }));
-    });
-    ["spurBranch", "spurEnd"].forEach((key) => {
-      if (!Array.isArray(L[key])) return;
-      push({ id: key, kind: "point",
-        get: () => L[key].slice(), set: (x, y) => { L[key] = [r4(x), r4(y)]; } });
     });
     for (const key of ["river", "beachZone"]) {
       const rv = L[key];
@@ -239,7 +240,7 @@
   function drawShapes() {
     ui.shapes.innerHTML = "";
     // polylines
-    ["railPath", "outfall", "waterMain", "powerFeeder"].forEach((key) => {
+    ["railPath", "spurPath", "outfall", "waterMain", "powerFeeder"].forEach((key) => {
       const arr = L[key];
       if (!Array.isArray(arr) || arr.length < 2) return;
       mk("polyline", { class: "pe-shape",

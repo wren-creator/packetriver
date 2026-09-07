@@ -205,8 +205,15 @@ body {
 .house .win.on  { fill: #ffd35a; opacity: 1; filter: drop-shadow(0 0 4px #ffcf5a); }
 .house .drop { fill: #d9584f; opacity: .0; }
 .house .drop.on { fill: var(--river); opacity: .85; }
-.streetlight { fill: #6a6250; opacity: .5; }
-.streetlight.on { fill: #ffcf5a; opacity: 1; filter: drop-shadow(0 0 3px #ffcf5a); }
+.streetlight { fill: #5a5347; opacity: .45; }
+.streetlight.on { fill: #f2f2ec; opacity: 1; filter: drop-shadow(0 0 3px #fff6d8); }
+
+/* distribution dots: dim/grey de-energised, feeder colour when live */
+.gdot, .wdot { fill: #5a5347; opacity: .45; transition: opacity .4s, fill .4s; }
+.gdot.on.res    { fill: #f0cf5c; opacity: 1; }
+.gdot.on.biz    { fill: #e88a2e; opacity: 1; }
+.gdot.on.plant  { fill: #23262c; opacity: 1; stroke: #000; stroke-width: .5; }
+.wdot.on        { fill: #4aa8e0; opacity: 1; }
 
 .spur { opacity: .7; }
 .spur.spur-set { stroke: var(--bad); opacity: 1; }
