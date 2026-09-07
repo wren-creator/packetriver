@@ -31,8 +31,10 @@ written to `scoring.db` as `location_hint`; if a future UI surfaces that, it
 goes through the Tier-2 hint-penalty, never for free. The step-by-step for
 every technique lives in `instructor/answer-key.md` (Tier 4).
 
-`docs/districts/*.md` still carry exact payloads and paths in places - those
-need the same audit (tracked in `ROADMAP.md`).
+`docs/districts/*.md` are Tier-1 as well (done): bug class, tool, surface, map
+effect, fix - the exact sign-on, the SQL statement, the RACF command, the
+flag's field all live in `instructor/answer-key.md`. New district docs ship
+Tier-1 from the start, with the answer-key entry in the same commit.
 
 ## Easter eggs as in-world help
 

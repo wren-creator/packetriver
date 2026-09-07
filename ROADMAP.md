@@ -90,9 +90,12 @@ reuse map live in the design doc.
     minutes.
     - [x] `scoring/flags.py` `hint` strings audited to Tier-1 direction; the
       sharp step-by-step moved to `instructor/answer-key.md`.
-    - [ ] `docs/districts/*.md` still carry exact payloads / paths / creds in
-      several places - audit those down to Tier-1 too, leaning on
-      `instructor/answer-key.md` for the sharp version.
+    - [x] `docs/districts/*.md` audited to Tier-1 (bug class / tool / effect /
+      fix, no payloads / params / creds / flag locations); the two spills in
+      `docs/architecture.md` scrubbed too. Sharp version lives in
+      `instructor/answer-key.md`.
+    - [ ] Each future district doc + `flags.py` entry ships Tier-1 from the
+      start; the answer-key entry lands in the same commit.
   - [ ] **Easter-egg hints.** Hide help as in-world artifacts (a stale
     `README.old`, a `.bak` config, a `robots.txt`, a note baked into a
     texture, an NPC line). Each egg gives a *fragment* - a technique name, one

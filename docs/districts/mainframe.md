@@ -7,6 +7,11 @@ behind Town Hall for payroll (`as400_empmast`, Phase 3c), and an **IBM z16
 [web3270](https://github.com/wren-creator/web3270) (GPL-3.0); both carry a
 handful of curated, genuine bugs rather than a deep OS emulation.
 
+These pages give **direction, not a walkthrough** (see
+[`../learning-design.md`](../learning-design.md)). The step-by-step — exact
+sign-on, the SQL statement, the RACF command, the flag's field — is in
+[`../../instructor/answer-key.md`](../../instructor/answer-key.md).
+
 ---
 
 ## The Packet River AS/400  (`as400_empmast`) — Phase 3c
@@ -15,26 +20,26 @@ Behind Town Hall (and, in the story, the Widget Factory) sits an IBM i / AS/400
 running payroll on a green screen. It is a real TN5250 host: a SIGNON panel, a
 menu tree, DSPMSG, WRKUSRPRF, and Interactive SQL. The mock is vendored from
 [web3270](https://github.com/wren-creator/web3270) (GPL-3.0) with one addition —
-a `PAYROLL/PAYKEY` file carrying this session's flag, dropped into the same
-`PAYROLL` library the box already ships `*PUBLIC *ALL`.
+a small file carrying this session's flag, dropped into the payroll library,
+which the box leaves readable to everyone.
 
 | | |
 |---|---|
 | Surfaces | TN5250 on `127.0.0.1:8992` (container port 3272). From the map: click **Town Hall**, then **green screen ↗** to open the in-browser terminal (`ttyd` on the player box, `:7681`). |
-| The bug | Three stacked IBM i misconfigurations, all real: (1) a **blank password signs you on as any profile** — the mock's long-standing convenience, and exactly what unhardened `QSECURITY 20`-era boxes did; (2) **`QSECOFR` still has its shipped default password** (`QSECOFR`); (3) the **`PAYROLL` library and `EMPMAST` file are `*PUBLIC *ALL`**, so any signed-on profile can read them from SQL. |
-| Tool | `as400_5250.py` — a purpose-built TN5250 client on the player box (menu option 1, "AS/400 payroll pull"). Negotiates the 5250 telnet options, signs on, opens `STRSQL`, runs `SELECT * FROM PAYROLL.PAYKEY`, scrapes the flag off the result panel. Option 2 lets you run your own `SELECT * FROM lib.table` (try `QIWS.QCUSTCDT`, `PAYROLL.EMPMAST`). |
-| By hand | `telnet`/`tn5250` to `:8992` if you have a client → User `QSECOFR`, Password `QSECOFR` (or any user, blank password) → `STRSQL` on the command line → `SELECT * FROM PAYROLL.PAYKEY`. |
+| The bug | Three stacked IBM i misconfigurations, all real: (1) a **weak sign-on** — a blank password is accepted for any profile, the way unhardened low-`QSECURITY` boxes behaved; (2) a **powerful profile still has its shipped default password**; (3) the **payroll library is left readable to the public**, so any signed-on profile can read it from Interactive SQL. |
+| Tool | `as400_5250.py` on the player box (menu option 1) drives the whole path: negotiate 5250, sign on, open `STRSQL`, run one `SELECT`, scrape the flag off the result panel. Option 2 lets you run your own `SELECT * FROM lib.table`. Or hand-drive it from the `ttyd` terminal. |
 | Physical result | Submitting the flag fires `cityhall_payroll`: Town Hall's `payroll_balance` drops to 0 on the map and `admin_pwned` flips. Same effect the Town Hall web LFI chains into — the payroll money is gone whichever way you got in. |
-| Flag location | `PAYROLL/PAYKEY`, column `RECONKEY`, one row. Read at mock startup from `/run/secret/as400_empmast/flag.txt`. |
+| Flag | one row in the payroll data, readable once you have a session. Read at mock startup from `/run/secret/as400_empmast/flag.txt`. |
 | Points | base 200, severity `loud`. |
-| Reset | reset panel `civic` scope restores Town Hall's balance and announcement. The AS/400 mints a fresh `PAYKEY` row only on a full `scoring` re-run. |
-| Hardened build | On a real box: set `QSECURITY` to 40+, require passwords (no blank sign-on), rotate `QSECOFR` off its default and restrict its device access (`QLMTSECOFR`), and pull `*PUBLIC` down to `*EXCLUDE` on `PAYROLL` with an authorization list for the people who actually run payroll. |
-| Real-world | Default and blank IBM i credentials (`QSECOFR/QSECOFR`, `QSRV/QSRV`, `QPGMR`) are a standing finding in every AS/400 security review; `*PUBLIC *ALL` on application libraries is the single most common IBM i exposure. TN5250 is cleartext — on a real network this whole exchange, password included, is on the wire. Green-screen depth here is deliberately shallow: a real SIGNON panel and a handful of curated, genuine bugs, not a full OS. |
+| Reset | reset panel `civic` scope restores Town Hall's balance and announcement. The AS/400 mints a fresh flag row only on a full `scoring` re-run. |
+| Hardened build | On a real box: set `QSECURITY` to 40+, require passwords (no blank sign-on), rotate the shipped default passwords and restrict powerful profiles' device access (`QLMTSECOFR`), and pull `*PUBLIC` down to `*EXCLUDE` on the payroll library with an authorization list for the people who actually run payroll. |
+| Real-world | Default and blank IBM i credentials are a standing finding in every AS/400 security review; `*PUBLIC *ALL` on application libraries is the single most common IBM i exposure. TN5250 is cleartext — on a real network this whole exchange, password included, is on the wire. Green-screen depth here is deliberately shallow: a real SIGNON panel and a handful of curated, genuine bugs, not a full OS. |
 
-## Wire notes (for `as400_5250.py`)
+### Wire notes (for `as400_5250.py`)
 
 The client is small on purpose, in the spirit of `modbus_attack.py`: just enough
-5250 to drive the payroll path, not a general-purpose emulator.
+5250 to drive the payroll path, not a general-purpose emulator. This documents
+how the client talks to the host, not how to exploit it.
 
 - EBCDIC is CP037 (Python's `cp037` codec, both directions).
 - Telnet negotiation: server sends `DO NEW-ENVIRON` + `DO TERMINAL-TYPE`; client
@@ -64,23 +69,24 @@ Behind First Packet Bank & Trust runs core banking on a z/OS LPAR: a real
 TN3270E host with a RACF logon panel, TSO READY, ISPF, SDSF, JCL/SUBMIT. The
 mock is vendored from web3270's `mock-lpar` (GPL-3.0). One addition: a RACF
 command family at the READY prompt — `LISTUSER`, `RLIST`, `SETROPTS LIST` —
-and a FACILITY profile, `BANK.XFER.APPROVE`, left in a deliberately weak state
-with this session's flag parked in its `INSTALLATION DATA`.
+and a general-resource profile left in a deliberately weak state with this
+session's flag parked in its metadata.
 
 | | |
 |---|---|
 | Surfaces | TN3270E on `127.0.0.1:8991` (container port 3270). From the map: click **First Packet Bank & Trust**, then **z16 green screen ↗** to open the in-browser terminal (`ttyd` on the player box, `:7681`). |
-| The bug | Three real, common RACF review findings: (1) **`IBMUSER` was never revoked** and still holds `SPECIAL OPERATIONS AUDITOR` (`LISTUSER IBMUSER`), and its install-default password `SYS1` still logs on; (2) the `BANK.XFER.APPROVE` FACILITY profile is **`UACC(READ)` and in `WARNING` mode** — a failed access check is logged but *allowed*, so the transfer-approval control is fail-open; (3) globally **`NOPROTECTALL`** with WARNING honored (`SETROPTS LIST`). Someone then stashed a reconciliation key in the profile's world-readable `INSTALLATION DATA`. |
-| Tool | `z16_3270.py` — a purpose-built TN3270E client on the player box (menu option 3, "RACF pull"). Negotiates TN3270E, logs on as `IBMUSER`/`SYS1`, runs `RLIST FACILITY BANK.XFER.APPROVE` at READY, scrapes the flag off the command panel. Option 4 runs any READY command you type (`SETROPTS LIST`, `LISTUSER IBMUSER`, `LISTAPF`). |
-| By hand | Any TN3270 client to `:8991` → `IBMUSER` / `SYS1` → at `READY` type `RLIST FACILITY BANK.XFER.APPROVE`. |
+| The bug | Three real, common RACF review findings: (1) a **default admin profile was never revoked** — it still holds `SPECIAL` + `OPERATIONS` and still logs on with its shipped password; (2) a **banking transfer-approval profile is world-readable and in `WARNING` mode** — a failed access check is logged but *allowed*, so the control is fail-open; (3) globally **`NOPROTECTALL`** with WARNING honored. Someone then stashed a reconciliation key in that profile's readable metadata. |
+| Tool | `z16_3270.py` on the player box (menu option 3) drives the whole path: negotiate TN3270E, log on, run one `RLIST` at READY, scrape the flag off the panel. Option 4 runs any READY command you type (`LISTUSER`, `SETROPTS LIST`, `LISTAPF`). Or hand-drive it from the `ttyd` terminal. |
 | Physical result | Submitting the flag fires `bank_drain`: the bank reads `carded`, balance 0, ATM drained, and the grid-tied alarm drops on the map — the same effect as the web JWT-`none` path. WARNING-mode approval means fraudulent transfers sail through. |
-| Flag location | The `BANK.XFER.APPROVE` FACILITY profile's `INSTALLATION DATA` field. Read at mock startup from `/run/secret/z16_racf/flag.txt`. |
+| Flag | in the transfer-approval profile's readable metadata field. Read at mock startup from `/run/secret/z16_racf/flag.txt`. |
 | Points | base 275, severity `loud`. |
 | Reset | reset panel `bank` scope restores the bank. A fresh flag is minted only on a full `scoring` re-run. |
-| Hardened build | Revoke `IBMUSER` (or at minimum strip `SPECIAL`/`OPERATIONS` and rotate the password); take `BANK.XFER.APPROVE` out of WARNING mode and set `UACC(NONE)` with an explicit access list; `SETROPTS PROTECTALL(FAILURES)`; and never put secrets in `INSTALLATION DATA` — it is metadata, readable by anyone who can `RLIST` the profile. |
-| Real-world | Never-revoked `IBMUSER` with the shipped `SYS1` password is a standing pen-test finding on z/OS. WARNING mode is meant to be a migration aid — profiles left in it for years are a classic audit hit (it silently permits every access it would otherwise deny). `NOPROTECTALL` means any dataset with no covering profile is open. TN3270 is cleartext. Green-screen depth here is deliberately shallow: a real RACF logon and a few genuine misconfigurations, not a z/OS emulator. |
+| Hardened build | Revoke the default admin (or at minimum strip `SPECIAL` / `OPERATIONS` and rotate the password); take the profile out of WARNING mode and set `UACC(NONE)` with an explicit access list; `SETROPTS PROTECTALL(FAILURES)`; and never put secrets in profile metadata — it is readable by anyone who can `RLIST` the profile. |
+| Real-world | A never-revoked default admin with its shipped password is a standing pen-test finding on z/OS. WARNING mode is meant to be a migration aid — profiles left in it for years are a classic audit hit (it silently permits every access it would otherwise deny). `NOPROTECTALL` means any dataset with no covering profile is open. TN3270 is cleartext. Green-screen depth here is deliberately shallow: a real RACF logon and a few genuine misconfigurations, not a z/OS emulator. |
 
 ### Wire notes (for `z16_3270.py`)
+
+How the client talks TN3270E to the host, not how to exploit it.
 
 - EBCDIC is CP037 (Python's `cp037` codec).
 - TN3270E negotiation (host-driven path): host sends `DO TN3270E` / `DO`+`WILL
@@ -94,7 +100,7 @@ with this session's flag parked in its `INSTALLATION DATA`.
   addr, <cp037 text> …]`. `0xFF` doubled; framed with `IAC EOR`.
 - The mock's inbound parser is byte-scanning and forgiving: it skips the 3
   bytes after an SBA and reads the EBCDIC that follows, concatenating all field
-  data. So the logon record is just `SBA` + `"IBMUSER SYS1"` and a READY
+  data. So the logon record is just `SBA` + `"<user> <password>"` and a READY
   command is `SBA` + the command text.
 - The client does not parse the 3270 order stream — it decodes the whole record
   as CP037 and regexes `PKTR\{...\}` off the result panel.
