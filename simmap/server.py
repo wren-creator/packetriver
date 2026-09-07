@@ -113,6 +113,70 @@ _GOSSIP = {
 }
 
 
+_DIRECTORY = [
+    ("Packet River Municipal Water Authority", "water.packetriver.range", "Public Works"),
+    ("Packet River Water Reclamation Facility", "reclamation.packetriver.range", "Public Works"),
+    ("Packet River Power & Light", "power.packetriver.range", "Public Works"),
+    ("Packet River Widget Works", "widgetworks.packetriver.range", "Industry"),
+    ("Packet River DOT - Signal Operations", "signals.packetriver.range", "Transportation"),
+    ("Packet River & Southern Railroad - Dispatch", "dispatch.packetriver.range", "Transportation"),
+    ("First Packet Bank & Trust", "firstpacketbank.packetriver.range", "Finance"),
+    ("FPB&T Core Banking", "core.firstpacketbank.packetriver.range", "Finance"),
+    ("Packet River Payroll Bureau", "payroll.packetriver.range", "Finance"),
+    ("Packet River Merchant Services", "merchant.packetriver.range", "Finance"),
+    ("Town of Packet River - Borough Hall", "townhall.packetriver.range", "Civic"),
+    ("Packet River Police Department", "pd.packetriver.range", "Civic"),
+    ("Packet River Fire & Rescue", "fd.packetriver.range", "Civic"),
+    ("Packet River General Store", "generalstore.packetriver.range", "Main Street"),
+    ("Riverside Hardware & Supply", "hardware.packetriver.range", "Main Street"),
+    ("Packet River Pharmacy", "pharmacy.packetriver.range", "Main Street"),
+    ("The Packet River Diner", "diner.packetriver.range", "Main Street"),
+    ("Riverbend Barber & Salon", "barber.packetriver.range", "Main Street"),
+    ("The Broken Packet Tavern", "tavern.packetriver.range", "Main Street"),
+    ("Packet River Cleaners", "cleaners.packetriver.range", "Main Street"),
+    ("Packet River Bait & Tackle", "baittackle.packetriver.range", "Main Street"),
+]
+
+
+@app.get("/directory")
+def directory():
+    """A plain corporate/municipal directory. Public-facing recon fodder: it
+    hands you every official name and its hostname in one page."""
+    rows = "".join(
+        f"<tr><td>{name}</td><td><code>{host}</code></td><td>{dept}</td></tr>"
+        for name, host, dept in _DIRECTORY
+    )
+    html = ("<!doctype html><meta charset=utf-8><title>Packet River - Organisation Directory</title>"
+            "<style>body{font:14px/1.6 system-ui;max-width:760px;margin:32px auto;padding:0 18px;color:#243}"
+            "table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left}"
+            "code{background:#f2f4f6;padding:1px 4px}</style>"
+            "<h1>Packet River - Organisation Directory</h1>"
+            "<p>Systems and services on the municipal network. For access requests contact "
+            "IT at <code>it@packetriver.range</code>.</p>"
+            f"<table><tr><th>Organisation</th><th>Host</th><th>Group</th></tr>{rows}</table>")
+    return html, 200, {"Content-Type": "text/html"}
+
+
+@app.get("/whois")
+def whois():
+    """A toy whois-over-HTTP. `/whois?q=<name>` returns a record for a known
+    hostname or org substring."""
+    q = (request.args.get("q") or "").strip().lower()
+    if not q:
+        return ("usage: /whois?q=<hostname or organisation>\n", 200,
+                {"Content-Type": "text/plain"})
+    for name, host, dept in _DIRECTORY:
+        if q in host.lower() or q in name.lower():
+            body = (f"organisation:  {name}\n"
+                    f"host:          {host}\n"
+                    f"group:         {dept}\n"
+                    f"registrar:     Town of Packet River, IT\n"
+                    f"contact:       it@packetriver.range\n"
+                    f"nameserver:    ns.packetriver.range\n")
+            return body, 200, {"Content-Type": "text/plain"}
+    return (f"no match for '{q}'\n", 404, {"Content-Type": "text/plain"})
+
+
 @app.get("/robots.txt")
 def robots():
     if _EGGS == "off":

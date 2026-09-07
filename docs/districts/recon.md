@@ -53,11 +53,20 @@ Common name (map hover) · official name · `*.packetriver.range` label:
 | Dry Cleaners | Packet River Cleaners | `cleaners` |
 | Bait & Tackle | Packet River Bait & Tackle | `baittackle` |
 
-The Main Street shops all CNAME onto the one shared `packetriver-websites`
-container, a real shared-hosting setup. Telling them apart by `Server` header
-and a per-vhost 404 (real `Host:`-routing at the edge) is a
-[roadmap](../../ROADMAP.md) follow-up; today they share the container's
-fingerprint.
+The Main Street shops and the civic sites CNAME onto `packetriver-gateway`,
+which routes each `<name>.packetriver.range` to its subdirectory of the one
+shared `websites` container and hands each a distinct `Server` /
+`X-Powered-By` (real shared hosting, told apart at the app layer). The
+backend's own Apache 404 page still leaks under that mask.
+
+More recon surface:
+
+- **Reverse DNS.** `recon.py rev` (or `dig axfr 20.31.172.in-addr.arpa @dns`)
+  dumps a PTR for every box the name server knew at boot. Cross-check it
+  against the forward zone.
+- **`/directory`** and **`/whois?q=<name>`** on the map server: a plain
+  municipal directory listing every official name and its hostname, and a
+  toy whois-over-HTTP.
 
 ## No cross-portal navigation
 

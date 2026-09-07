@@ -19,6 +19,15 @@ packetriver.range:53 {
     errors
 }
 
+20.31.172.in-addr.arpa:53 {
+    bind 172.31.20.253
+    file /etc/coredns/db.reverse
+    transfer {
+        to *
+    }
+    errors
+}
+
 .:53 {
     bind 172.31.20.253
     forward . 127.0.0.11

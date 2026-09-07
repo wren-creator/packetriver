@@ -4,6 +4,18 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Recon layer - the deferred pieces
+
+- **Real `Host:`-header vhost routing.** The shop and civic CNAMEs point at the
+  gateway now. nginx routes each `<name>.packetriver.range` to its subdir of
+  the shared `websites` container and gives each a distinct `Server` /
+  `X-Powered-By`, so app-layer fingerprinting tells the shops apart even though
+  they are one container. An unknown `*.packetriver.range` gets the map.
+- **Reverse DNS.** `dns` resolves each container's it-net address at boot and
+  serves an AXFR-able `20.31.172.in-addr.arpa` zone; `recon.py rev` sweeps it.
+- **Corporate directory + whois.** `/directory` and `/whois?q=` on the map
+  server list every official name and its hostname.
+
 ### Segmented build - coverage extended
 
 - `docker-compose.segmented.yml` now hardens the web tier and the Phase 5

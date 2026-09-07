@@ -92,16 +92,19 @@ reuse map live in the design doc.
   - **No cross-portal navigation.** The field-plc HMI `<nav>` no longer links
     sibling plants and `GET /` no longer lists the four portals (returns 404).
     You land on each item independently, from the map or from recon by name.
-  - Still open (folded here, lower priority):
-    - `gateway` real `Host:`-header vhost routing so the 8 shops - still one
-      shared container - are reached by name with distinct `Server` /
-      `X-Powered-By` / custom 404 per vhost. Today the shop CNAMEs all land on
-      `packetriver-websites` and share its fingerprint.
-    - PTR / reverse-DNS sweep (CNAME targets are dynamic container IPs; needs
-      static IPs or a boot-time resolve step).
-    - A mock `whois` / internal corporate-directory page seeding a few
-      hostnames (ties into the easter-egg hints). `.local` stays out (mDNS
-      conflict on macOS).
+  - [x] `gateway` real `Host:`-header vhost routing. The shop / civic CNAMEs
+    point at `packetriver-gateway` now; nginx routes each `<shop>.packetriver.range`
+    to its subdir of the shared `websites` container and hands each a distinct
+    `Server` / `X-Powered-By` (`map $host ...`). An unknown `*.packetriver.range`
+    gets the map. (The backend's own 404 page still leaks `Apache` - per-vhost
+    ErrorDocument is a smaller follow-up.)
+  - [x] PTR / reverse-DNS. `dns` resolves each container's it-net address at
+    boot and serves an AXFR-able `20.31.172.in-addr.arpa` reverse zone;
+    `recon.py rev` sweeps it. Boot-time snapshot (a container restart needs a
+    `dns` rebuild).
+  - [x] A mock corporate directory + toy whois: `/directory` and
+    `/whois?q=` on the map server list every official name and its hostname.
+    `.local` stays out (mDNS conflict on macOS).
 - [x] **Phase 5 - Network-attack lanes (a different skill from web exploits).**
   - [x] **5a - The Diner Wi-Fi lane.** `netlab` (AP: cleartext rewards portal +
     toy POP3) + `netlab-patron` (a bot that logs in and reads mail in the
