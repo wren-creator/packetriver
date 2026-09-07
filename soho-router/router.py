@@ -78,7 +78,8 @@ def login():
         if (request.form.get("user") == ADMIN_USER
                 and request.form.get("pass") == ADMIN_PASS):
             r = make_response(redirect("/admin"))
-            r.set_cookie(_SESSION, _TOKEN, httponly=True)
+            r.set_cookie(_SESSION, _TOKEN, httponly=True,
+                         max_age=int(os.environ.get("PKT_PORTAL_TTL", "180") or 180))
             return r
         return _page("Login", "<p>Wrong username or password.</p>"
                      "<p><a href=/login>try again</a></p>"), 401

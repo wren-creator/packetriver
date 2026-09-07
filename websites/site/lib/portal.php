@@ -23,11 +23,28 @@ function pr_meta(): array
     return SHOP_META[pr_shop()] ?? ['name' => ucfirst(pr_shop()), 'tag' => ''];
 }
 
+// Portal sessions are short-lived on purpose: open a portal after any real gap
+// and it asks for credentials again, so the login step is always part of the
+// exercise. Active use keeps it alive. Tunable with PKT_PORTAL_TTL (seconds).
+function pr_portal_ttl(): int
+{
+    $t = (int) (getenv('PKT_PORTAL_TTL') ?: 180);
+    return $t > 0 ? $t : 180;
+}
+
 function pr_start(): void
 {
     if (session_status() === PHP_SESSION_NONE) {
+        session_set_cookie_params(['lifetime' => 0]);   // dies with the browser
         session_start();
     }
+    $ttl = pr_portal_ttl();
+    if (isset($_SESSION['_seen']) && (time() - $_SESSION['_seen']) > $ttl) {
+        $_SESSION = [];
+        session_destroy();
+        session_start();
+    }
+    $_SESSION['_seen'] = time();
 }
 
 function pr_current_user(): ?array

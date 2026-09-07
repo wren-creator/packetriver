@@ -12,6 +12,7 @@ write that skips the login entirely.
 import json
 import os
 import pathlib
+import time
 
 from flask import Flask, jsonify, redirect, request, session
 
@@ -20,6 +21,19 @@ from store import FCTX, FLOCK, PCTX, PLOCK, SGCTX, SGLOCK, WCTX, WLOCK, rd, wr
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("HMI_SECRET", "field-plc-dev")
+
+# Short-lived operator sessions: open the HMI after a real gap and it asks to
+# sign in again. Active use keeps it alive. Tunable with PKT_PORTAL_TTL.
+_PORTAL_TTL = int(os.environ.get("PKT_PORTAL_TTL", "180") or 180)
+
+
+@app.before_request
+def _portal_idle_timeout():
+    seen = session.get("_seen")
+    if seen and (time.time() - seen) > _PORTAL_TTL:
+        for k in [k for k in list(session.keys()) if k.startswith("op_")]:
+            session.pop(k, None)
+    session["_seen"] = time.time()
 
 # Per-plant operator logins are minted by `scoring` into /run/secret/creds/ and
 # rotate on policy (blue team rolls them at Alert L2). Read live per request so

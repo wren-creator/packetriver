@@ -115,6 +115,7 @@ services:
       DB_USER: "shop"
       DB_PASS: "shop"
       VERBOSE_ERRORS: "${VERBOSE_ERRORS:-1}"
+      PKT_PORTAL_TTL: "${PKT_PORTAL_TTL:-180}"
       PKT_EGGS: "${PKT_EGGS:-off}"
     volumes:
       - pkt-flags:/run/secret:ro       # Phase 3 tightens this to a per-target subpath
@@ -172,6 +173,8 @@ services:
     container_name: packetriver-bank
     depends_on:
       scoring: { condition: service_healthy }
+    environment:
+      PKT_PORTAL_TTL: "${PKT_PORTAL_TTL:-180}"
     volumes:
       - pkt-flags:/run/secret:ro
     ports:
@@ -209,6 +212,7 @@ services:
     depends_on:
       scoring: { condition: service_healthy }
     environment:
+      PKT_PORTAL_TTL: "${PKT_PORTAL_TTL:-180}"
       MODBUS_WRITE_OPEN: "${MODBUS_WRITE_OPEN:-1}"
       PKT_EGGS: "${PKT_EGGS:-off}"
       HMI_USER: "operator"
@@ -368,6 +372,7 @@ services:
       scoring: { condition: service_healthy }
     environment:
       ADMIN_USER: "admin"
+      PKT_PORTAL_TTL: "${PKT_PORTAL_TTL:-180}"
       ADMIN_PASS: "${SOHO_ADMIN_PASS:-admin}"
     volumes:
       - pkt-flags:/run/secret:ro

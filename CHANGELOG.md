@@ -4,6 +4,15 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Portals ask for credentials again
+
+- Every login portal (the shops, the field HMI, the bank, the SOHO router) now
+  has a short idle timeout, `PKT_PORTAL_TTL` (default 180 s). Open a portal
+  after a real gap and it presents the login form instead of dropping you
+  straight onto the dashboard, so the login step is always part of the
+  exercise. Active use keeps a session alive. The bank JWT `exp` follows the
+  same TTL; the SOHO router cookie gets a matching `max-age`.
+
 ### "Packet River 101" - the syllabus EPUB
 
 - `docs/syllabus-epub/` builds to `docs/Packet-River-101.epub`: nine sessions,

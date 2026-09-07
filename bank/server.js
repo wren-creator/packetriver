@@ -44,10 +44,12 @@ const ACCOUNTS = {
 let BANK_TOTAL = () => Object.values(ACCOUNTS).reduce((s, a) => s + a.balance, 0);
 
 // --- token handling (with the alg:none flaw) --------------------------
+const TOKEN_TTL = parseInt(process.env.PKT_PORTAL_TTL || '180', 10) || 180;
+
 function makeToken(u) {
   const header = b64uJson({ alg: 'HS256', typ: 'JWT' });
   const payload = b64uJson({ sub: u.sub, role: u.role, acct: u.acct,
-                             exp: Math.floor(Date.now() / 1000) + 3600 });
+                             exp: Math.floor(Date.now() / 1000) + TOKEN_TTL });
   const sig = crypto.createHmac('sha256', SECRET).update(`${header}.${payload}`).digest('base64url');
   return `${header}.${payload}.${sig}`;
 }
