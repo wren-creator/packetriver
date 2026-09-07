@@ -96,6 +96,9 @@ function buildOverlay(layout) {
   });
   REFS.streetlights = layout.streetlights.map(sp =>
     el("circle", { cx: X(sp.x), cy: Y(sp.y), r: 3, class: "streetlight" }, svg));
+
+  // hook for the ?edit=1 overlay editor (edit.js); inert otherwise
+  window.PKTR_EDIT = { layout, VB, overlay: svg, rebuild: () => buildOverlay(layout) };
 }
 
 // ---------------------------------------------------------------- render

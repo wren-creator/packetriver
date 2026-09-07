@@ -4,6 +4,19 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Overlay editor (`?edit=1`)
+- `simmap/web/edit.js`: a drag-and-copy editor for `overlay.json`. Loads for
+  everyone, inert without `?edit=1` on the URL, so players never see it. With
+  it on: a draggable handle for every coordinate (building centres + size,
+  intersections, houses, streetlights, rail path, river, swimmers, the two
+  utility flows, spur points), a 5% / 2.5% calibration grid, a live cursor
+  fraction readout, arrow-key nudging (0.001 / 0.01), polyline vertex
+  insert/delete, and a JSON panel with copy / download / apply / revert. The
+  real overlay redraws live as you drag.
+- `app.js` exposes a small `window.PKTR_EDIT` hook (layout, viewBox, rebuild);
+  `index.html` loads `edit.js` deferred. `docs/overlay-editing.md` documents
+  the coordinate model and the editor.
+
 ### Learning design - guidance, not walkthroughs
 - `docs/learning-design.md`: the game must not ship a copy-paste path to
   controlling the town in 30 minutes. Four help tiers (orientation / opt-in

@@ -15,7 +15,9 @@ reuse map live in the design doc.
   `/leaderboard`, the score formula, the live leaderboard, the target
   side-panel, the boxed-in `player` box. Sign up, get a shop session, UNION the
   flag out of the search, submit it, watch the store break on the map (+alert),
-  beat your best. Overlay alignment still rough - tweak later.
+  beat your best. Overlay alignment gets a drag-and-copy editor
+  (`?edit=1`, see `docs/overlay-editing.md`); a final pass waits for the
+  Phase 6 art.
 - [x] **Phase 2 - Water + power districts.** `field-plc` runs two real
   Modbus/TCP soft-PLCs (water :502, power :503) plus a shared operator HMI
   (`operator`/`operator`). simmap drives the physics from them via `icsloops`

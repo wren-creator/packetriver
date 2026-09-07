@@ -79,19 +79,23 @@ would rather attack from your own shell.
 
 ## Status
 
-Early build. See `ROADMAP.md`. **Phases 0-2** are in:
+Early build. See `ROADMAP.md`. **Phases 0-3** are in:
 
 - the pixel-art live map with its overlay
-- the **General Store** (web) end to end - a login portal, a real SQL injection
-  in the product search, a flag you UNION out and submit
-- the **water and power districts** on real Modbus - stop the high-lift pump
-  and the town goes dry, open a feeder breaker and a zone goes dark; the flag
-  is in the PLC's maintenance-mode register block; there's an operator HMI at
-  `:8093`
+- all of **Main Street** (8 storefronts, one bug class each), **Town Hall**,
+  **Police**, **Fire**, the **payment gateway**, and **First Packet Bank &
+  Trust**, each behind its login portal
+- the **water, power, and widget-factory** districts on real Modbus, with an
+  operator HMI
+- an **AS/400** behind Town Hall (TN5250) and an **IBM z16** behind the Bank
+  (TN3270), both real green screens with curated bugs
+- the score / run / leaderboard loop, the reset panel, and the boxed-in
+  attacker box with a browser terminal
 
-The rest of Main Street, the bank, Town Hall, sewage, traffic, rail, and the
-Wi-Fi lane land over Phases 3-6. Overlay alignment against the map art is still
-being tightened.
+Sewage, traffic, rail, the Alert-Level meter, the blue-team response, and the
+Wi-Fi lanes land over Phases 4-6. Overlay alignment against the map art has a
+drag-and-copy editor (`?edit=1`, see `docs/overlay-editing.md`); a final pass
+waits for the Phase 6 art.
 
 ## More
 
