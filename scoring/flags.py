@@ -152,6 +152,16 @@ TECHNIQUES = {
                 "RLIST command family. Fix: revoke defaults, UACC(NONE) plus "
                 "an access list, take profiles out of WARNING.",
     },
+    "z16_apf": {
+        "subsystem": "bank", "target": "bank", "effect": "bank_drain",
+        "severity": "loud", "base": 250,
+        "hint": "TN3270 green screen, at READY. LISTAPF already flags an "
+                "APF-authorised library that is also world-writable. Link a "
+                "routine into it and CALL it and you run authorised (key 0 / "
+                "supervisor state); the mock hands back an escalation token. "
+                "Fix: no writable APF libraries, tight volume authority, "
+                "program-control on APF, and audit APF changes.",
+    },
     "water_modbus_pump": {
         "subsystem": "utility",
         "target": "water",

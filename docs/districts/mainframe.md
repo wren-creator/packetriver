@@ -107,6 +107,18 @@ session's flag parked in its metadata.
 | Hardened build | Revoke the default admin (or at minimum strip `SPECIAL` / `OPERATIONS` and rotate the password); take the profile out of WARNING mode and set `UACC(NONE)` with an explicit access list; `SETROPTS PROTECTALL(FAILURES)`; and never put secrets in profile metadata — it is readable by anyone who can `RLIST` the profile. |
 | Real-world | A never-revoked default admin with its shipped password is a standing pen-test finding on z/OS. WARNING mode is meant to be a migration aid — profiles left in it for years are a classic audit hit (it silently permits every access it would otherwise deny). `NOPROTECTALL` means any dataset with no covering profile is open. TN3270 is cleartext. Green-screen depth here is deliberately shallow: a real RACF logon and a few genuine misconfigurations, not a z/OS emulator. |
 
+### `z16_apf` — a writable APF library
+
+| | |
+|---|---|
+| The bug | `LISTAPF` lists `USER.LOADLIB` on `WORK01` as APF-authorised, and it is also writable by anyone. `LISTDS 'USER.LOADLIB'` confirms the volume authority. An APF library you can write to is an APF library you can subvert: link an authorised routine in and `CALL` it and you are running in supervisor state, key 0 — total control of the LPAR. |
+| Tool | `z16_3270.py "CALL 'USER.LOADLIB(RX01)'"`, or hand-drive at READY. |
+| Physical result | fires `bank_drain` (same end state as the RACF and JWT paths). |
+| Flag | the escalation token the `CALL` prints. Read at mock startup from `/run/secret/z16_apf/flag.txt`. |
+| Points | base 250, severity `loud`. |
+| Hardened build | no writable APF libraries; tight authority on the volumes that hold them; program control (`PROGRAM` class) on APF modules; and audit every APF-list change. |
+| Real-world | "APF library that is world-writable" is one of the highest-severity findings a z/OS review can produce, and it is not rare. It is a straight line from `UPDATE` on a dataset to key 0. |
+
 ### Wire notes (for `z16_3270.py`)
 
 How the client talks TN3270E to the host, not how to exploit it.

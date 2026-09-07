@@ -63,6 +63,7 @@ Register and start a run once (`/api/score/register`, `/api/score/run`), then
 | B15 `bank_jwt_none` | forge an `alg:none` token with an elevated role (answer key) | staff dashboard renders the "Fed wire settlement token" (flag); submit → bank `carded`, balance 0, ATM drained, alarm cut on the map |
 | B16 `bank_account_idor` | `curl` over `/api/accounts/:id` on `:8100` | the municipal account's `memo` carries the flag; submit → bank `db_dumped` |
 | B17 `z16_racf` | `python3 /opt/pktr/scripts/z16_3270.py` menu option 3 | negotiates TN3270E, logs on, `RLIST` scrapes `PKTR{...}`; submit → bank drain (same end state as B15) |
+| B17b `z16_apf` | `z16_3270.py "LISTDS 'USER.LOADLIB'"` then `z16_3270.py "CALL 'USER.LOADLIB(RX01)'"` | LISTDS confirms the APF library is writable; the CALL prints the key-0 escalation token; submit → 250 base, bank drain |
 
 ### Group D — utilities / OT
 

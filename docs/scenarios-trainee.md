@@ -1,6 +1,6 @@
 # Packet River scenarios, trainee edition
 
-Twenty-seven planted weaknesses in six groups. This is the instructor edition
+Twenty-eight planted weaknesses in six groups. This is the instructor edition
 with the **Fix** line removed from each entry: work out the remediation
 yourself, then check it against [`scenarios.md`](scenarios.md).
 
@@ -231,6 +231,16 @@ green screen behind it. Full writeups in
 **Confirm / exploit with:** `z16_3270.py` on the player box (menu option 3), or hand-drive RACF from the `ttyd` terminal. Exact `RLIST` in the answer key.
 **Physical consequence:** `bank_drain`, same end state as the JWT path.
 **Points / severity:** 275 / loud.
+**Fix:** _work this out, then check the instructor edition._
+
+### z16_apf - writable APF library -> supervisor state
+**Where:** TN3270 green screen, the READY prompt.
+**Real-world parallel:** a world-writable APF-authorised library is one of the highest-severity z/OS review findings there is.
+**Vulnerability:** `LISTAPF` names an APF library that `LISTDS` shows is also writable. Link a routine in and `CALL` it and you run key 0 / supervisor state.
+**MITRE ATT&CK:** T1068 (exploitation for privilege escalation), T1548.
+**Confirm / exploit with:** `z16_3270.py "CALL 'USER.LOADLIB(RX01)'"`, or hand-drive at READY.
+**Physical consequence:** `bank_drain` (same end state as the RACF and JWT paths).
+**Points / severity:** 250 / loud.
 **Fix:** _work this out, then check the instructor edition._
 
 ---

@@ -1,6 +1,6 @@
 # Packet River scenarios, instructor edition
 
-Twenty-seven planted weaknesses in six groups. Trainees work from
+Twenty-eight planted weaknesses in six groups. Trainees work from
 [`scenarios-trainee.md`](scenarios-trainee.md), which is this file with the
 **Fix** line removed from each entry.
 
@@ -232,6 +232,16 @@ green screen behind it. Full writeups in
 **Physical consequence:** `bank_drain`, same end state as the JWT path.
 **Points / severity:** 275 / loud.
 **Fix:** revoke the default admin (or strip `SPECIAL`/`OPERATIONS` and rotate), take the profile out of WARNING, `UACC(NONE)` + an access list, `SETROPTS PROTECTALL(FAILURES)`, and never store secrets in profile metadata.
+
+### z16_apf - writable APF library -> supervisor state
+**Where:** TN3270 green screen, the READY prompt.
+**Real-world parallel:** a world-writable APF-authorised library is one of the highest-severity z/OS review findings there is.
+**Vulnerability:** `LISTAPF` names an APF library that `LISTDS` shows is also writable. Link a routine in and `CALL` it and you run key 0 / supervisor state.
+**MITRE ATT&CK:** T1068 (exploitation for privilege escalation), T1548.
+**Confirm / exploit with:** `z16_3270.py "CALL 'USER.LOADLIB(RX01)'"`, or hand-drive at READY.
+**Physical consequence:** `bank_drain` (same end state as the RACF and JWT paths).
+**Points / severity:** 250 / loud.
+**Fix:** no writable APF libraries; tight volume authority; program control on APF modules; audit APF changes.
 
 ---
 

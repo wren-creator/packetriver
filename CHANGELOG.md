@@ -4,6 +4,16 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### z16 - APF escalation
+
+- New `z16_apf` technique (base 250, loud). `LISTAPF` already flagged
+  `USER.LOADLIB` as APF-authorised and writable; `LISTDS 'USER.LOADLIB'` now
+  confirms the volume authority and `CALL 'USER.LOADLIB(<member>)'` runs
+  authorised - the mock returns a key-0 / supervisor-state escalation token.
+  Fires `bank_drain`, the same end state as the RACF and JWT paths. (The
+  deeper mainframe depth - CICS CEMT/CECI, TSO REXX, a runnable RPG payroll
+  app - stays on the roadmap.)
+
 ### Widget Works - a management plane
 
 - New `factory-snmp` container: a real net-snmp agent with the shipped

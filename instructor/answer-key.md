@@ -144,6 +144,16 @@ Flags are `PKTR{<technique_id>_<random hex>}` and are minted fresh on every
   `UACC(NONE)` + access list on `BANK.XFER.APPROVE`; out of `WARNING`;
   `SETROPTS PROTECTALL(FAILURES)`; never put secrets in `INSTALLATION DATA`.
 
+### `z16_apf` — writable APF library (map: `bank_drain`) — Phase F
+- The move: at `READY`, `LISTAPF` names `USER.LOADLIB` on `WORK01` as
+  APF-authorised and writable; `LISTDS 'USER.LOADLIB'` confirms the volume
+  authority. `CALL 'USER.LOADLIB(RX01)'` (any member) runs authorised - the
+  mock returns `IEA995I ... SUPERVISOR STATE, KEY 0` and the escalation token.
+  `z16_3270.py "CALL 'USER.LOADLIB(RX01)'"`.
+- The flag: the token printed by the `CALL`.
+- Fix: no writable APF libraries; tight authority on the volumes holding them;
+  `PROGRAM`-class control on APF modules; audit every APF-list change.
+
 ---
 
 ## Utilities (OT)

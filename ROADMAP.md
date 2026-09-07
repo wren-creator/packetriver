@@ -179,10 +179,14 @@ reuse map live in the design doc.
     `session.js` into the map panel is the remaining polish.)
   - [x] an **IBM z16** behind **First Packet Bank & Trust** for core banking
     (TN3270E, z/OS, RACF). Landed in Phase 3d - a RACF command family with
-    three curated findings. Remaining depth: CICS transaction abuse
-    (CEMT/CECI), APF / the writable-APF-library escalation the mock's `LISTAPF`
-    already hints at, TSO REXX, surrogat, and a full interactive in-browser
-    3270 instead of the built client.
+    three curated findings.
+    - [x] APF escalation (`z16_apf`, base 250). `LISTDS 'USER.LOADLIB'`
+      confirms the APF library from `LISTAPF` is also writable; `CALL` a
+      routine out of it and the mock hands back a key-0 escalation token.
+    - [ ] Remaining depth: CICS transaction abuse (CEMT/CECI), TSO REXX,
+      surrogate, a runnable RPG IV / DDS payroll app on the AS/400 +
+      library-list injection, and a full in-browser 3270 instead of the
+      built client.
   Both tie into the web front doors: pop the City Hall payroll portal then
   pivot to the AS/400; pop the bank's online banking then pivot to the z16.
 - [x] **Widget Factory PLC controls.** Assembly line (conveyor run/stop, line

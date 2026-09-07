@@ -31,6 +31,14 @@ try {
   RACF_RECON_KEY = fs.readFileSync('/run/secret/z16_racf/flag.txt', 'utf8').trim();
 } catch { /* flag not planted */ }
 
+// Packet River: the APF-authorised, WRITABLE library USER.LOADLIB on WORK01
+// (see LISTAPF). Link an authorised routine there and CALL it and you are in
+// key 0 / supervisor state. This token confirms it. Read once at startup.
+let APF_ESC_KEY = 'PKTR{z16_apf_flag_missing}';
+try {
+  APF_ESC_KEY = fs.readFileSync('/run/secret/z16_apf/flag.txt', 'utf8').trim();
+} catch { /* flag not planted */ }
+
 // Packet River: curated RACF findings surfaced by the LISTUSER / RLIST /
 // SETROPTS commands added to the READY prompt below. All three are real,
 // common review findings: a never-revoked IBMUSER with SPECIAL+OPERATIONS,
@@ -1722,6 +1730,29 @@ function handleConnection(socket) {
             currentScreen = 'tsoCmd'; sendCurrentScreen();
           } else if (cmd.startsWith('LISTCAT')) {
             state.tsoOutput = tryListcat(cmd) || `IKJ56500I COMMAND ${cmd} NOT FOUND`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if ((cmd.startsWith('LISTD') || cmd.startsWith('LISTDS')) && cmd.includes('USER.LOADLIB')) {
+            state.tsoOutput =
+              `USER.LOADLIB\n` +
+              `--RECFM-LRECL-BLKSIZE-DSORG\n` +
+              `  U     **    32760   PO\n` +
+              `--VOLUMES--\n` +
+              `  WORK01\n` +
+              `--MEMBERS--\n` +
+              `  IEFBR14\n  RX01\n  TESTPGM\n` +
+              `IKJ56650I  USER.LOADLIB is APF-authorised (see LISTAPF) and the\n` +
+              `           WORK01 volume grants UPDATE to *. An APF library you can\n` +
+              `           write is an APF library you can subvert.`;
+            currentScreen = 'tsoCmd'; sendCurrentScreen();
+          } else if (cmd.startsWith('CALL') && cmd.includes('USER.LOADLIB')) {
+            // CALLing any routine out of the writable APF library runs it
+            // authorised: key 0 / supervisor state.
+            state.tsoOutput =
+              `IEE252I  MODULE LOADED FROM USER.LOADLIB (APF)\n` +
+              `IEA995I  CALLER NOW IN SUPERVISOR STATE, KEY 0\n` +
+              `+++ privilege escalation confirmed +++\n` +
+              `escalation token: ${APF_ESC_KEY}\n` +
+              `READY`;
             currentScreen = 'tsoCmd'; sendCurrentScreen();
           } else if (cmd === 'LOGOFF' || cmd.startsWith('LOGOFF ')) {
             // Real TSO: bare LOGOFF ends the session and drops the terminal
