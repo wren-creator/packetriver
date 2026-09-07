@@ -67,21 +67,33 @@ def _flag_block(ctx, lock, maint_coil, flag) -> None:
     wr(ctx, lock, 4, FLAG_IR_BASE, pack_flag(flag) if on else [0] * FLAG_IR_LEN)
 
 
+HAND_BASE = 20   # HR HAND_BASE+coil set by the HMI = "this device is in HAND"
+
+
+def _assert_safe(ctx, lock, golden) -> None:
+    """Re-assert each coil to its golden value UNLESS the operator put that
+    device in HAND from the HMI (HR HAND_BASE+coil). The unauthenticated
+    Modbus attack does not touch the HAND flags, so it still gets stomped."""
+    hand = rd(ctx, lock, 3, HAND_BASE, len(golden))
+    for c, want in enumerate(golden):
+        if not hand[c]:
+            wr(ctx, lock, 1, c, [want])
+
+
 def scan_loop() -> None:
     while True:
         try:
             if not WRITE_OPEN:
-                # hardened: re-assert the safe operating state every scan
-                wr(WCTX, WLOCK, 1, 0, [1, 1, 1, 1])
+                # hardened: re-assert the safe operating state every scan,
+                # skipping any device the operator has taken to HAND from the HMI
+                _assert_safe(WCTX, WLOCK, [1, 1, 1, 1])
                 _clamp(WCTX, WLOCK, WATER["hr"]["HIGHLIFT_SP"], *WATER["sp_clamp"]["HIGHLIFT_SP"])
                 _clamp(WCTX, WLOCK, WATER["hr"]["CHLORINE_SP"], *WATER["sp_clamp"]["CHLORINE_SP"])
-                wr(PCTX, PLOCK, 1, 0, [1, 1, 1, 1, 1, 1])
+                _assert_safe(PCTX, PLOCK, [1, 1, 1, 1, 1, 1])
                 _clamp(PCTX, PLOCK, POWER["hr"]["GEN_SP"], *POWER["sp_clamp"]["GEN_SP"])
-                wr(FCTX, FLOCK, 1, FACTORY["coil"]["LINE_RUN"], [1])
-                wr(FCTX, FLOCK, 1, FACTORY["coil"]["ESTOP_BYPASS"], [0])
-                wr(FCTX, FLOCK, 1, FACTORY["coil"]["HOPPER_GATE"], [0])
+                _assert_safe(FCTX, FLOCK, [1, 0, 1, 0])   # line on, estop armed, gantry on, hopper shut
                 _clamp(FCTX, FLOCK, FACTORY["hr"]["LINE_SPEED"], *FACTORY["sp_clamp"]["LINE_SPEED"])
-                wr(SGCTX, SGLOCK, 1, 0, [1, 1, 1, 0])   # aeration/dose/return on, bypass shut
+                _assert_safe(SGCTX, SGLOCK, [1, 1, 1, 0])   # aeration/dose/return on, bypass shut
                 _clamp(SGCTX, SGLOCK, SEWAGE["hr"]["DOSE_SP"], *SEWAGE["sp_clamp"]["DOSE_SP"])
 
             # alarms derived from the PVs simmap writes back
