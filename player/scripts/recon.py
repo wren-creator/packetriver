@@ -20,10 +20,10 @@ ZONE = "packetriver.range"
 def dns_sweep():
     guard("dns")
     print(f"\n=== DNS: the {ZONE} name server ===", flush=True)
-    subprocess.run(["dig", "+noall", "+answer", "@dns", ZONE, "SOA"])
+    subprocess.run(["dig", "+noall", "+answer", "@172.31.20.253", ZONE, "SOA"])
     print("\n--- trying a zone transfer (AXFR) ---", flush=True)
     r = subprocess.run(
-        ["dig", "+noall", "+answer", "+time=3", "+tries=1", "AXFR", ZONE, "@dns"],
+        ["dig", "+noall", "+answer", "+time=3", "+tries=1", "AXFR", ZONE, "@172.31.20.253"],
         capture_output=True, text=True,
     )
     print(r.stdout, end="")

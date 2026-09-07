@@ -426,6 +426,12 @@ def api_cmd(plant):
 # because you already knew its name (recon), not by following a link from here.
 @app.get("/")
 def index():
+    # host-based routing for recon-by-name
+    host = request.host.split(":")[0].split(".")[0]
+    mapping = {"water": "water", "reclamation": "sewage", "power": "power", "widgetworks": "factory"}
+    if host in mapping:
+        return redirect(f"/{mapping[host]}")
+
     return ("<!doctype html><meta charset=utf-8><title>Field Operations</title>"
             "<p style=\"font:15px system-ui;margin:40px\">Packet River Field Operations. "
             "Operator terminals are not listed here.</p>"), 404
