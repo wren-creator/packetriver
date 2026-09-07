@@ -65,6 +65,12 @@ scenario in `docs/scenarios.md` carries a real incident or CVE reference and a
 fix. The map is pixel-art isometric with a live overlay for everything that
 lights up, floods, or goes dark.
 
+Packet River gives you *direction*, not a script. The building blurbs and the
+district docs tell you the bug class, the tool, and the fix; they do not hand
+you a working payload. Stuck? There is an opt-in hint that costs points, and
+hidden notes scattered around the town that cost only the looking. See
+[`docs/learning-design.md`](docs/learning-design.md).
+
 ## Requirements
 
 Docker with Compose v2 (or v1), and about 1 GB of free memory for the full
