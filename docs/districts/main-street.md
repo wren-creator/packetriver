@@ -2,9 +2,9 @@
 
 Eight storefronts, one bug class each, so no two teach the same thing. Each is a
 vhost in the `websites` container (PHP 8 + Apache) behind a login portal styled
-after the Cross Creek HMI logons and Widgetorium's `login.php`. The bank, Town
-Hall, Police, and Fire are their own writeups; the cinema and bakery are set
-dressing.
+after the Cross Creek HMI logons and Widgetorium's `login.php`. Town Hall,
+Police, Fire, and payments are in [`civic.md`](civic.md); the bank is in
+[`bank.md`](bank.md); the cinema and bakery are set dressing.
 
 These pages give **direction, not a walkthrough** (see
 [`../learning-design.md`](../learning-design.md)). The step-by-step for every

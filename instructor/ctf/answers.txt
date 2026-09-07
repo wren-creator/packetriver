@@ -1,0 +1,33 @@
+Packet River - CTF answers
+==========================
+
+Flags are minted fresh every time `scoring` (re)starts - there is no static
+answer list. To see the current run's flags:
+
+    docker compose exec scoring python -c \
+      'import sqlite3; [print(f"{t}\t{f}") for t,f in \
+       sqlite3.connect("/data/scoring.db").execute("SELECT technique_id,flag FROM flags")]'
+
+The step-by-step for every technique (sign-on, payload, exact flag location) is
+in ../answer-key.md. The instructor scenario notes with MITRE mappings and
+real-world parallels are in ../../docs/scenarios.md.
+
+check-flags.sh in this directory smoke-tests the whole mint -> plant -> submit
+-> score loop for all 24 techniques without re-running the exploits. Run it
+after `./start.sh` and after any change to scoring / flags / effects:
+
+    ./instructor/ctf/check-flags.sh
+
+Expected: "24 ok, 0 failed". It fires every town effect as a side effect, so
+follow it with `./reset.sh -y`.
+
+Technique roster (24), by group - see docs/scenarios.md for detail:
+
+  Main Street   generalstore_sqli hardware_idor pharmacy_authbypass diner_backup
+                barber_xss tavern_defaultcreds drycleaner_gitleak baittackle_ssrf
+  Civic + pay   townhall_deface townhall_lfi police_leak fire_defaultcreds
+                paygw_receipt_idor as400_empmast
+  Bank          bank_jwt_none bank_account_idor z16_racf
+  Utilities/OT  water_modbus_pump power_modbus_feeder factory_modbus sewage_modbus
+                traffic_mqtt rail_console
+  Recon         dns_axfr

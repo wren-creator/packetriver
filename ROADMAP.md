@@ -116,11 +116,19 @@ reuse map live in the design doc.
     Hardened build: disable WAN-side router admin + rotate its creds, TLS on
     the rail portal, MFA / segmentation blocking residential IPs from the OT
     portal without a hardened VPN.
-- [ ] **Phase 6 - EPUB, docs, art, polish.** "Packet River 101" EPUB (chapters
-  1:1 with scenarios), `docs/scenarios.md` + `scenarios-trainee.md`,
-  `docs/verification.md`, the CTF flag-check script, the ZAP automation plan,
-  the final pixel-art base image, README to its final game-page form with a
-  labelled map screenshot.
+- [ ] **Phase 6 - EPUB, docs, art, polish.** Remaining: "Packet River 101" EPUB
+  (chapters 1:1 with scenarios) with cover art, the ZAP automation plan
+  (`docs/zap/`), the final pixel-art base image, README to its final
+  game-page form with a labelled map screenshot.
+  - [x] `docs/scenarios.md` + `scenarios-trainee.md` (Cross Creek shape:
+    where / real-world / MITRE / confirm-with / physical consequence / fix;
+    trainee = fix stripped), all 24 techniques.
+  - [x] `docs/verification.md` (Section A containment / B per-technique /
+    C reset / D defended / E ebook).
+  - [x] `docs/districts/bank.md` + `docs/districts/civic.md` +
+    `docs/districts/recon.md`; `architecture.md` brought current.
+  - [x] `instructor/ctf/check-flags.sh` + `answers.txt` - smoke-tests the
+    mint -> plant -> submit -> score loop for all 24 (currently 24 ok).
   - **Guidance, not walkthroughs** (see `docs/learning-design.md`). The
     game must not ship a copy-paste path to controlling the town in 30
     minutes.

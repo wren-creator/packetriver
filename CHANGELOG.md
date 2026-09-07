@@ -4,6 +4,34 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Documentation pass
+
+- `docs/scenarios.md` + `docs/scenarios-trainee.md`: all 24 techniques in the
+  Cross Creek shape (where / real-world parallel / MITRE / confirm-with /
+  physical consequence / fix). Trainee edition is the instructor edition with
+  the fix stripped.
+- `docs/verification.md`: the end-to-end runbook, with Section A containment,
+  B per-technique, C reset, D defended re-run, E ebook.
+- New district docs: `docs/districts/bank.md` (JWT `alg:none`, account IDOR),
+  `docs/districts/civic.md` (Town Hall deface + LFI, Police, Fire, paygw IDOR).
+  `main-street.md` now links them instead of promising them.
+- `docs/architecture.md` brought current: the full 14-service list, the actual
+  three-network layout (no `ot-net`), the recon layer, the spur-routing
+  behaviour, HMI credential rotation, and the current anti-cheat posture.
+- `instructor/ctf/check-flags.sh` + `answers.txt`: smoke-tests the
+  mint → plant → submit → score loop for every technique (24 ok, 0 failed).
+- Fixed stale reset-scope names in `civic.md` / `mainframe.md` (`cityhall` /
+  `police` / `fire`, not a non-existent `civic` scope).
+
+### Train runs the spur
+
+- Routing the rail switch to `spur` before the train reaches the branch (under
+  the "R" of "Main Rail Line") now routes the train *onto* the spur: it travels
+  the spur polyline down to the Widget Factory over ~5 s, then derails into it.
+  Before, it snapped straight to the factory and the branch point didn't line
+  up with the painted spur. New `Rail.on_spur` / `spur_pos`; `SWITCH_POINT`
+  retuned to the branch.
+
 ### Recon layer — every target has a name
 
 - New `dns` container (CoreDNS) is the `player` box's only resolver: authoritative
@@ -12,7 +40,7 @@ All notable changes to Packet River. Newest first.
   a resolver IP and works the town by business name
   (`nmap water.packetriver.range`, `curl firstpacketbank.packetriver.range`).
   Names are CNAMEs onto the container network so lookups follow through.
-- The zone **answers AXFR from anyone** — a new low-value `dns_axfr` recon
+- The zone **answers AXFR from anyone**, a new low-value `dns_axfr` recon
   technique (base 75, `quiet`). `recon.py dns` (or `dig axfr packetriver.range
   @dns`) dumps every host plus a stray TXT record from a "decommissioned" box
   that carries this run's flag. `_recon` / `_zone` TXT breadcrumbs season it.

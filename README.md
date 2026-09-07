@@ -110,6 +110,16 @@ against the map art has a drag-and-copy editor (`?edit=1`, see
 `docs/overlay-editing.md`); a final pass
 waits for the Phase 6 art.
 
+## Documentation
+
+- [`docs/architecture.md`](docs/architecture.md): services, networks, the sim loop, anti-cheat
+- [`docs/scenarios.md`](docs/scenarios.md) and [`scenarios-trainee.md`](docs/scenarios-trainee.md): all 24 techniques, MITRE-mapped, with fixes (the trainee edition has the fixes stripped)
+- [`docs/verification.md`](docs/verification.md): the end-to-end runbook (containment, per-technique, reset, defended re-run)
+- [`docs/districts/`](docs/districts/): one page per district, giving the bug class, the tool, the map effect, the fix
+- [`docs/learning-design.md`](docs/learning-design.md): why the game gives direction, not walkthroughs
+- [`instructor/answer-key.md`](instructor/answer-key.md): the sharp step-by-step, for instructors
+- [`instructor/ctf/check-flags.sh`](instructor/ctf/check-flags.sh): smoke-test the scoring loop for every technique
+
 ## More
 
 - Community and discussion: **britleydev.slack.com**

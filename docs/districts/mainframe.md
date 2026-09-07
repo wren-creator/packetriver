@@ -54,7 +54,7 @@ which the box leaves readable to everyone.
 | Physical result | Submitting the flag fires `cityhall_payroll`: Town Hall's `payroll_balance` drops to 0 on the map and `admin_pwned` flips. Same effect the Town Hall web LFI chains into — the payroll money is gone whichever way you got in. |
 | Flag | one row in the payroll data, readable once you have a session. Read at mock startup from `/run/secret/as400_empmast/flag.txt`. |
 | Points | base 200, severity `loud`. |
-| Reset | reset panel `civic` scope restores Town Hall's balance and announcement. The AS/400 mints a fresh flag row only on a full `scoring` re-run. |
+| Reset | reset panel `cityhall` scope restores Town Hall's balance and announcement. The AS/400 mints a fresh flag row only on a full `scoring` re-run. |
 | Hardened build | On a real box: set `QSECURITY` to 40+, require passwords (no blank sign-on), rotate the shipped default passwords and restrict powerful profiles' device access (`QLMTSECOFR`), and pull `*PUBLIC` down to `*EXCLUDE` on the payroll library with an authorization list for the people who actually run payroll. |
 | Real-world | Default and blank IBM i credentials are a standing finding in every AS/400 security review; `*PUBLIC *ALL` on application libraries is the single most common IBM i exposure. TN5250 is cleartext — on a real network this whole exchange, password included, is on the wire. Green-screen depth here is deliberately shallow: a real SIGNON panel and a handful of curated, genuine bugs, not a full OS. |
 
