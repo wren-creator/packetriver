@@ -82,10 +82,10 @@ function buildOverlay(layout) {
 
   REFS.ints = layout.intersections.map(it => {
     const g = el("g", { id: "int" + it.id, class: "int" }, svg);
-    const ns = el("circle", { cx: X(it.x), cy: Y(it.y) - 9, r: 4.5, class: "light off" }, g);
-    const ew = el("circle", { cx: X(it.x) + 12, cy: Y(it.y), r: 4.5, class: "light off" }, g);
-    const crash = el("text", { x: X(it.x) + 8, y: Y(it.y) - 14, class: "badge defaced", "font-size": 10 }, g);
-    return { g, ns, ew, crash };
+    // one signal dot per crossroads — drop it on the light pole in the art
+    const dot = el("circle", { cx: X(it.x), cy: Y(it.y), r: 4.5, class: "light off" }, g);
+    const crash = el("text", { x: X(it.x) + 7, y: Y(it.y) - 8, class: "badge defaced", "font-size": 10 }, g);
+    return { g, dot, crash };
   });
 
   REFS.houses = layout.houses.map(hp => {
@@ -129,12 +129,10 @@ function render(s) {
 
   (s.traffic || []).forEach((t, i) => {
     const R = REFS.ints[i]; if (!R) return;
-    const setL = (node, c) => node.setAttribute("class", "light " + c);
-    if (t.phase === "dark") { setL(R.ns, "off"); setL(R.ew, "off"); }
-    else if (t.phase === "ALL-GREEN") { setL(R.ns, "green"); setL(R.ew, "green"); }
-    else if (t.phase === "ns-green") { setL(R.ns, "green"); setL(R.ew, "red"); }
-    else if (t.phase === "ew-green") { setL(R.ns, "red"); setL(R.ew, "green"); }
-    else { setL(R.ns, "red"); setL(R.ew, "red"); }
+    let c = "red";
+    if (t.phase === "dark") c = "off";
+    else if (t.phase === "ns-green" || t.phase === "ew-green" || t.phase === "ALL-GREEN") c = "green";
+    R.dot.setAttribute("class", "light " + c);
     R.g.classList.toggle("hijacked", t.mode === "ALL-GREEN");
     R.crash.textContent = t.crash_count ? "⚠ " + t.crash_count : "";
   });
