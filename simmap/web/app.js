@@ -156,11 +156,16 @@ function render(s) {
 
   if (s.rail && REFS.rail) {
     const L = REFS.rail.getTotalLength();
+    const SL = REFS.spur.getTotalLength();
     let p, ang, show = true;
-    if (s.rail.derailed) {
-      p = REFS.spur.getPointAtLength(REFS.spur.getTotalLength());
-      const a = REFS.spur.getPointAtLength(0);
-      ang = Math.atan2(p.y - a.y, p.x - a.x) * 180 / Math.PI;
+    if (s.rail.on_spur || s.rail.derailed) {
+      // routed onto the spur: travel it from the branch down to the plant,
+      // then hold at the factory once derailed
+      const frac = s.rail.derailed ? 1.0 : (s.rail.spur_pos || 0);
+      const d = Math.min(SL, frac * SL);
+      p = REFS.spur.getPointAtLength(d);
+      const q = REFS.spur.getPointAtLength(Math.max(0, d - 6));
+      ang = Math.atan2(p.y - q.y, p.x - q.x) * 180 / Math.PI;
     } else if (s.rail.train_pos < 1.0) {
       const d = s.rail.train_pos * L;
       p = REFS.rail.getPointAtLength(d);

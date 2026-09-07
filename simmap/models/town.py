@@ -20,7 +20,13 @@ TRAFFIC_CYCLE = [("ns-green", 6.0), ("all-red", 2.0), ("ew-green", 6.0), ("all-r
 # The train runs the visible top track (train_pos 0..1), then spends the rest
 # of the cycle off-screen before re-entering from the start.
 TRAIN_CYCLE = 1.7
-SWITCH_POINT = 0.42   # where the spur branches, as a fraction of the visible run
+# Where the spur branches, as a fraction of the visible run. Tuned to the
+# overlay's spurPath[0] (under the "R" of "Main Rail Line" on the base art) so
+# the train hands off to the spur polyline with no visible jump.
+SWITCH_POINT = 0.256
+# The spur is a short leg; the train covers it in ~4-5 s (roughly the same
+# on-screen speed as the main line) before it piles into the plant.
+SPUR_SPEED = 6.0
 
 # The eight Main Street storefronts. The bank, police, and fire are their own
 # first-class entities; the cinema and bakery are set dressing (not modelled).
@@ -58,6 +64,8 @@ class Rail:
     train_pos: float = 0.0
     train_speed: float = 0.035
     switch_position: str = "loop"   # loop | spur
+    on_spur: bool = False           # train has been routed onto the spur
+    spur_pos: float = 0.0           # 0..1 progress down the spur toward the plant
     derailed: bool = False
     console_locked: bool = True
     factory_fire: bool = False
@@ -230,6 +238,16 @@ class TownState:
         r = self.rail
         if r.derailed:
             return
+        # already committed to the spur: run down it toward the plant, then
+        # pile into the factory at the end
+        if r.on_spur:
+            r.spur_pos = min(1.0, r.spur_pos + r.train_speed * SPUR_SPEED * dt)
+            if r.spur_pos >= 1.0:
+                r.derailed = True
+                r.factory_fire = True
+                self.factory.on_fire = True
+                r.train_speed = 0.0
+            return
         prev = r.train_pos
         r.train_pos += r.train_speed * dt
         if r.train_pos >= TRAIN_CYCLE:
@@ -237,10 +255,8 @@ class TownState:
         # crossed the switch point on this pass across the visible run
         crossed = prev < SWITCH_POINT <= r.train_pos
         if r.switch_position == "spur" and crossed:
-            r.derailed = True
-            r.factory_fire = True
-            self.factory.on_fire = True
-            r.train_speed = 0.0
+            r.on_spur = True
+            r.train_pos = SWITCH_POINT   # pin at the branch; the spur takes over
 
     def _step_water(self, dt: float) -> None:
         if "water" in self.external:
@@ -317,6 +333,8 @@ class TownState:
                 "train_pos": round(self.rail.train_pos, 4),
                 "on_screen": self.rail.train_pos < 1.0,
                 "switch_position": self.rail.switch_position,
+                "on_spur": self.rail.on_spur,
+                "spur_pos": round(self.rail.spur_pos, 4),
                 "derailed": self.rail.derailed,
                 "console_locked": self.rail.console_locked,
                 "factory_fire": self.rail.factory_fire,
