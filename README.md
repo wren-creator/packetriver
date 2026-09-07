@@ -59,7 +59,8 @@ reset panel puts any building, or the whole town, back to golden state.
 | Rail | loop track + a switch into the widget factory | switch thrown, train derailed, factory fire |
 | Police & Fire | dispatch screens, alarm panels | minor targets, one bug each |
 | Municipal DNS | the town name server, `*.packetriver.range` | zone transfer is wide open: one request maps the whole town |
-| Local Diner Wi-Fi | an open, unencrypted network | a different lane: sniff cleartext credentials off the air |
+| Local Diner Wi-Fi | an open, unencrypted network | get between two hosts, read the cleartext login and inbox off the wire |
+| A house on the edge of town | a consumer router, WAN admin on `admin/admin` | its capture page leaks a rail engineer's cleartext login; reuse it into the rail console |
 
 Exactly one bug class per storefront, so no two teach the same thing. Every
 scenario in `docs/scenarios.md` carries a real incident or CVE reference and a
@@ -80,7 +81,7 @@ would rather attack from your own shell.
 
 ## Status
 
-Early build. See `ROADMAP.md`. **Phases 0-4** are in:
+Early build. See `ROADMAP.md`. **Phases 0-5** are in:
 
 - the pixel-art live map with its overlay
 - all of **Main Street** (8 storefronts, one bug class each), **Town Hall**,
@@ -98,6 +99,10 @@ Early build. See `ROADMAP.md`. **Phases 0-4** are in:
 - a **municipal DNS** server: the `player` box's only resolver, authoritative
   for `*.packetriver.range`, with zone transfer left wide open so `recon.py
   dns` maps the whole town (and turns up a stray record with a flag in it)
+- two **network-attack lanes**: the Diner's open Wi-Fi (an ARP-spoof MITM on a
+  sniffable LAN standing in for 802.11) and a **SOHO router pivot** where a
+  home router on `admin/admin` leaks a rail engineer's cleartext login that is
+  reused into the rail console (residential to OT)
 - the **Alert Level** meter and a **blue-team** response (credential rotation,
   auto-restore) that reacts to how loud you are
 - the score / run / leaderboard loop, the reset panel, the `?edit=1` overlay
@@ -105,15 +110,14 @@ Early build. See `ROADMAP.md`. **Phases 0-4** are in:
 - `./start.sh --segmented` - the hardened town: run the same attacks, watch
   them fail
 
-The Wi-Fi lanes and the "101" EPUB land over Phases 5-6. Overlay alignment
-against the map art has a drag-and-copy editor (`?edit=1`, see
-`docs/overlay-editing.md`); a final pass
+The "101" EPUB lands over Phase 6. Overlay alignment against the map art has a
+drag-and-copy editor (`?edit=1`, see `docs/overlay-editing.md`); a final pass
 waits for the Phase 6 art.
 
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md): services, networks, the sim loop, anti-cheat
-- [`docs/scenarios.md`](docs/scenarios.md) and [`scenarios-trainee.md`](docs/scenarios-trainee.md): all 24 techniques, MITRE-mapped, with fixes (the trainee edition has the fixes stripped)
+- [`docs/scenarios.md`](docs/scenarios.md) and [`scenarios-trainee.md`](docs/scenarios-trainee.md): all 26 techniques, MITRE-mapped, with fixes (the trainee edition has the fixes stripped)
 - [`docs/verification.md`](docs/verification.md): the end-to-end runbook (containment, per-technique, reset, defended re-run)
 - [`docs/districts/`](docs/districts/): one page per district, giving the bug class, the tool, the map effect, the fix
 - [`docs/learning-design.md`](docs/learning-design.md): why the game gives direction, not walkthroughs

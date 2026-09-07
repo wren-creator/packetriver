@@ -89,46 +89,41 @@ reuse map live in the design doc.
     - A mock `whois` / internal corporate-directory page seeding a few
       hostnames (ties into the easter-egg hints). `.local` stays out (mDNS
       conflict on macOS).
-- [ ] **Phase 5 - Network-attack lanes (a different skill from web exploits).**
-  - [ ] **5a - The Diner Wi-Fi lane.** `netlab` (needs `cap_add: NET_ADMIN`):
-    a mock open AP, a captive portal, cleartext HTTP/POP3 on a sniffable
-    segment; `player` gets `tcpdump` + a sniff/MITM script + scripted ARP
-    spoof. Layer-2: unauthenticated sniffing and active MITM on a shared
-    medium. Honest scope: a sniffable LAN standing in for 802.11, not real
-    radio. Success -> the Diner reads `carded`; noisy ARP bumps the Alert
-    meter.
-  - [ ] **5b - The SOHO router pivot (residential -> rail).** One house on the
-    map runs a consumer WRT/OpenWRT-style router. Its own container
-    (`soho-router`, pure Layer-7, no `NET_ADMIN`) with a LuCI-style login
-    portal and default creds `admin`/`admin`. Behind it a "LAN" segment where
-    a scripted resident (a curl/telnet loop, like the barber manager-bot) logs
-    the homeowner - a **railroad engineer** - into the rail portal in
-    cleartext every few seconds. Exploit: log into the router -> abuse its
-    built-in **Diagnostics / packet-capture** page to pull a ~10 s pcap (or a
-    live syslog dump) that is guaranteed to hold the cleartext rail login ->
-    extract the flag from the captured credential, and replay the reused creds
-    against `rail-plc` for a second flag + a live rail effect on the map. This
-    is the APT remote-worker SOHO->OT pivot, unrepresented elsewhere in the
-    range. **Depends on the Phase 4 rail district existing.** v1 keeps the
-    capture deterministic (the resident bot is always chattering, no waiting);
-    a dwell-time / "patience" scoring bonus for sitting quiet and waiting for
-    the login is a later refinement that ties into the stealth multiplier.
-    Hardened build: disable WAN-side router admin + rotate its creds, TLS on
-    the rail portal, MFA / segmentation blocking residential IPs from the OT
-    portal without a hardened VPN.
+- [x] **Phase 5 - Network-attack lanes (a different skill from web exploits).**
+  - [x] **5a - The Diner Wi-Fi lane.** `netlab` (AP: cleartext rewards portal +
+    toy POP3) + `netlab-patron` (a bot that logs in and reads mail in the
+    clear) on an internal `lan-net`. `player` gains `tcpdump` + `dsniff`,
+    `NET_RAW`, and `net.ipv4.ip_forward=1` (compose `sysctls`, not
+    privileged); `wifi_sniff.py` runs an `arpspoof` MITM and pulls the flag
+    from the patron's inbox. `netlab` watches its ARP cache for a MAC flip and
+    publishes an Alert-heat event, so a sustained spoof crosses L1. Technique
+    `diner_wifi` (base 125) -> Diner `carded`.
+  - [x] **5b - The SOHO router pivot (residential -> rail).** `soho-router`
+    (consumer router: WAN-side admin, `admin`/`admin`, a Diagnostics
+    packet-capture returning a decoded text dump) + `soho-resident` (a rail
+    engineer signing in to a cleartext crew portal on a loop) on an internal
+    `home-net`. `soho_pcap.py`: default creds -> capture -> the flag (an
+    `X-Reconcile` header) + the crew credential, which is reused on
+    `rail-plc:2323` (a second static operator account) to chain into
+    `rail_console` and throw the switch. Technique `soho_router_pcap` (base
+    150, `noop`).
+  - [ ] Follow-ups: hardened overrides in `docker-compose.segmented.yml` (TLS
+    the portals, rotate the router creds, block residential -> OT); a
+    dwell-time "patience" scoring bonus for 5b that ties into the stealth
+    multiplier.
 - [ ] **Phase 6 - EPUB, docs, art, polish.** Remaining: "Packet River 101" EPUB
   (chapters 1:1 with scenarios) with cover art, the ZAP automation plan
   (`docs/zap/`), the final pixel-art base image, README to its final
   game-page form with a labelled map screenshot.
   - [x] `docs/scenarios.md` + `scenarios-trainee.md` (Cross Creek shape:
     where / real-world / MITRE / confirm-with / physical consequence / fix;
-    trainee = fix stripped), all 24 techniques.
+    trainee = fix stripped), all 26 techniques.
   - [x] `docs/verification.md` (Section A containment / B per-technique /
     C reset / D defended / E ebook).
   - [x] `docs/districts/bank.md` + `docs/districts/civic.md` +
     `docs/districts/recon.md`; `architecture.md` brought current.
   - [x] `instructor/ctf/check-flags.sh` + `answers.txt` - smoke-tests the
-    mint -> plant -> submit -> score loop for all 24 (currently 24 ok).
+    mint -> plant -> submit -> score loop for all 26 (currently 26 ok).
   - **Guidance, not walkthroughs** (see `docs/learning-design.md`). The
     game must not ship a copy-paste path to controlling the town in 30
     minutes.

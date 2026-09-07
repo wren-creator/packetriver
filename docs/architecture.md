@@ -1,6 +1,6 @@
 # Packet River architecture
 
-Tracks the code as it lands. Phases 0-4 plus the recon layer are in; each phase
+Tracks the code as it lands. Phases 0-5 plus the recon layer are in; each phase
 updates this document in the same commit series. For the per-technique detail
 see [`scenarios.md`](scenarios.md) and [`districts/`](districts/); for the
 end-to-end checks see [`verification.md`](verification.md).
@@ -41,8 +41,10 @@ plus the operator HMI), `as400` (TN5250 green screen behind Town Hall),
 `z16` (TN3270E green screen behind the Bank), `traffic-plc` (commanded over the
 open MQTT bus), `rail-plc` (raw-TCP console + command injection), `dns` (the
 town name server, AXFR wide open), and `player` (the attacker box). Cinema and
-Bakery render on the map but are set dressing. The Diner Wi-Fi sniff/MITM lane
-(`netlab`) is Phase 5, not built yet.
+Bakery render on the map but are set dressing. Phase 5 adds two network-attack
+lanes: `netlab` / `netlab-patron` (the Diner's open Wi-Fi, a sniffable LAN
+standing in for 802.11) and `soho-router` / `soho-resident` (a consumer router
+on the edge of town that pivots a residential foothold into the rail console).
 
 ## Services
 
@@ -62,11 +64,13 @@ Bakery render on the map but are set dressing. The Diner Wi-Fi sniff/MITM lane
 | `traffic-plc` | python:3.12-alpine + paho-mqtt | Five signal controllers; takes each intersection's commanded mode off `pkt/traffic/<id>/set` (no ACL on the flat broker - the bug). An engineering-mode topic takes a short PIN and publishes the flag. Read-only status on `:8095`. |
 | `rail-plc` | python:3.12-alpine | The loop/spur switch controller. Raw-TCP "maintenance console" on `:2323` with default creds and a `set label` that shells out (command injection). Publishes `pkt/rail/switch`. Read-only status on `:8096`. |
 | `dns` | alpine + CoreDNS | The town name server. Authoritative for `packetriver.range` (CNAMEs onto the container network), forwards the rest to Docker's embedded resolver. **AXFR is open to anyone** - the `dns_axfr` technique. Binds only its fixed it-net address (`172.31.20.253`) so it doesn't shadow `127.0.0.11`. |
-| `player` | python:3.12-slim + tools | The boxed-in attacker box: sqlmap, nmap, curl, dig, mosquitto-clients, pymodbus, plus the pure-Python `as400_5250.py` / `z16_3270.py` green-screen clients and a `ttyd` terminal (`:7681`). Its resolver is `dns`. Default route dropped at start; `scripts/targets.py` is a lab-only allowlist guard. |
+| `netlab` / `netlab-patron` | python:3.12-alpine | Phase 5a. `netlab` is the Diner's open-Wi-Fi "AP": a cleartext rewards portal (:80) + a toy POP3 (:110), plus an ARP-cache watcher that feeds Alert heat. `netlab-patron` signs in and reads mail over the segment on a loop. Both on `lan-net`; no published ports. |
+| `soho-router` / `soho-resident` | python:3.12-alpine | Phase 5b. `soho-router` is a consumer router: WAN-side admin reachable, still `admin/admin`, a Diagnostics packet-capture that returns a decoded dump. `soho-resident` (a rail engineer) signs in to a cleartext crew portal on a loop. `soho-router` on `home-net` + `it-net`; `soho-resident` on `home-net` only. |
+| `player` | python:3.12-slim + tools | The boxed-in attacker box: sqlmap, nmap, curl, dig, mosquitto-clients, pymodbus, tcpdump, dsniff, plus the pure-Python `as400_5250.py` / `z16_3270.py` green-screen clients and a `ttyd` terminal (`:7681`). Its resolver is `dns`. Default route dropped at start; `NET_ADMIN` + `NET_RAW` + `ip_forward=1` for the layer-2 lane; `scripts/targets.py` is a lab-only allowlist guard. |
 
 ## Networks
 
-Three bridges. `it-net` and `bus-net` are `internal: true` (no route off-box);
+Five bridges. All but `edge-net` are `internal: true` (no route off-box);
 `edge-net` faces the host so published ports have a route back.
 
 - `edge-net` - `gateway` + every service that publishes a port. A container
@@ -74,8 +78,14 @@ Three bridges. `it-net` and `bus-net` are `internal: true` (no route off-box);
   port-publishing services are dual-homed here and on `it-net`.
 - `it-net` (`internal`) - the main lab segment: `gateway`, `simmap`, `scoring`,
   `db`, `websites`, `bank`, `paygw`, `field-plc`, `as400`, `z16`, `traffic-plc`,
-  `rail-plc`, `dns`, `bus`, `player`.
-- `bus-net` (`internal`) - `bus`, `simmap`, `scoring`, `traffic-plc`, `rail-plc`.
+  `rail-plc`, `dns`, `bus`, `soho-router`, `player`.
+- `bus-net` (`internal`) - `bus`, `simmap`, `scoring`, `traffic-plc`, `rail-plc`,
+  `netlab`.
+- `lan-net` (`internal`, `172.31.60.0/24`) - the Diner Wi-Fi: `netlab` (.10),
+  `netlab-patron` (.20), `player`. Phase 5a.
+- `home-net` (`internal`, `172.31.61.0/24`) - a resident's home LAN behind the
+  SOHO router: `soho-router` (.10), `soho-resident` (.20). Phase 5b. `player`
+  is NOT on it - the pivot goes through the router's WAN-side admin.
 
 There is no separate `ot-net` in the current build - the PLC protocol ports sit
 on `it-net`. The Phase-4 pivot-isolation goal (move `player` off the OT segment

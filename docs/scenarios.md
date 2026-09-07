@@ -1,6 +1,6 @@
 # Packet River scenarios, instructor edition
 
-Twenty-four planted weaknesses in five groups. Trainees work from
+Twenty-six planted weaknesses in six groups. Trainees work from
 [`scenarios-trainee.md`](scenarios-trainee.md), which is this file with the
 **Fix** line removed from each entry.
 
@@ -317,3 +317,31 @@ rail is a raw-TCP console. Full writeups in
 **Physical consequence:** none, pure recon (`effect: noop`).
 **Points / severity:** 75 / quiet.
 **Fix:** restrict `transfer` to known secondaries; split internal and external views; keep secrets out of DNS.
+
+---
+
+## Group F — Network-attack lanes
+
+A different skill from the web and OT districts: layer-2 and lateral movement.
+Full writeups in [`districts/diner-wifi.md`](districts/diner-wifi.md) and
+[`districts/soho-router.md`](districts/soho-router.md).
+
+### diner_wifi — cleartext credential + inbox off the open Wi-Fi
+**Where:** the Diner Wi-Fi segment `172.31.60.0/24`. `netlab` (.10) = the AP (cleartext rewards portal :80, toy POP3 :110); `netlab-patron` (.20) signs in and reads mail over it on a loop.
+**Real-world parallel:** credential theft off open Wi-Fi, and ARP spoofing on a switched LAN once associated (the same move on hotel / coffee-shop networks).
+**Vulnerability:** nothing on the segment is encrypted and there is no client isolation. A switch won't flood the patron's unicast to you, so the attack is an active ARP-spoof MITM; then the portal login and the whole inbox are in the clear.
+**MITRE ATT&CK:** T1557.002 (ARP cache poisoning), T1040 (network sniffing).
+**Confirm / exploit with:** `arpspoof` + `tcpdump`, or `wifi_sniff.py`. The flag is in the patron's POP3 inbox.
+**Physical consequence:** `shop_carded`, the Diner reads `carded`. The ARP spoof flips a MAC in `netlab`'s cache; it publishes an Alert-heat event, enough to cross Level 1.
+**Points / severity:** 125 / medium.
+**Fix:** WPA2-Enterprise or per-client isolation, and TLS on the portal and mail so a MITM gets ciphertext.
+
+### soho_router_pcap — SOHO router pivot, residential -> rail
+**Where:** `soho-router` (172.31.61.10, admin HTTP :80, reachable from the town LAN); behind it `home-net` with `soho-resident`. Pivot target: the rail console `rail-plc:2323`.
+**Real-world parallel:** Volt Typhoon-style use of SOHO routers as footholds; a remote worker's home network bridging to OT.
+**Vulnerability:** WAN-side admin is reachable, the login is still `admin` / `admin`, and the Diagnostics packet-capture returns a decoded dump of the home LAN, where the resident (a rail engineer) signs in to a crew portal over plain HTTP. That credential is reused on the rail console.
+**MITRE ATT&CK:** T1078.001 (default accounts), T1040 (capture-page abuse), T1078 (credential reuse into OT).
+**Confirm / exploit with:** a browser / `curl` for the router, `soho_pcap.py` to script it, `nc` for the console replay. The flag is an `X-Reconcile:` header in the decoded capture.
+**Physical consequence:** the flag itself is recon (`noop`). Replaying the credential on `rail-plc:2323` chains into `rail_console`, `flag` for that flag and `set switch spur` for the derail into the Widget Factory.
+**Points / severity:** 150 / medium.
+**Fix:** disable WAN-side admin, force a change off the default at first login, TLS the crew portal, and never reuse operator credentials between a web portal and a device console; segmentation should keep a residential IP off the rail console entirely.

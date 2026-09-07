@@ -81,22 +81,30 @@ Register and start a run once (`/api/score/register`, `/api/score/run`), then
 |---|---|---|
 | B24 `dns_axfr` | `python3 /opt/pktr/scripts/recon.py dns` | the AXFR returns the whole `packetriver.range` zone including `scada-legacy-07 ... PKTR{...}`; submit → 75 base, no map change |
 
+### Group F — network-attack lanes
+
+| # | Steps | Pass condition |
+|---|---|---|
+| B25 `diner_wifi` | `python3 /opt/pktr/scripts/wifi_sniff.py --time 20` | arpspoof MITM comes up; the flag prints from the patron's POP3 inbox and a cleartext `pass=` credential is shown; submit → Diner `carded`; `netlab` logs an ARP-flip and Alert heat crosses Level 1 |
+| B26 `soho_router_pcap` | `python3 /opt/pktr/scripts/soho_pcap.py` | logs into the router `admin/admin`, the decoded capture yields the crew login and the `PKTR{...}`; submit → 150 base, no map change. Then `nc rail-plc 2323`, `login` with the sniffed cred, `flag` → the `rail_console` flag, `set switch spur` → derail |
+| B27 | `docker compose exec soho-resident python3 -c 'import socket;print(socket.socket().connect_ex(("1.1.1.1",53)))'` and same on `netlab` | non-zero / connect error, both new segments are `internal` |
+
 ### Anti-cheat
 
 | # | Steps | Pass condition |
 |---|---|---|
-| B25 | `curl -X POST` every `simmap` route | no route awards points |
-| B26 | submit a random string, and a real flag minted in a different run | both rejected, generic `{"accepted": false}`, Alert heat ticks up |
-| B27 | `docker compose exec player sh -c 'ls /run/secret 2>&1'` | not mounted, the player box never sees a flag file |
-| B28 | `docker compose exec simmap sh -c 'ls /run/secret 2>&1'` | not mounted |
+| B28 | `curl -X POST` every `simmap` route | no route awards points |
+| B29 | submit a random string, and a real flag minted in a different run | both rejected, generic `{"accepted": false}`, Alert heat ticks up |
+| B30 | `docker compose exec player sh -c 'ls /run/secret 2>&1'` | not mounted, the player box never sees a flag file |
+| B31 | `docker compose exec simmap sh -c 'ls /run/secret 2>&1'` | not mounted |
 
 ### Alert Level + blue team
 
 | # | Steps | Pass condition |
 |---|---|---|
-| B29 | run several `loud` techniques quickly; watch `GET /api/score/me` `alert_level` | climbs through the bands (20/45/75/110/150) with downward hysteresis |
-| B30 | cross Level 2 | the field-plc HMI operator logins rotate (`pkt/creds/rotate`); `GET /ops/handover.txt` on `:8093` shows the new set; the traffic PIN and rail console password rotate |
-| B31 | cross Level 5 | the worst-hit subsystem auto-restores to golden |
+| B32 | run several `loud` techniques quickly; watch `GET /api/score/me` `alert_level` | climbs through the bands (20/45/75/110/150) with downward hysteresis |
+| B33 | cross Level 2 | the field-plc HMI operator logins rotate (`pkt/creds/rotate`); `GET /ops/handover.txt` on `:8093` shows the new set; the traffic PIN and rail console password rotate |
+| B34 | cross Level 5 | the worst-hit subsystem auto-restores to golden |
 
 ## Section C — reset
 
@@ -115,6 +123,7 @@ Register and start a run once (`/api/score/register`, `/api/score/run`), then
 | D3 | re-run B22 (`traffic_attack.py`) | the broker `acl.segmented` + `passwd.segmented` refuse the anonymous publish |
 | D4 | re-run B23 (`rail_attack.py`) | the console credentials are rotated; default login refused |
 | D5 | re-check the web tier | `VERBOSE_ERRORS=0`, `WEAK_SESSIONS=0`; error-based extraction and weak-token paths are blunted |
+| D6 | re-run B25 / B26 (Phase 5 lanes) | the Diner portal + mail are TLS so the MITM gets ciphertext; the SOHO router's WAN admin is off and the default is rotated (segmented overrides, once written) |
 
 ## Section E — ebook (Phase 6, not built yet)
 

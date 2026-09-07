@@ -210,3 +210,34 @@ PLC, authenticated protocol, re-assert safe state (the hardened build's
   and port-scan it (`nmap firstpacketbank.packetriver.range`).
 - Fix: `transfer { to <secondaries> }` only, split internal/external views,
   keep secrets out of DNS.
+
+## Network lanes
+
+### `diner_wifi` — cleartext off the open Wi-Fi (map: Diner carded) — Phase 5a
+- The segment: `172.31.60.0/24`. `netlab` `.10` = AP (portal :80, POP3 :110),
+  `netlab-patron` `.20` logs in + reads mail every ~4 s, all cleartext. The
+  `player` box is on the segment.
+- The move: passive sniffing sees nothing on a switch, so ARP-spoof both ways:
+  `arpspoof -i <if> -t 172.31.60.20 172.31.60.10` and the reverse, with
+  `net.ipv4.ip_forward=1` (compose sets it). Then `tcpdump -Ani <if> host
+  172.31.60.20 and host 172.31.60.10`. `wifi_sniff.py` does all of it.
+- The flag is the "reconciliation code" in the one POP3 message
+  (`RETR 1` body). The portal credential `diner_guest` / `Rewards2026` is also
+  on the wire but is not the flag.
+- Noise: the ARP spoof flips a MAC in `netlab`'s `/proc/net/arp`; it publishes
+  a `severity: loud` heat event. A sustained run crosses Alert L1.
+- Fix: client isolation / WPA2-Enterprise, TLS on the portal and POP3.
+
+### `soho_router_pcap` — SOHO router pivot to rail (map: nothing direct) — Phase 5b
+- `soho-router` `172.31.61.10`, admin HTTP :80, reachable from `it-net`.
+  `admin` / `admin`. `home-net` behind it has `soho-resident` `.20` POSTing
+  `user=rse.kmiller&pass=Sw1tchboard!` to `/portal/rail/login` every 5 s.
+- The move: log in, GET `/admin/diag/capture?format=raw`. The decoded dump
+  carries the resident's `POST /portal/rail/login` with the credential and a
+  response header `X-Reconcile: PKTR{...}` — that header value is the flag.
+  `soho_pcap.py` scripts it.
+- Chain: `rse.kmiller` / `Sw1tchboard!` is a real operator account on
+  `rail-plc:2323`. `nc rail-plc 2323`, `login rse.kmiller Sw1tchboard!`,
+  `flag` → the `rail_console` flag, `set switch spur` (time the train) → derail.
+- Fix: no WAN-side admin, rotate the default, TLS the crew portal, never reuse
+  operator creds between a portal and a console.

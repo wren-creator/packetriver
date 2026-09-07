@@ -4,6 +4,30 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Phase 5 — network-attack lanes
+
+- **Diner open Wi-Fi (`diner_wifi`, base 125).** New internal `lan-net`.
+  `netlab` serves a cleartext rewards portal + a toy POP3; `netlab-patron`
+  signs in and reads mail over the segment on a loop. A switch won't flood
+  their unicast to you, so `wifi_sniff.py` runs an `arpspoof` MITM (`player`
+  gains `tcpdump` + `dsniff`, `NET_RAW`, and `net.ipv4.ip_forward=1` via
+  compose `sysctls`, no privileged) and pulls the flag from the patron's
+  inbox. `netlab` watches its ARP cache and feeds Alert heat on a MAC flip,
+  so a sustained spoof crosses Level 1. Submitting flips the Diner to
+  `carded`. Honest scope: a sniffable LAN standing in for open 802.11.
+- **SOHO router pivot (`soho_router_pcap`, base 150).** New internal
+  `home-net`. `soho-router` is a consumer router with WAN-side admin still on
+  `admin/admin` and a Diagnostics packet-capture that returns a decoded dump;
+  `soho-resident` (a rail engineer) signs in to a cleartext crew portal on a
+  loop. `soho_pcap.py` reads the flag and the crew credential out of the
+  capture; the credential is reused on `rail-plc:2323` (a second static
+  operator account) to chain into `rail_console` and throw the switch — the
+  residential-to-OT pivot.
+- Docs: `docs/districts/diner-wifi.md`, `docs/districts/soho-router.md`,
+  a Group F in `scenarios.md` / `scenarios-trainee.md`, verification Group F,
+  answer-key "Network lanes", architecture + README + ROADMAP updated.
+  `check-flags.sh`: 26 ok, 0 failed.
+
 ### Documentation pass
 
 - `docs/scenarios.md` + `docs/scenarios-trainee.md`: all 24 techniques in the

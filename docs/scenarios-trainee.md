@@ -1,6 +1,6 @@
 # Packet River scenarios, trainee edition
 
-Twenty-four planted weaknesses in five groups. This is the instructor edition
+Twenty-six planted weaknesses in six groups. This is the instructor edition
 with the **Fix** line removed from each entry: work out the remediation
 yourself, then check it against [`scenarios.md`](scenarios.md).
 
@@ -50,7 +50,7 @@ each behind a login portal.
 **Real-world parallel:** the LIKE-clause concatenation bug is the shape behind countless breaches; CWE-89, and error-based extraction is straight out of sqlmap's own test suite.
 **Vulnerability:** the search term is concatenated into a `LIKE` clause; verbose DB errors are on, so the database walks you through its own schema.
 **MITRE ATT&CK:** T1190 (exploit public-facing application), T1213 (data from information repositories).
-**Confirm / exploit with:** `sqlmap` against the search parameter, or a hand-built `UNION`. Find the parameter and the flag yourself.
+**Confirm / exploit with:** `sqlmap` against the search parameter, or a hand-built `UNION`. Surface + exact run in the answer key.
 **Physical consequence:** `shop_sqli_dump`, the General Store reads `db_dumped` on the map.
 **Points / severity:** 150 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -60,7 +60,7 @@ each behind a login portal.
 **Real-world parallel:** broken object-level authorization, OWASP API1:2023; the Panera Bread and USPS "Informed Visibility" leaks are the canonical mass-IDOR cases.
 **Vulnerability:** the record id is trusted and never checked against the caller's session, so incrementing it walks every order.
 **MITRE ATT&CK:** T1190, T1213.
-**Confirm / exploit with:** `curl` / `ffuf` walking the id. Walk it yourself.
+**Confirm / exploit with:** `curl` / `ffuf` walking the id. Answer key has the parameter.
 **Physical consequence:** `shop_sqli_dump`, Hardware reads `db_dumped`.
 **Points / severity:** 100 / quiet.
 **Fix:** _work this out, then check the instructor edition._
@@ -70,7 +70,7 @@ each behind a login portal.
 **Real-world parallel:** `' OR '1'='1` auth bypass, CWE-89 / CWE-287; still found in embedded admin panels every year.
 **Vulnerability:** the login query is string-built, so input becomes logic and the password check collapses.
 **MITRE ATT&CK:** T1190, T1078 (valid accounts).
-**Confirm / exploit with:** a crafted username in the login form; `sqlmap` will also find it.
+**Confirm / exploit with:** a crafted username in the login form; `sqlmap` will also find it. Answer key has the string.
 **Physical consequence:** `shop_sqli_dump`, Pharmacy reads `db_dumped` (records leaked).
 **Points / severity:** 125 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -80,7 +80,7 @@ each behind a login portal.
 **Real-world parallel:** exposed `.sql` / `.zip` backups are a perennial content-discovery win; CWE-538.
 **Vulnerability:** a database dump is reachable by URL because it was written somewhere the web server serves.
 **MITRE ATT&CK:** T1083 (file and directory discovery), T1530 (data from web-served storage).
-**Confirm / exploit with:** content discovery (`ffuf`), or read what the pages hint at.
+**Confirm / exploit with:** content discovery (`ffuf`), or read what the pages hint at. Answer key has the name.
 **Physical consequence:** `shop_sqli_dump`, the Diner reads `db_dumped`.
 **Points / severity:** 100 / quiet.
 **Fix:** _work this out, then check the instructor edition._
@@ -90,7 +90,7 @@ each behind a login portal.
 **Real-world parallel:** stored XSS against a back-office reviewer; MySpace's Samy worm is the archetype.
 **Vulnerability:** the booking note is stored raw and rendered raw in an automated "manager" review, so your script runs in their context. The bot is a regex, never a real browser.
 **MITRE ATT&CK:** T1059.007 (JavaScript), T1189 (drive-by compromise).
-**Confirm / exploit with:** a script payload in the booking note.
+**Confirm / exploit with:** a script payload in the booking note. Answer key has the sink.
 **Physical consequence:** `shop_xss_deface`, the Barbershop reads `defaced`.
 **Points / severity:** 100 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -100,7 +100,7 @@ each behind a login portal.
 **Real-world parallel:** default creds on point-of-sale and kiosk admin panels; CWE-1392, Mirai's whole business model.
 **Vulnerability:** the admin panel still has its vendor default login, and the session token is weak.
 **MITRE ATT&CK:** T1078.001 (default accounts), T1110 (brute force).
-**Confirm / exploit with:** the vendor default, or `hydra` a short list.
+**Confirm / exploit with:** the vendor default, or `hydra` a short list. Answer key has the pair.
 **Physical consequence:** `shop_carded`, the Tavern reads `carded`.
 **Points / severity:** 125 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -110,7 +110,7 @@ each behind a login portal.
 **Real-world parallel:** exposed `.git` is a standing bug-bounty find; CWE-527.
 **Vulnerability:** the deployed tree includes its version-control directory, so the repo (including deleted history with a secret) can be reconstructed.
 **MITRE ATT&CK:** T1083, T1552.001 (credentials in files).
-**Confirm / exploit with:** `git-dumper`, then read the history.
+**Confirm / exploit with:** `git-dumper`, then read the history. Answer key names the secret.
 **Physical consequence:** `shop_sqli_dump`, the Dry Cleaners reads `db_dumped`.
 **Points / severity:** 100 / quiet.
 **Fix:** _work this out, then check the instructor edition._
@@ -120,7 +120,7 @@ each behind a login portal.
 **Real-world parallel:** Capital One, 2019, SSRF to the cloud metadata endpoint. CWE-918.
 **Vulnerability:** the server fetches an attacker-supplied URL with no egress control, so it can be pointed at something only the server can reach.
 **MITRE ATT&CK:** T1190, T1135 (network share discovery) / T1046 (network service discovery) via the pivot.
-**Confirm / exploit with:** `curl` driving the fetch parameter at an internal target.
+**Confirm / exploit with:** `curl` driving the fetch parameter at an internal target. Answer key has the target.
 **Physical consequence:** `shop_sqli_dump`, Bait & Tackle reads `db_dumped`.
 **Points / severity:** 150 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -139,7 +139,7 @@ the AS/400 payroll green screen. Full writeups in
 **Real-world parallel:** CMS defacement via a weak admin and an unencoded notice field; MITRE T1491.001 (internal defacement).
 **Vulnerability:** weak default clerk login; the posted notice is stored raw and rendered raw on the public board.
 **MITRE ATT&CK:** T1078, T1059.007, T1491.
-**Confirm / exploit with:** the clerk login, then a notice with markup.
+**Confirm / exploit with:** the clerk login, then a notice with markup. Answer key has the creds and the confirm-code (the flag).
 **Physical consequence:** `cityhall_deface`, the map's announcement board shows your text; Town Hall reads `defaced`.
 **Points / severity:** 100 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -149,7 +149,7 @@ the AS/400 payroll green screen. Full writeups in
 **Real-world parallel:** LFI / path traversal, CWE-22, OWASP A01; the shape behind many "read /etc/passwd, then read the app secret" chains.
 **Vulnerability:** the `doc` parameter is concatenated onto a path with no sanitisation, so `../` escapes the payslips directory.
 **MITRE ATT&CK:** T1190, T1083, T1005 (data from local system).
-**Confirm / exploit with:** `curl` with a traversal in the `doc` parameter.
+**Confirm / exploit with:** `curl` with a traversal in the `doc` parameter. Answer key has the parameter and the flag path.
 **Physical consequence:** `cityhall_payroll`, Town Hall `payroll_balance` → 0, `admin_pwned`. Same end state as the AS/400 path.
 **Points / severity:** 175 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -159,7 +159,7 @@ the AS/400 payroll green screen. Full writeups in
 **Real-world parallel:** secrets in a web-served config file, CWE-538 / OWASP A05.
 **Vulnerability:** the dispatch team's config sits where the web server serves it.
 **MITRE ATT&CK:** T1083, T1552.001.
-**Confirm / exploit with:** content discovery, or request the known path.
+**Confirm / exploit with:** content discovery, or request the known path. Answer key names the file.
 **Physical consequence:** `police_deface`, the Police Station reads `defaced`.
 **Points / severity:** 75 / quiet.
 **Fix:** _work this out, then check the instructor edition._
@@ -169,7 +169,7 @@ the AS/400 payroll green screen. Full writeups in
 **Real-world parallel:** default creds on building-management / alarm panels; CWE-1392.
 **Vulnerability:** the panel takes a shared default credential.
 **MITRE ATT&CK:** T1078.001.
-**Confirm / exploit with:** the vendor default, or `hydra`.
+**Confirm / exploit with:** the vendor default, or `hydra`. Answer key has the pair.
 **Physical consequence:** `fire_deface`, the Fire Department reads `defaced`.
 **Points / severity:** 75 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -179,7 +179,7 @@ the AS/400 payroll green screen. Full writeups in
 **Real-world parallel:** IDOR on invoices/receipts leaking PANs and PII; OWASP API1:2023, PCI-DSS 7.
 **Vulnerability:** any receipt is readable by id, no auth, no ownership check.
 **MITRE ATT&CK:** T1190, T1213.
-**Confirm / exploit with:** `curl` walking `<txn>`.
+**Confirm / exploit with:** `curl` walking `<txn>`. Answer key names the seeded receipt.
 **Physical consequence:** `paygw_carded`, fraud spreads: every healthy shop → `carded`, `fraud_charges` climb across Main Street.
 **Points / severity:** 150 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -189,7 +189,7 @@ the AS/400 payroll green screen. Full writeups in
 **Real-world parallel:** blank / default IBM i credentials and `*PUBLIC *ALL` on application libraries are standing AS/400 review findings.
 **Vulnerability:** three stacked, all real, a blank password is accepted for any profile; a powerful profile keeps its shipped default password; the payroll library is readable to the public, so Interactive SQL walks right in.
 **MITRE ATT&CK:** T1078.001, T1190, T1213; cleartext TN5250 → T1040 (network sniffing).
-**Confirm / exploit with:** `as400_5250.py` on the player box (menu option 1), or hand-drive from the `ttyd` terminal.
+**Confirm / exploit with:** `as400_5250.py` on the player box (menu option 1), or hand-drive from the `ttyd` terminal. Exact sign-on and `SELECT` in the answer key.
 **Physical consequence:** `cityhall_payroll`, Town Hall `payroll_balance` → 0, `admin_pwned`.
 **Points / severity:** 200 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -208,7 +208,7 @@ green screen behind it. Full writeups in
 **Real-world parallel:** CVE-2015-9235 and a decade of copies.
 **Vulnerability:** the verifier accepts `{"alg":"none"}` with no signature. Forge an elevated role and the staff dashboard opens, printing the Fed wire settlement token in the clear.
 **MITRE ATT&CK:** T1550.001 (application access token), T1190.
-**Confirm / exploit with:** `curl` + a base64url one-liner, or any JWT tool.
+**Confirm / exploit with:** `curl` + a base64url one-liner, or any JWT tool. Answer key has the claim to set.
 **Physical consequence:** `bank_drain`, `carded`, balance 0, ATM drained, `admin_pwned`, grid-tied alarm cut on the map.
 **Points / severity:** 200 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -218,7 +218,7 @@ green screen behind it. Full writeups in
 **Real-world parallel:** OWASP API1:2023; IDOR on a numeric account id.
 **Vulnerability:** any account is returned by id with no ownership check. One account's `memo` carries a municipal reconciliation token.
 **MITRE ATT&CK:** T1190, T1213.
-**Confirm / exploit with:** `curl` in a loop over the ids.
+**Confirm / exploit with:** `curl` in a loop over the ids. Answer key names the account.
 **Physical consequence:** `bank_leak`, the bank reads `db_dumped` (data exposed, no drain).
 **Points / severity:** 125 / medium.
 **Fix:** _work this out, then check the instructor edition._
@@ -228,7 +228,7 @@ green screen behind it. Full writeups in
 **Real-world parallel:** a never-revoked default admin with its shipped password, and profiles left in WARNING mode for years, are standing z/OS audit hits.
 **Vulnerability:** three real findings, a default admin still holds `SPECIAL` + `OPERATIONS` and still logs on; a transfer-approval profile is world-readable and in `WARNING` mode (fail-open); globally `NOPROTECTALL`. A reconciliation key sits in that profile's readable metadata.
 **MITRE ATT&CK:** T1078.001, T1222 (permission modification weakness), T1552; cleartext TN3270 → T1040.
-**Confirm / exploit with:** `z16_3270.py` on the player box (menu option 3), or hand-drive RACF from the `ttyd` terminal.
+**Confirm / exploit with:** `z16_3270.py` on the player box (menu option 3), or hand-drive RACF from the `ttyd` terminal. Exact `RLIST` in the answer key.
 **Physical consequence:** `bank_drain`, same end state as the JWT path.
 **Points / severity:** 275 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -249,7 +249,7 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** Oldsmar FL 2021 (setpoint change was the attack); FrostyGoop, Lviv 2024 (plain Modbus knocked out heat to ~600 buildings).
 **Vulnerability:** Modbus/TCP has no auth, no session, no integrity. Any host that can open 502 reads and writes every coil and register. The flag block unlocks while the PLC is in maintenance mode.
 **MITRE ATT&CK for ICS:** T0855 (unauthorized command message), T0831 (manipulation of control), T0836 (modify parameter), T0813 (denial of control).
-**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`.
+**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`. Exact coils in the answer key.
 **Physical consequence:** stop the high-lift pump and mains pressure bleeds out over a few ticks; houses on the map go dry, then a main bursts.
 **Points / severity:** 175 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -259,7 +259,7 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** Ukraine 2015/2016 grid attacks (operator HMIs and breaker control abused).
 **Vulnerability:** as above, open Modbus on the substation bus; breakers are just coils and nothing checks the writer.
 **MITRE ATT&CK for ICS:** T0855, T0831, T0832 (manipulation of view), T0813.
-**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`.
+**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`. Answer key has the feeder coils.
 **Physical consequence:** trip a feeder and that load goes dark on the map (houses, streetlights, downtown, or the factory); grid frequency sags.
 **Points / severity:** 175 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -269,7 +269,7 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** unsafe writes past a safety interlock; the shape behind many ICS "safety instrumented system" concerns (TRITON/TRISIS, 2017).
 **Vulnerability:** the line's safety interlocks are just coils; nothing checks the writer. The flag block unlocks in maintenance mode.
 **MITRE ATT&CK for ICS:** T0855, T0831, T0889 (modify program), T0880 (loss of safety).
-**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`.
+**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`. Answer key has the coils.
 **Physical consequence:** line jam / unsafe run, the Widget Factory shows a trouble ring and throughput drops.
 **Points / severity:** 175 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -279,7 +279,7 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** Maroochy Shire, Queensland 2000, an insider released ~800,000 L of sewage via radio commands to pumping stations.
 **Vulnerability:** open Modbus; open the storm bypass, or stop aeration and dosing, and the effluent runs raw.
 **MITRE ATT&CK for ICS:** T0855, T0831, T0836, T0828 (loss of productivity/revenue), T0813.
-**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`.
+**Confirm / exploit with:** `pymodbus` / `modbus_attack.py`. Answer key has the coils.
 **Physical consequence:** the effluent path goes raw; river contamination integrates up and the plume mosaic spreads from the beach; swimmers sicken (cascade bonus).
 **Points / severity:** 175 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -289,7 +289,7 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** unauthenticated MQTT brokers are a standing Shodan finding; the 2014 University of Michigan traffic-signal study and Cesar Cerrudo's Sensys Networks work.
 **Vulnerability:** on the flat broker the controllers' command topic has no ACL and no auth. A publish locks a crossroads ALL-GREEN. The engineering-mode topic takes a short PIN and, on a match, publishes the flag (non-retained).
 **MITRE ATT&CK for ICS:** T0855, T0831, T0814 (denial of service); Enterprise T1090 (proxy) n/a.
-**Confirm / exploit with:** `mosquitto_pub` / `mosquitto_sub`, or `traffic_attack.py`.
+**Confirm / exploit with:** `mosquitto_pub` / `mosquitto_sub`, or `traffic_attack.py`. Answer key has the topics and the PIN behaviour.
 **Physical consequence:** the intersection's signal dot locks green, the crossroads pulses "hijacked", crashes climb a few seconds later, downtown gridlocks.
 **Points / severity:** 175 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -299,7 +299,7 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** Lodz tram, 2008 ("someone threw the switches"); the long tail of telnet management ports on transit signalling.
 **Vulnerability:** two stacked, the console has default credentials, and `set label` hands your input straight to a shell (command injection, CWE-78). Either one reads the maintenance key; `set switch spur` throws the switch.
 **MITRE ATT&CK for ICS:** T0812 (default credentials), T0807 (command-line interface), T0855, T0831; Enterprise T1059.
-**Confirm / exploit with:** `nc` / `telnet`, or `rail_attack.py`.
+**Confirm / exploit with:** `nc` / `telnet`, or `rail_attack.py`. Answer key has the creds and the injection form.
 **Physical consequence:** set the switch to `spur` before the train reaches the branch (under the "R" of "Main Rail Line") and the train routes onto the spur, runs it to the Widget Factory over ~5 s, and derails into it, factory fire.
 **Points / severity:** 200 / loud.
 **Fix:** _work this out, then check the instructor edition._
@@ -313,7 +313,35 @@ rail is a raw-TCP console. Full writeups in
 **Real-world parallel:** open AXFR against a misconfigured secondary is one of the oldest external-recon wins; stale records for "retired" kit routinely outlive it.
 **Vulnerability:** the `packetriver.range` zone answers AXFR from anyone. One transfer enumerates every host in town, plus a TXT record for a box that was supposed to be decommissioned, with a maintenance token in it.
 **MITRE ATT&CK:** T1590.002 (gather victim network information: DNS), T1596.001 (search open technical databases: DNS/passive DNS).
-**Confirm / exploit with:** `recon.py dns`, or `dig axfr packetriver.range @dns`.
+**Confirm / exploit with:** `recon.py dns`, or `dig axfr packetriver.range @dns`. Answer key names the flag record.
 **Physical consequence:** none, pure recon (`effect: noop`).
 **Points / severity:** 75 / quiet.
+**Fix:** _work this out, then check the instructor edition._
+
+---
+
+## Group F — Network-attack lanes
+
+A different skill from the web and OT districts: layer-2 and lateral movement.
+Full writeups in [`districts/diner-wifi.md`](districts/diner-wifi.md) and
+[`districts/soho-router.md`](districts/soho-router.md).
+
+### diner_wifi — cleartext credential + inbox off the open Wi-Fi
+**Where:** the Diner Wi-Fi segment `172.31.60.0/24`. `netlab` (.10) = the AP (cleartext rewards portal :80, toy POP3 :110); `netlab-patron` (.20) signs in and reads mail over it on a loop.
+**Real-world parallel:** credential theft off open Wi-Fi, and ARP spoofing on a switched LAN once associated (the same move on hotel / coffee-shop networks).
+**Vulnerability:** nothing on the segment is encrypted and there is no client isolation. A switch won't flood the patron's unicast to you, so the attack is an active ARP-spoof MITM; then the portal login and the whole inbox are in the clear.
+**MITRE ATT&CK:** T1557.002 (ARP cache poisoning), T1040 (network sniffing).
+**Confirm / exploit with:** `arpspoof` + `tcpdump`, or `wifi_sniff.py`. The flag is in the patron's POP3 inbox.
+**Physical consequence:** `shop_carded`, the Diner reads `carded`. The ARP spoof flips a MAC in `netlab`'s cache; it publishes an Alert-heat event, enough to cross Level 1.
+**Points / severity:** 125 / medium.
+**Fix:** _work this out, then check the instructor edition._
+
+### soho_router_pcap — SOHO router pivot, residential -> rail
+**Where:** `soho-router` (172.31.61.10, admin HTTP :80, reachable from the town LAN); behind it `home-net` with `soho-resident`. Pivot target: the rail console `rail-plc:2323`.
+**Real-world parallel:** Volt Typhoon-style use of SOHO routers as footholds; a remote worker's home network bridging to OT.
+**Vulnerability:** WAN-side admin is reachable, the login is still `admin` / `admin`, and the Diagnostics packet-capture returns a decoded dump of the home LAN, where the resident (a rail engineer) signs in to a crew portal over plain HTTP. That credential is reused on the rail console.
+**MITRE ATT&CK:** T1078.001 (default accounts), T1040 (capture-page abuse), T1078 (credential reuse into OT).
+**Confirm / exploit with:** a browser / `curl` for the router, `soho_pcap.py` to script it, `nc` for the console replay. The flag is an `X-Reconcile:` header in the decoded capture.
+**Physical consequence:** the flag itself is recon (`noop`). Replaying the credential on `rail-plc:2323` chains into `rail_console`, `flag` for that flag and `set switch spur` for the derail into the Widget Factory.
+**Points / severity:** 150 / medium.
 **Fix:** _work this out, then check the instructor edition._
