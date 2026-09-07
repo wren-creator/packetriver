@@ -39,8 +39,10 @@ THEMES = {
                    bg="#182016", screen="#eef1e8", ink="#28321f", accent="#5c7d3a",
                    bar="#3f5626", lbl="#28321f", vendor="Clarus Environmental"),
 }
-TITLES = {"water": "Packet River Water Company", "power": "Municipal Power - Substation 1",
-          "factory": "Widget Factory - Line & Loading", "sewage": "Water Reclamation Plant"}
+TITLES = {"water": "Packet River Water Company",
+          "power": "Packet River Municipal Power - Substation 1",
+          "factory": "Packet River Widget Factory - Line & Loading",
+          "sewage": "Packet River Water Reclamation Plant"}
 
 # ---------------------------------------------------------------------------
 # Per-plant mimic definitions. Coordinates are in a 0..960 x 0..420 viewBox.
@@ -213,7 +215,7 @@ def _svg(plant):
                      f'fill="#eef4f6" stroke="#1b4b7a" stroke-width="2"/>')
         parts.append(f'<rect id="tankfill" x="{tk["x"]+2}" y="{tk["y"]+tk["h"]-2}" '
                      f'width="{tk["w"]-4}" height="0" fill="#2f6fb0"/>')
-        parts.append(f'<text x="{tk["x"]+tk["w"]/2}" y="{tk["y"]-8}" font-size="11" '
+        parts.append(f'<text x="{tk["x"]+tk["w"]/2}" y="{tk["y"]-10}" font-size="15" font-weight="600" '
                      f'fill="{lbl}" text-anchor="middle">{tk["label"]}</text>')
     for dev in d["devices"]:
         x, y, k = dev["x"], dev["y"], dev["kind"]
@@ -232,7 +234,7 @@ def _svg(plant):
             parts.append(f'<g class=dev id="{gid}" data-dev="{dev["id"]}" data-coil="{dev["coil"]}">'
                          f'<path d="M{x-13} {y-11} L{x} {y} L{x-13} {y+11} Z" fill="#3a3f45" stroke="#1b4b7a"/>'
                          f'<path d="M{x+13} {y-11} L{x} {y} L{x+13} {y+11} Z" fill="#3a3f45" stroke="#1b4b7a"/></g>')
-        parts.append(f'<text x="{x}" y="{y+30}" font-size="10" '
+        parts.append(f'<text x="{x}" y="{y+36}" font-size="17" font-weight="600" '
                      f'text-anchor="middle" fill="{lbl}">{dev["label"]}</text>')
     parts.append("</svg>")
     return "".join(parts)
