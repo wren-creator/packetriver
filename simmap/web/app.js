@@ -30,7 +30,7 @@ async function api(path, method = "GET", body) {
 }
 
 // ----------------------------------------------------------- overlay build
-const REFS = { shops: {}, ints: [], houses: [], streetlights: [] };
+const REFS = { shops: {}, ints: [], streetlights: [] };
 let LAYOUT = null;
 
 function buildOverlay(layout) {
@@ -103,12 +103,6 @@ function buildOverlay(layout) {
     return { g, dot, crash };
   });
 
-  REFS.houses = layout.houses.map(hp => {
-    const cx = X(hp.x), cy = Y(hp.y), g = el("g", { class: "house" }, svg);
-    const win = el("rect", { x: cx - 4, y: cy - 4, width: 8, height: 8, rx: 1.5, class: "win" }, g);
-    const drop = el("circle", { cx: cx - 8, cy: cy + 3, r: 2.4, class: "drop" }, g);
-    return { win, drop };
-  });
   REFS.streetlights = layout.streetlights.map(sp =>
     el("circle", { cx: X(sp.x), cy: Y(sp.y), r: 3, class: "streetlight" }, svg));
 
@@ -219,11 +213,6 @@ function render(s) {
   }
   if (s.water)
     REFS.waterRes.forEach(d => d.classList.toggle("on", s.water.quality !== "dry"));
-  (s.houses || []).forEach((h, i) => {
-    if (!REFS.houses[i]) return;
-    REFS.houses[i].win.classList.toggle("on", !!h.has_power);
-    REFS.houses[i].drop.classList.toggle("on", !!h.has_water);
-  });
 
   const lvl = (s.alert && s.alert.level) || 0;
   $("hud-alert").dataset.lvl = lvl;

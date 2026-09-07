@@ -185,8 +185,6 @@
     }
     (L.intersections || []).forEach((p) => push({ id: "int " + p.id, kind: "point",
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
-    (L.houses || []).forEach((p, i) => push({ id: "house " + i, kind: "point",
-      get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
     const pts = (key, label) => (L[key] || []).forEach((p, i) => push({
       id: label + " " + i, kind: "point",
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
@@ -263,7 +261,7 @@
   // tell the layers apart while dragging
   const HANDLE_COLOUR = [
     [/^P-res /, "#f0cf5c"], [/^P-biz /, "#e88a2e"], [/^P-plant /, "#9aa0aa"],
-    [/^W-res /, "#4aa8e0"], [/^light /, "#f2f2ec"], [/^house /, "#d9a24f"],
+    [/^W-res /, "#4aa8e0"], [/^light /, "#f2f2ec"],
     [/^int /, "#8fd18f"], [/^railPath /, "#d98a6a"], [/^spurPath /, "#d98a6a"],
     [/^swimmers /, "#ffe4b8"], [/^outfall /, "#7cb03a"], [/^waterMain /, "#2f8fbf"],
     [/^powerFeeder/, "#e3a52e"], [/^river$/, "#3a8fb0"], [/^beachZone$/, "#6fae54"],

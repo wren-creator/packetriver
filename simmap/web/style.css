@@ -201,10 +201,6 @@ body {
 
 /* the house window is the power indicator: warm glow when the residential
    feeder is up, a dim red dot when it drops */
-.house .win  { fill: #d9584f; opacity: .5; transition: opacity .4s, fill .4s; }
-.house .win.on  { fill: #ffd35a; opacity: 1; filter: drop-shadow(0 0 4px #ffcf5a); }
-.house .drop { fill: #d9584f; opacity: .0; }
-.house .drop.on { fill: var(--river); opacity: .85; }
 .streetlight { fill: #5a5347; opacity: .45; }
 .streetlight.on { fill: #f2f2ec; opacity: 1; filter: drop-shadow(0 0 3px #fff6d8); }
 

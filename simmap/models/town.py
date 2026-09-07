@@ -306,10 +306,6 @@ class TownState:
     # -- snapshot ----------------------------------------------------
     def snapshot(self) -> dict:
         w, p = self.water, self.power
-        houses = [
-            {"id": i, "has_water": w.mains_pressure_pct > 25, "has_power": p.feeders["residential"]}
-            for i in range(1, 15)
-        ]
         return {
             "state_seq": self.state_seq,
             "generated_at": time.time(),
@@ -372,7 +368,6 @@ class TownState:
             },
             "police": {"site_status": self.police.site_status, "dispatch_pwned": self.police.dispatch_pwned},
             "fire": {"site_status": self.fire.site_status, "dispatch_pwned": self.fire.dispatch_pwned},
-            "houses": houses,
             "alert": {
                 "level": self.alert.level,
                 "heat": round(self.alert.heat, 1),
