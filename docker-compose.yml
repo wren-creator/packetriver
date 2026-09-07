@@ -123,6 +123,24 @@ services:
       timeout: 5s
       retries: 8
 
+  # --- the Packet River AS/400 (payroll, behind City Hall + the factory) ---
+  as400:
+    <<: *common
+    build: ./mainframe/as400
+    container_name: packetriver-as400
+    depends_on:
+      scoring: { condition: service_healthy }
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:8992:3272"    # TN5250
+    networks: [it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3272 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- First Packet Bank & Trust (online banking) ---------------------
   bank:
     <<: *common
@@ -184,7 +202,7 @@ services:
       timeout: 5s
       retries: 8
 
-  # --- the boxed-in attacker workstation --------------------------------
+  # --- the boxed-in attacker workstation + in-browser terminal ---------
   player:
     <<: *common
     build: ./player
@@ -192,7 +210,9 @@ services:
     cap_add: [NET_ADMIN]
     depends_on:
       websites: { condition: service_healthy }
-    networks: [it-net]               # Phase 4 hardening moves this to edge-net + a real pivot
+    ports:
+      - "127.0.0.1:7681:7681"       # ttyd terminal (the map opens this for the mainframe targets)
+    networks: [it-net, edge-net]    # Phase 4 hardening moves this to edge-net + a real pivot
     healthcheck:
       test: ["CMD-SHELL", "command -v sqlmap >/dev/null || exit 1"]
       interval: 30s

@@ -1,0 +1,27 @@
+#!/bin/sh
+# The in-browser terminal menu (served by ttyd on the player box).
+clear
+cat <<'BANNER'
+  ____            _        _     ____  _
+ |  _ \ __ _  ___| | _____| |_  |  _ \(_)_   _____ _ __
+ | |_) / _` |/ __| |/ / _ \ __| | |_) | \ \ / / _ \ '__|
+ |  __/ (_| | (__|   <  __/ |_  |  _ <| |\ V /  __/ |
+ |_|   \__,_|\___|_|\_\___|\__| |_| \_\_| \_/ \___|_|   terminal
+
+  1)  AS/400 payroll pull   (5250 -> sign on -> STRSQL -> flag)
+  2)  AS/400 SQL prompt     (pick your own SELECT * FROM lib.table)
+  3)  shell  (sqlmap, nmap, modbus_attack.py, git-dumper, ...)
+  q)  quit
+
+BANNER
+printf 'choose > '
+read choice
+case "$choice" in
+  1) python3 /opt/pktr/scripts/as400_5250.py; printf '\n[enter to go back] '; read _; exec "$0" ;;
+  2) printf 'SQL > SELECT * FROM '; read tbl
+     python3 /opt/pktr/scripts/as400_5250.py "SELECT * FROM $tbl"
+     printf '\n[enter to go back] '; read _; exec "$0" ;;
+  3) cd /opt/pktr && exec /bin/bash ;;
+  q|Q) exit 0 ;;
+  *) exec "$0" ;;
+esac

@@ -88,6 +88,13 @@ TECHNIQUES = {
         "severity": "medium", "base": 75,
         "hint": "the station alarm panel (/fire/) takes admin/fire",
     },
+    "as400_empmast": {
+        "subsystem": "civic", "target": "cityhall", "effect": "cityhall_payroll",
+        "severity": "loud", "base": 200,
+        "hint": "TN5250 to the AS/400 - a blank password signs you on as any "
+                "profile (or QSECOFR/QSECOFR). STRSQL: SELECT * FROM "
+                "PAYROLL.PAYKEY (the payroll library is *PUBLIC *ALL)",
+    },
     "paygw_receipt_idor": {
         "subsystem": "shop", "target": "paygw", "effect": "paygw_carded",
         "severity": "loud", "base": 150,

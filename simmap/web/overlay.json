@@ -176,7 +176,9 @@
       "kind": "civic",
       "port": 8090,
       "path": "/townhall/",
-      "technique": "townhall_lfi"
+      "technique": "townhall_lfi",
+      "terminal": 7681,
+      "terminal_label": "AS/400 green screen"
     },
     "police": {
       "x": 0.385,

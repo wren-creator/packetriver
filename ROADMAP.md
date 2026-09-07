@@ -30,18 +30,18 @@ reuse map live in the design doc.
   Split into ordered sub-phases, each committed + playable:
   - [x] **3a-1** all 8 storefronts, one bug class each (IDOR, auth-bypass,
     exposed backup, stored XSS + regex bot, default creds, `.git` leak, SSRF).
-  - [ ] **3a-2** Town Hall (announcements deface, payroll portal, LFI) +
+  - [x] **3a-2** Town Hall (announcements deface, payroll portal, LFI) +
     Police + Fire as minor targets + `paygw` (fake card gateway, test PANs) +
     a real checkout on the shops.
-  - [ ] **3a-3** the Bank district (`bank` service: JWT `none`, account IDOR,
-    ATM API, alarm panel on the business feeder), the `websites` -> `ot-net`
-    pivot.
-  - [ ] **3b** Widget Factory PLC controls (assembly line + train loading) on
-    `field-plc`.
-  - [ ] **3c** AS/400 (IBM i) behind City Hall + the factory for payroll:
-    green-screen TN5250 + one RPG/DDS payroll app + a handful of curated bugs
-    (default profiles, library-list injection). Reuse `web3270` TN5250 +
-    `rpgle_library`.
+  - [x] **3a-3** the Bank district (`bank` service: JWT `none`, account IDOR,
+    staff dashboard leaking the wire token, alarm panel on the business feeder).
+  - [x] **3b** Widget Factory PLC controls (assembly line + train loading) on
+    `field-plc` (Modbus/TCP :504, `FactoryModel`).
+  - [x] **3c** AS/400 (IBM i) behind City Hall + the factory for payroll:
+    green-screen TN5250, three stacked IBM i bugs (blank sign-on, default
+    `QSECOFR`, `PAYROLL` library `*PUBLIC *ALL`); flag pulled via `STRSQL`.
+    Player-side client `as400_5250.py` (built - no arm64 `tn5250`). A full
+    interactive in-browser 5250 (web3270 `session.js`) stays a follow-up.
   - [ ] **3d** IBM z16 behind the Bank: green-screen TN3270 + a CICS inquiry +
     a RACF panel + curated bugs (UACC, WARNING mode, magic SVC). Reuse
     `web3270` mock LPARs.
@@ -62,31 +62,29 @@ reuse map live in the design doc.
 
 ## Ideas / bucket list
 
-- [ ] **Midrange + mainframe tier.** Give the big civic systems the machines a
+- **Midrange + mainframe tier.** Give the big civic systems the machines a
   real small town would run them on:
-  - an **AS/400 (IBM i)** behind **City Hall** and the **Widget Factory**,
-    running payroll (TN5250 green screen, an RPG IV / DDS payroll app). Reuse
-    the TN5250 stack from `web3270` and the RPG IV / DDS parser from
-    `rpgle_library`. Bugs: default `QSECOFR` / weak profiles, no exit-program
-    controls, library-list / command-line injection, unencrypted 5250.
-  - an **IBM z16** behind **First Packet Bank & Trust** for core banking
-    (TN3270, z/OS, RACF, CICS). Reuse the mock-LPAR / TN3270 stack from
-    `web3270`. Bugs: RACF misconfig (universal access, WARNING mode, magic
+  - [x] an **AS/400 (IBM i)** behind **City Hall** and the **Widget Factory**,
+    running payroll (TN5250 green screen). Landed in Phase 3c. Remaining depth:
+    a runnable RPG IV / DDS payroll app (the `rpg/` interpreter is vendored but
+    the payroll path is SQL-only today), library-list / command-line injection,
+    and a full interactive in-browser 5250 (web3270 `session.js` behind a Node
+    renderer) instead of the built extraction client.
+  - [ ] an **IBM z16** behind **First Packet Bank & Trust** for core banking
+    (TN3270, z/OS, RACF, CICS) - Phase 3d. Reuse the mock-LPAR / TN3270 stack
+    from `web3270`. Bugs: RACF misconfig (universal access, WARNING mode, magic
     SVC), CICS transaction abuse, APF / surrogat, TSO REXX. This is Britley's
     home turf and the range's real differentiator.
-  These tie into the existing web front doors: pop the City Hall payroll portal
-  (web) then pivot to the AS/400 behind it; pop the bank's online banking (web)
-  then pivot to the z16.
-- [ ] **Widget Factory PLC controls.** The factory gets its own soft-PLC on
-  `field-plc` (or its own container): the **assembly line** (conveyor run/stop,
-  line speed, e-stop interlocks) and **train loading** (the spur, the loading
-  gantry / hopper gate, a car-in-position sensor). Same unauth-Modbus-write
-  lesson as water/power; ties to the rail switch already on the map. Effects:
-  line jam, over/under-fill, a car loaded while the switch is thrown.
+  Both tie into the web front doors: pop the City Hall payroll portal then
+  pivot to the AS/400; pop the bank's online banking then pivot to the z16.
+- [x] **Widget Factory PLC controls.** Assembly line (conveyor run/stop, line
+  speed, e-stop interlock) + train loading (gantry / hopper gate /
+  car-in-position) on `field-plc` :504. Landed in Phase 3b. Still open: tying a
+  car-loaded-while-the-switch-is-thrown to the rail district (Phase 4).
 - [ ] Widget Factory ops site (weak SNMP) alongside the PLC controls, instead of
   the factory being a pure consequence entity.
-- [ ] Optional `ttyd` browser terminal in the `player` box for players without
-  a local shell.
+- [x] `ttyd` browser terminal in the `player` box - added in Phase 3c (the map's
+  "green screen ↗" link on Town Hall opens it).
 - [ ] Timed events beyond the news crew: a state inspector visit, a Founder's
   Day parade that fills the crossroads.
 - [ ] Closer-to-real RF for the Wi-Fi lane would be its own wireless range, not

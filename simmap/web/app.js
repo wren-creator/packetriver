@@ -292,6 +292,14 @@ function openTarget(id, b) {
   $("sitepanel-title").textContent = b.label + " — login portal";
   $("sitepanel-open").href = url;
   $("sitepanel-frame").src = url;
+  const term = $("sitepanel-term");
+  if (b.terminal) {
+    term.href = `${location.protocol}//${location.hostname}:${b.terminal}/`;
+    term.textContent = (b.terminal_label || "terminal") + " ↗";
+    term.hidden = false;
+  } else {
+    term.hidden = true;
+  }
   $("flag-input").value = "";
   $("flag-result").textContent = "";
   $("submit-flag").hidden = !b.technique;

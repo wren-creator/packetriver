@@ -5,6 +5,11 @@
 ip route del default 2>/dev/null && echo "[player] default route removed" \
   || echo "[player] no default route to remove"
 
+# in-browser terminal (the map opens this for the mainframe targets)
+ttyd -p 7681 -W -t fontSize=15 -t 'theme={"background":"#101418"}' \
+     /usr/local/bin/pktr-connect >/dev/null 2>&1 &
+echo "[player] ttyd terminal on :7681"
+
 cat <<'EOF'
 [player] ready. scripts are in /opt/pktr/scripts:
 

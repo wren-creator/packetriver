@@ -4,6 +4,78 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Phase 3c - the Packet River AS/400 (payroll green screen)
+- `mainframe/as400/`: a real TN5250 host (SIGNON panel, menu tree, DSPMSG,
+  WRKUSRPRF, Interactive SQL), vendored from web3270's mock-lpar (GPL-3.0,
+  attribution header) with node builtins + the local `rpg/` interpreter, no npm
+  deps. One addition: a `PAYROLL/PAYKEY` file carrying this session's flag,
+  dropped into the `PAYROLL` library the box already ships `*PUBLIC *ALL`.
+- `as400` compose service on `127.0.0.1:8992` (container port 3272), `it-net` +
+  `edge-net`, reads the flag from `/run/secret/as400_empmast/flag.txt`.
+- `scoring/flags.py`: `as400_empmast` technique (subsystem `civic`, effect
+  `cityhall_payroll`, base 200, `loud`). Submitting it drains Town Hall's
+  payroll on the map - the same effect the Town Hall web LFI chains into.
+- `player`: `scripts/as400_5250.py`, a purpose-built TN5250 client (like
+  `modbus_attack.py`) - negotiates the 5250 telnet options, signs on with a
+  blank / default password, runs `STRSQL: SELECT * FROM PAYROLL.PAYKEY`, scrapes
+  the flag. `pktr-connect` (the `ttyd` menu) gets it as option 1, plus a
+  free-form `SELECT * FROM lib.table` prompt as option 2. `targets.py` allowlist
+  gains `as400`. (No arm64 `tn5250` package exists, hence the built client.)
+- `overlay.json`: Town Hall already carried `terminal: 7681` - clicking it on
+  the map now opens the AS/400 terminal alongside the web front door.
+- `docs/districts/mainframe.md`: surfaces, the three stacked IBM i
+  misconfigurations (blank sign-on, default `QSECOFR`, `*PUBLIC *ALL`), the
+  wire-format notes for the client, the hardening, real-world parallels.
+- Verified end to end from the player box: sign on -> `STRSQL` -> flag ->
+  submit -> `accepted`, 450 pts (200 x 1.5 speed x 1.5 stealth), Town Hall
+  payroll reads 0 on the map, alert level ticks to 1.
+
+### Phase 3b - Widget Factory PLC (assembly line + train loading)
+- `field-plc` gains a third Modbus/TCP soft-PLC on container port 504
+  (`127.0.0.1:5504`): assembly-line conveyor with an e-stop interlock, plus the
+  train-loading gantry / hopper gate / car-in-position sensor. `maps.py`
+  `FACTORY` block, `store.py` `FCTX/FLOCK`, `run.py` third `_serve` thread +
+  scan-loop hardening + flag block.
+- `simmap/models/factory.py` (`FactoryModel`) + a factory loop in `icsloops.py`:
+  simmap reads the coils/DIs each tick and drives `Factory.throughput_pct`,
+  `line_running`, `line_jam`, `estop_bypassed`. Throughput collapses on a jam or
+  a stopped line; overspeed past the interlock caps it and runs unsafe.
+- `scoring/flags.py`: `factory_modbus` (base 200, `loud`). `modbus_attack.py`
+  gains a `factory` plant (`line-stop`, `estop-bypass`, `hopper-dump`, `flag`,
+  `restore`). `overlay.json`: the factory hotspot opens the shared HMI; the
+  render shows a line-jam ring and, on a spur derail, a fire ring.
+- Reset panel gains a `factory` scope; `pkt/reset` + `/api/debug/reset` call
+  `icsloops.restore_factory`.
+
+### Phase 3a-3 - First Packet Bank & Trust
+- `bank`: `node:20-alpine` Express online-banking service on `127.0.0.1:8100`.
+  Hand-rolled JWT whose `verify()` honours `alg: none` (accepts an unsigned
+  payload); `GET /api/accounts/:id` has no ownership check; `POST /api/transfer`
+  sweeps every account. `GET /dashboard` (staff view) prints the wire token;
+  account 1003's memo carries the IDOR flag.
+- `scoring/flags.py`: `bank_jwt_none` (base 250, `loud`) and `bank_account_idor`
+  (base 150, `quiet`), both read from per-technique `/run/secret` subpaths.
+- `overlay.json`: the Bank hotspot opens online banking. The map's bank alarm
+  follows the business feeder; draining the bank cuts it.
+
+### Phase 3a-2 - Town Hall, Police, Fire, and the payment gateway
+- Town Hall (`/townhall/`): announcements rendered raw (stored XSS / deface),
+  a clerk/clerk admin, a concatenated-query payroll login, and `payslip.php`
+  with an unsanitised `readfile()` (LFI). Techniques `townhall_deface` (base
+  150) and `townhall_lfi` (base 175). `flags.py` now writes one dir per
+  technique so a single target can own several.
+- Police (`/police/`): a static blotter plus `dispatch/config.json` with a
+  `radio_key` (`police_leak`, base 100). Fire (`/fire/`): `admin`/`fire` on the
+  station alarm panel (`fire_defaultcreds`, base 75).
+- `paygw`: `python:3.12-alpine` fake card gateway on `127.0.0.1:8500`. GIBSON-
+  style `authorize()` with standard vendor **test** PANs only; `POST /charge`
+  has a `force` bypass and no amount sanity check; `GET /receipt/<txn_id>` is an
+  in-memory IDOR, one memo holding the flag (`paygw_receipt_idor`, base 150).
+  Shop checkouts post here.
+- `db/init/30-civic.sql`: the `townhall` schema (announce, clerk admin, payroll
+  users). `overlay.json`: Town Hall / Police / Fire hotspots wired to their
+  subpaths.
+
 ### Phase 3a-1 - the rest of Main Street (8 storefronts)
 - `websites` restructured: one docroot, one subdirectory per shop
   (`/generalstore/`, `/hardware/`, ...), each its own MariaDB schema. Shared
