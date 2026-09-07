@@ -95,12 +95,12 @@ def index():
     fdi = rd(FCTX, FLOCK, 2, 0, 4)
     factory_rows = [
         ("Assembly line", onoff(fco[FACTORY["coil"]["LINE_RUN"]])),
-        ("E-stop interlock", "BYPASSED" if fco[FACTORY["coil"]["ESTOP_BYPASS"]]
-         else "armed").replace("BYPASSED", "<span class=alarm>BYPASSED</span>"),
+        ("E-stop interlock", "<span class=alarm>BYPASSED</span>"
+         if fco[FACTORY["coil"]["ESTOP_BYPASS"]] else "armed"),
         ("Line speed", f"{fhr[FACTORY['hr']['LINE_SPEED']]} %"),
         ("Loading gantry", onoff(fco[FACTORY["coil"]["GANTRY"]])),
-        ("Hopper gate", "OPEN" if fco[FACTORY["coil"]["HOPPER_GATE"]]
-         else "closed").replace("OPEN", "<span class=alarm>OPEN</span>"),
+        ("Hopper gate", "<span class=alarm>OPEN</span>"
+         if fco[FACTORY["coil"]["HOPPER_GATE"]] else "closed"),
         ("Rail car in position", "yes" if fdi[FACTORY["di"]["CAR_IN_POSITION"]] else "no"),
     ]
     factory_alarms = ["LINE JAM / UNSAFE STATE"] if fdi[FACTORY["di"]["LINE_JAM"]] else []
@@ -112,8 +112,8 @@ def index():
         ("Aeration basin", onoff(sco[SEWAGE["coil"]["AERATION"]])),
         ("Disinfection dosing", onoff(sco[SEWAGE["coil"]["CHEM_DOSE"]])),
         ("Treated-return pump", onoff(sco[SEWAGE["coil"]["RETURN_PUMP"]])),
-        ("Storm bypass gate", ("OPEN" if sco[SEWAGE["coil"]["BYPASS_GATE"]]
-         else "closed").replace("OPEN", "<span class=alarm>OPEN</span>")),
+        ("Storm bypass gate", "<span class=alarm>OPEN</span>"
+         if sco[SEWAGE["coil"]["BYPASS_GATE"]] else "closed"),
         ("Dose setpoint", f"{shr[SEWAGE['hr']['DOSE_SP']] / 100:.2f} mg/L"),
         ("Dissolved oxygen", f"{shr[SEWAGE['hr']['DO_LEVEL']] / 10:.1f} mg/L"),
         ("Effluent turbidity", f"{shr[SEWAGE['hr']['TURBIDITY']] / 10:.1f} NTU"),
