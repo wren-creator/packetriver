@@ -20,7 +20,12 @@ from models.town import RESET_SCOPES
 WEB = pathlib.Path(__file__).parent / "web"
 
 app = Flask(__name__)
-app.config["SOCK_SERVER_OPTIONS"] = {"ping_interval": 25}
+# No ping_interval: flask-sock's simple-websocket keepalive runs a second
+# thread that writes PING frames straight to the socket, bypassing SEND_LOCK
+# and interleaving with the tick loop's broadcast frames ("invalid attempt to
+# fragment control frame" -> the client drops and reconnects every ~25 s). The
+# 1 s broadcast keeps the pipe warm and nginx's /ws proxy_read_timeout is 1h,
+# so no keepalive frame is needed.
 sock = Sock(app)
 
 STATE: dict = {"town": None, "lock": None}

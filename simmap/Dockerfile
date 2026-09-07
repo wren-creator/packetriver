@@ -13,6 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE 8000
-# one gevent-websocket worker: the tick / bus / ICS threads live in-process
-CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", \
-     "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "120", "wsgi:app"]
+# One plain gevent worker. flask-sock (simple-websocket) does its own WS
+# handshake + framing, so it must NOT run under GeventWebSocketWorker - that
+# worker upgrades the socket itself, and the two framers on one connection
+# give the client "invalid attempt to fragment control frame" and a
+# reconnect loop. `-w 1` keeps the tick / bus / ICS threads single-instance.
+CMD ["gunicorn", "-k", "gevent", "-w", "1", "-b", "0.0.0.0:8000", \
+     "--timeout", "120", "wsgi:app"]

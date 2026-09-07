@@ -4,4 +4,3 @@ paho-mqtt==2.1.0
 pymodbus==3.6.9
 gunicorn==22.0.0
 gevent==24.2.1
-gevent-websocket==0.10.1
