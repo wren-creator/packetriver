@@ -64,10 +64,10 @@ PLANTS = {
     ],
     tank=dict(x=560, y=95, w=120, h=150, src="hr:10", scale=0.1, label="Clearwell / Tower"),
     tags=[
-      dict(x=90, y=355, label="1FT101", src="hr:13", unit="gpm", scale=1, fmt=0),
-      dict(x=470, y=120, label="2PT201", src="hr:11", unit="psi", scale=0.1, fmt=1, hi=None),
-      dict(x=175, y=245, label="3AIT301", src="hr:12", unit="ppm", scale=0.01, fmt=2),
-      dict(x=760, y=300, label="Dist. pressure", src="hr:11", unit="psi", scale=0.1, fmt=1),
+      dict(x=110, y=330, label="1FT101", src="hr:13", unit="gpm", scale=1, fmt=0),
+      dict(x=470, y=150, label="2PT201", src="hr:11", unit="psi", scale=0.1, fmt=1, hi=None),
+      dict(x=175, y=270, label="3AIT301", src="hr:12", unit="ppm", scale=0.01, fmt=2),
+      dict(x=780, y=330, label="Dist. pressure", src="hr:11", unit="psi", scale=0.1, fmt=1),
     ],
     sp=[dict(reg=0, label="High-lift setpoint", unit="psi", scale=0.1, step=1, lo=400, hi=700)],
   ),
@@ -89,9 +89,9 @@ PLANTS = {
            on="ONLINE", off="OFFLINE"),
     ],
     tags=[
-      dict(x=300, y=95, label="Bus freq", src="hr:10", unit="Hz", scale=0.01, fmt=2),
-      dict(x=430, y=95, label="Bus volt", src="hr:11", unit="kV", scale=0.1, fmt=1),
-      dict(x=560, y=95, label="Load", src="hr:12", unit="MW", scale=0.1, fmt=1),
+      dict(x=290, y=120, label="Bus freq", src="hr:10", unit="Hz", scale=0.01, fmt=2),
+      dict(x=470, y=120, label="Bus volt", src="hr:11", unit="kV", scale=0.1, fmt=1),
+      dict(x=650, y=120, label="Load", src="hr:12", unit="MW", scale=0.1, fmt=1),
     ],
     sp=[dict(reg=0, label="Generation setpoint", unit="MW", scale=0.1, step=1, lo=40, hi=120)],
   ),
@@ -108,9 +108,9 @@ PLANTS = {
            on="OPEN", off="SHUT"),
     ],
     tags=[
-      dict(x=180, y=180, label="Line speed", src="hr:0", unit="%", scale=1, fmt=0),
-      dict(x=560, y=180, label="Throughput", src="hr:11", unit="%", scale=1, fmt=0),
-      dict(x=640, y=90, label="Car in pos.", src="di:0", unit="", scale=1, fmt=0),
+      dict(x=180, y=210, label="Line speed", src="hr:0", unit="%", scale=1, fmt=0),
+      dict(x=560, y=210, label="Throughput", src="hr:11", unit="%", scale=1, fmt=0),
+      dict(x=640, y=120, label="Car in pos.", src="di:0", unit="", scale=1, fmt=0),
     ],
     sp=[dict(reg=0, label="Line speed setpoint", unit="%", scale=1, step=1, lo=20, hi=90)],
   ),
@@ -129,9 +129,9 @@ PLANTS = {
     ],
     tank=dict(x=180, y=150, w=90, h=120, src="hr:10", scale=1, label="Aeration basin DO"),
     tags=[
-      dict(x=280, y=180, label="DO", src="hr:10", unit="mg/L", scale=0.1, fmt=1),
-      dict(x=500, y=180, label="Turbidity", src="hr:11", unit="NTU", scale=0.1, fmt=1, hi=300),
-      dict(x=700, y=180, label="Effluent qual.", src="hr:12", unit="%", scale=0.1, fmt=0),
+      dict(x=300, y=210, label="DO", src="hr:10", unit="mg/L", scale=0.1, fmt=1),
+      dict(x=500, y=210, label="Turbidity", src="hr:11", unit="NTU", scale=0.1, fmt=1, hi=300),
+      dict(x=700, y=210, label="Effluent qual.", src="hr:12", unit="%", scale=0.1, fmt=0),
     ],
     sp=[dict(reg=0, label="Disinfection dose", unit="mg/L", scale=0.01, step=5, lo=80, hi=260)],
   ),
@@ -158,7 +158,8 @@ def shell(plant, heading, body_html):
    font-weight:700;border-bottom:1px solid #0002}}
  .mimic{{position:relative}} svg{{display:block;width:100%;height:auto;background:var(--screen)}}
  .dev{{cursor:pointer}}
- .tag{{position:absolute;transform:translate(-50%,-50%);font:10px/1.2 'Courier New',monospace;text-align:center}}
+ .tag{{position:absolute;transform:translate(-50%,calc(-100% - 12px));font:10px/1.2 'Courier New',monospace;text-align:center}}
+ .tag::after{{content:'';position:absolute;left:50%;top:100%;width:1px;height:12px;background:#2b5c86}}
  .tag .h{{background:#2b5c86;color:#fff;padding:1px 4px;white-space:nowrap}}
  .tag .v{{background:#eef4f6;color:#12324a;padding:1px 4px;border:1px solid #2b5c86;border-top:0}}
  .tag .v.hi{{background:#f4c9c9;color:#7a1414;font-weight:700}}
