@@ -128,9 +128,10 @@ Register and start a run once (`/api/score/register`, `/api/score/run`), then
 | D6 | re-run B25 / B26 (Phase 5 lanes) | `NETLAB_TLS=1`: `wifi_sniff.py` gets no flag (the MITM sees TLS). `WAN_ADMIN=0`: `soho_pcap.py` from the player gets `403 administration is disabled on the WAN interface`; `ADMIN_PASS` is rotated; `PORTAL_TLS=1` so even the capture is opaque |
 | D7 | mainframe | `MOCK_AS400_HARDENED=1`: a blank sign-on is rejected. `MOCK_Z16_HARDENED=1`: `IBMUSER/SYS1` no longer logs on. (Deeper RACF / library-authority hardening is roadmapped.) |
 
-## Section E — ebook (Phase 6, not built yet)
+## Section E — ebook
 
 | # | Command | Pass condition |
 |---|---|---|
-| E1 | `cd docs/syllabus-epub && ./build-epub.sh` | `mimetype` is the first entry and `stored` (not deflated) |
-| E2 | `epubcheck docs/Packet-River-101.epub` (if installed) | no errors |
+| E1 | `cd docs/syllabus-epub && ./build-epub.sh` | `mimetype` is the first entry and `stored` (not deflated); `docs/Packet-River-101.epub` written |
+| E2 | `xmllint --noout OEBPS/chapters/*.xhtml OEBPS/nav.xhtml OEBPS/content.opf` | all well-formed |
+| E3 | `epubcheck docs/Packet-River-101.epub` (if installed) | no errors |

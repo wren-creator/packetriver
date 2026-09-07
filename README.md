@@ -113,19 +113,23 @@ Early build. See `ROADMAP.md`. **Phases 0-5** are in:
 - `./start.sh --segmented` - the hardened town: run the same attacks, watch
   them fail
 
-The "101" EPUB lands over Phase 6. Overlay alignment against the map art has a
-drag-and-copy editor (`?edit=1`, see `docs/overlay-editing.md`); a final pass
-waits for the Phase 6 art.
+The **"Packet River 101" syllabus** ships as an EPUB
+(`docs/Packet-River-101.epub`, source in `docs/syllabus-epub/`): nine sessions,
+one per district group, in the same "guidance not walkthroughs" register as the
+rest of the docs. What's left for Phase 6: the ZAP automation plan and a final
+art pass. Overlay alignment against the map art has a drag-and-copy editor
+(`?edit=1`, see `docs/overlay-editing.md`).
 
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md): services, networks, the sim loop, anti-cheat
-- [`docs/scenarios.md`](docs/scenarios.md) and [`scenarios-trainee.md`](docs/scenarios-trainee.md): all 26 techniques, MITRE-mapped, with fixes (the trainee edition has the fixes stripped)
+- [`docs/scenarios.md`](docs/scenarios.md) and [`scenarios-trainee.md`](docs/scenarios-trainee.md): all 28 techniques, MITRE-mapped, with fixes (the trainee edition has the fixes stripped)
 - [`docs/verification.md`](docs/verification.md): the end-to-end runbook (containment, per-technique, reset, defended re-run)
 - [`docs/districts/`](docs/districts/): one page per district, giving the bug class, the tool, the map effect, the fix
 - [`docs/learning-design.md`](docs/learning-design.md): why the game gives direction, not walkthroughs
 - [`instructor/answer-key.md`](instructor/answer-key.md): the sharp step-by-step, for instructors
 - [`instructor/ctf/check-flags.sh`](instructor/ctf/check-flags.sh): smoke-test the scoring loop for every technique
+- [`docs/Packet-River-101.epub`](docs/Packet-River-101.epub): the nine-session training syllabus (source in `docs/syllabus-epub/`)
 
 ## More
 

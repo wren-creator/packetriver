@@ -1,0 +1,119 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 3: City Hall, the Money, and the Green Screens</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 3: City Hall, the Money, and the Green Screens</h1>
+
+<p>Goal for this session: drain the town's money three different ways, and see
+why a modern web front door and a fifty-year-old terminal host end up at the
+same place. This is the civic tier, the payment gateway, First Packet Bank
+&amp; Trust, and the two mainframes behind them.</p>
+
+<h2>3.1 City Hall, Police, Fire</h2>
+
+<table>
+<thead><tr><th>Target</th><th>Bug class</th><th>Map effect</th></tr></thead>
+<tbody>
+<tr><td>Town Hall announcements</td><td>weak clerk login, then a notice stored raw and rendered raw on the public board (stored XSS / defacement)</td><td>the announcement board on the map shows your text; Town Hall <code>defaced</code></td></tr>
+<tr><td>Town Hall payslip viewer</td><td>path traversal in a document parameter, reached after a weak payroll login</td><td>payroll balance to zero, <code>admin_pwned</code></td></tr>
+<tr><td>Police blotter</td><td>the dispatch team's config file is world-readable under the web root</td><td>Police <code>defaced</code></td></tr>
+<tr><td>Fire station alarm panel</td><td>a shared default credential</td><td>Fire <code>defaced</code></td></tr>
+<tr><td>Payment gateway</td><td>IDOR on <code>GET /receipt/&lt;txn&gt;</code>: no auth, sequential ids, and one seeded receipt's memo carries the flag</td><td>fraud spreads: every healthy shop flips to <code>carded</code></td></tr>
+</tbody>
+</table>
+
+<p>The card data in the gateway is vendor test PANs only, non-functional, and
+the header of <code>paygw/cards.py</code> says so. LFI is CWE-22 / OWASP A01;
+secrets in a web-served config file is CWE-538 / OWASP A05; the receipt IDOR is
+OWASP API1:2023 and a PCI-DSS 7 failure.</p>
+
+<h2>3.2 The bank</h2>
+
+<p>First Packet Bank &amp; Trust is a Node/Express app on
+<code>127.0.0.1:8100</code>: a login portal, a customer dashboard, a JSON
+accounts API, and a staff-only transfer form. Two ways in:</p>
+
+<ul>
+<li><strong>The token check honours <code>alg:none</code>.</strong> Re-issue your
+own customer token with an elevated role and no signature, and the staff
+dashboard opens and prints the Fed wire settlement token in the clear. This is
+CVE-2015-9235 and a decade of copies since; MITRE <strong>T1550.001</strong>.
+Fix: pin the algorithm, reject <code>none</code>, verify the signature, and do
+not render a settlement token into HTML.</li>
+<li><strong>The accounts API has no ownership check.</strong> Walk the account
+ids and one memo carries a municipal reconciliation token. OWASP API1:2023
+again. Fix: enforce ownership on every account read; keep secrets out of
+free-text fields.</li>
+</ul>
+
+<p>Draining the bank fires <code>bank_drain</code>: carded, balance zero, ATM
+drained, and the alarm panel, which is wired to the industrial power feeder,
+drops on the map.</p>
+
+<h2>3.3 The AS/400 behind City Hall</h2>
+
+<p>A real TN5250 host on <code>127.0.0.1:8992</code>: a SIGNON panel, a menu
+tree, and Interactive SQL. Three stacked IBM i misconfigurations, all real: a
+<strong>blank password is accepted</strong> for any profile, the way
+unhardened low-<code>QSECURITY</code> boxes behaved; a
+<strong>powerful profile still has its shipped default password</strong>; and
+the <strong>payroll library is left readable to the public</strong>, so any
+signed-on profile can read it from <code>STRSQL</code>. Drive it with the
+bundled <code>as400_5250.py</code>, or hand-drive from the browser terminal.
+Submitting fires the same <code>cityhall_payroll</code> effect as the web LFI
+path: the money is gone whichever way you got in.</p>
+
+<p>Fix: set <code>QSECURITY</code> to 40 or above, require passwords, rotate the
+shipped defaults, restrict powerful profiles' device access, and pull
+<code>*PUBLIC</code> on the payroll library down to <code>*EXCLUDE</code> with
+an authorization list. Default and blank IBM i credentials are a standing
+finding in every AS/400 security review, and <code>*PUBLIC *ALL</code> on
+application libraries is the single most common IBM i exposure.</p>
+
+<h2>3.4 The IBM z16 behind the bank</h2>
+
+<p>Core banking on a z/OS LPAR: a real TN3270E host with a RACF logon panel,
+TSO READY, and a RACF command family (<code>LISTUSER</code>, <code>RLIST</code>,
+<code>SETROPTS LIST</code>). Two paths:</p>
+
+<ul>
+<li><strong><code>z16_racf</code>.</strong> A default admin was never revoked; it
+still holds <code>SPECIAL</code> and <code>OPERATIONS</code> and still logs on
+with its shipped password. A banking transfer-approval profile is
+world-readable and in <code>WARNING</code> mode, so a failed access check is
+logged but allowed, the control is fail-open, and someone parked a
+reconciliation key in that profile's readable metadata. A never-revoked default
+admin is a standing pen-test finding on z/OS; <code>WARNING</code> mode left in
+place for years is a classic audit hit.</li>
+<li><strong><code>z16_apf</code>.</strong> <code>LISTAPF</code> flags a library
+that is APF-authorised and also world-writable. An APF library you can write to
+is an APF library you can subvert: link a routine in, <code>CALL</code> it, and
+you are running in supervisor state, key 0, with total control of the LPAR.
+"World-writable APF library" is one of the highest-severity findings a z/OS
+review can produce, and it is not rare. It is a straight line from
+<code>UPDATE</code> on a dataset to key 0.</li>
+</ul>
+
+<p>Both fire <code>bank_drain</code>. Fix for the RACF path: revoke the default
+admin or strip its authority and rotate it, take the profile out of
+<code>WARNING</code>, set <code>UACC(NONE)</code> with an access list,
+<code>SETROPTS PROTECTALL(FAILURES)</code>, and never put secrets in profile
+metadata. Fix for the APF path: no writable APF libraries, tight authority on
+the volumes that hold them, program control on APF modules, and audit every
+APF-list change.</p>
+
+<h2>3.5 What you should notice</h2>
+
+<p>Five different technologies, one outcome. The web app trusts a token's own
+claim about how it was signed. The API trusts a number in the URL. The AS/400
+trusts a blank password. The z16 trusts a default admin nobody removed, and a
+dataset permission nobody checked. The money does not care which door you came
+through.</p>
+
+</body>
+</html>

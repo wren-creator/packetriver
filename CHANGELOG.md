@@ -4,6 +4,17 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### "Packet River 101" - the syllabus EPUB
+
+- `docs/syllabus-epub/` builds to `docs/Packet-River-101.epub`: nine sessions,
+  one per district group (Main Street; civic + money + green screens; the
+  utilities; recon + the network lanes; hardening; a capstone + IR tabletop;
+  the author). Same "guidance not walkthroughs" register as the district docs -
+  bug class, tool family, what you'll see, the fix, the real-world parallel,
+  the MITRE mapping. The sharp step-by-step stays in
+  `instructor/answer-key.md`. Generated cover art. `build-epub.sh` lifts the
+  Cross Creek toolchain.
+
 ### z16 - APF escalation
 
 - New `z16_apf` technique (base 250, loud). `LISTAPF` already flagged

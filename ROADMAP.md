@@ -127,19 +127,22 @@ reuse map live in the design doc.
     the portals, rotate the router creds, block residential -> OT); a
     dwell-time "patience" scoring bonus for 5b that ties into the stealth
     multiplier.
-- [ ] **Phase 6 - EPUB, docs, art, polish.** Remaining: "Packet River 101" EPUB
-  (chapters 1:1 with scenarios) with cover art, the ZAP automation plan
+- [ ] **Phase 6 - EPUB, docs, art, polish.** Remaining: the ZAP automation plan
   (`docs/zap/`), the final pixel-art base image, README to its final
   game-page form with a labelled map screenshot.
+  - [x] **"Packet River 101" EPUB** with a generated cover, 9 sessions 1:1
+    with the scenario groups (`docs/syllabus-epub/`, `build-epub.sh` ->
+    `docs/Packet-River-101.epub`). Tier-1 register - the sharp step-by-step
+    stays in `instructor/answer-key.md`.
   - [x] `docs/scenarios.md` + `scenarios-trainee.md` (Cross Creek shape:
     where / real-world / MITRE / confirm-with / physical consequence / fix;
-    trainee = fix stripped), all 26 techniques.
+    trainee = fix stripped), all 28 techniques.
   - [x] `docs/verification.md` (Section A containment / B per-technique /
     C reset / D defended / E ebook).
   - [x] `docs/districts/bank.md` + `docs/districts/civic.md` +
     `docs/districts/recon.md`; `architecture.md` brought current.
   - [x] `instructor/ctf/check-flags.sh` + `answers.txt` - smoke-tests the
-    mint -> plant -> submit -> score loop for all 26 (currently 26 ok).
+    mint -> plant -> submit -> score loop for all 28 (currently 28 ok).
   - **Guidance, not walkthroughs** (see `docs/learning-design.md`). The
     game must not ship a copy-paste path to controlling the town in 30
     minutes.
@@ -214,7 +217,9 @@ reuse map live in the design doc.
 
 ## Related work in the sibling repos
 
-- [ ] **Widgetorium and Cross Creek: add a donation banner page.** Give each of
-  the sibling ranges the same corner tip-jar banner Packet River has (dismissable,
-  `localStorage`, points at the CashApp cashtag, never gates anything). Tracked
-  here so it does not get lost; do the actual work in those repos.
+- [x] **Widgetorium and Cross Creek: donation banner.** The same dismissible
+  corner tip jar (self-contained, `localStorage`-remembered, points at Cash App
+  `$britleywren`, never gates anything). Widgetorium: in `wdg_footer`
+  (`webapp/src/lib/helpers.php`). Cross Creek: on the water + power HMI
+  dashboard templates (the login pages already had a support note). Committed
+  locally in each sibling repo, unpushed.

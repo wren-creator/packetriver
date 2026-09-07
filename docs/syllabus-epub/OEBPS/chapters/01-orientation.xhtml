@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 1: The Town, the Score, and the Noise You Make</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 1: The Town, the Score, and the Noise You Make</h1>
+
+<p>Goal for this session: understand what you are looking at, how the score
+works, and why being loud costs you. No exploits yet. By the end you should be
+able to start a run, open a target, read the Alert meter, and reset the town.</p>
+
+<h2>1.1 The map is the truth</h2>
+
+<p>The map is a pixel-art isometric drawing of Packet River, population 646,
+with a transparent live overlay on top. Everything that lights up, floods, or
+goes dark is driven off a state snapshot the map server broadcasts once a
+second. Traffic cycles green and red. A train runs the top track and loops off
+screen. Water and power flow to thirty-odd house markers. The river runs clean
+with swimmers in it.</p>
+
+<p>Click any building and its real service opens in a side panel, starting with
+a login portal, the same convention as the Cross Creek HMIs and the Widgetorium
+login. When you land an exploit and submit its flag, the map degrades: a shop
+goes <code>defaced</code> or <code>db_dumped</code> or <code>carded</code>, a
+feeder trips and a zone goes dark, the sewage plant's outfall runs raw and a
+brown mosaic spreads from the swimming beach, the rail switch throws and the
+train runs the spur into the widget factory and it catches fire.</p>
+
+<h2>1.2 Flags are the only currency</h2>
+
+<p>There is no "award points" endpoint. The scoreboard mints a random
+<code>PKTR{...}</code> flag per technique at boot and drops each one into the
+single service that owns it, inside the vulnerable resource, in a spot that
+requires the actual exploit to reach. The only write path is
+<code>POST /api/score/submit {flag}</code>. Points are a pure server-side
+function of a valid random flag plus server-held timing and Alert state. No
+client-supplied score, multiplier, or "technique complete" field is trusted.</p>
+
+<p>The formula rewards three things: <strong>speed</strong> (a decaying
+multiplier from arm to submit), <strong>stealth</strong> (a bonus if the Alert
+Level did not rise while you worked the technique), and <strong>chaining</strong>
+(a stacking bonus for distinct techniques solved on the same subsystem in one
+run). Call <code>arm</code> when you start recon on a technique so the clock and
+the stealth baseline start then.</p>
+
+<h2>1.3 The Alert Level, and the blue team</h2>
+
+<p>A leaky-bucket "heat" accumulator with a roughly two-minute half-life drives
+an Alert Level from 0 (calm) to 5 (lockdown). Heat comes from the inherent
+loudness of what you did (a payroll drain is loud however quietly you got
+admin), from wrong flag submissions, and from a tailer reading the gateway's
+access log for scan bursts and tool user-agents. Thresholds have downward
+hysteresis so the meter does not flap.</p>
+
+<p>Each level the meter crosses, a blue team responds, and a couple of the
+responses actually bite:</p>
+
+<table>
+<thead><tr><th>Level</th><th>Response</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>SOC investigating (banner)</td></tr>
+<tr><td>2</td><td><strong>credentials rotated</strong> on the field controllers and the HMIs: an in-progress attacker's next canned command fails</td></tr>
+<tr><td>3</td><td>rate limiting (banner; the segmented build wires it for real)</td></tr>
+<tr><td>4</td><td>OT segmentation (banner; the segmented build drops the routes)</td></tr>
+<tr><td>5</td><td><strong>automatic golden-restore</strong> of the worst-hit subsystem</td></tr>
+</tbody>
+</table>
+
+<p>Already-solved techniques stay solved. But if you are mid-chain when Level 2
+fires and you were relying on a default credential, you just lost it.</p>
+
+<h2>1.4 Timed events: the town has a clock</h2>
+
+<p>With <code>PKT_EVENTS</code> at <code>calm</code> or <code>lively</code>,
+three things happen on a schedule and change the stakes:</p>
+
+<ul>
+<li><strong>News crew.</strong> A TV crew parks at whatever is most broken. While
+they film, any Alert heat from an incident on that subsystem is multiplied.
+Getting caught loud on camera is worse than getting caught loud.</li>
+<li><strong>State inspector.</strong> An inspector visits for a fixed window. An
+incident that is still active when they leave costs a large heat spike and a
+citation, if the town was clean when they arrived. It rewards cleaning up your
+mess, or never being seen.</li>
+<li><strong>Founder's Day parade.</strong> Parade crowds fill the crossroads. A
+signal hijacked to all-green during the parade racks up crashes several times
+faster. Same exploit, far bigger consequence, if you time it.</li>
+</ul>
+
+<h2>1.5 Reset</h2>
+
+<p>The in-game reset panel restores one subsystem, or the whole town, to golden
+state over the bus without a container bounce, and re-arms a fresh flag for
+that scope. <code>./reset.sh -y</code> from the shell is the harder hammer, and
+also clears the scoreboard run state. Reset between cohorts, and any time the
+town gets into a state you did not intend.</p>
+
+<h2>1.6 What you should notice</h2>
+
+<p>Nothing here required a memory-corruption bug or a piece of malware. The
+whole range is misconfiguration, missing authentication, cleartext, and reused
+credentials. That is the point, and it is what the rest of this book is
+about.</p>
+
+</body>
+</html>

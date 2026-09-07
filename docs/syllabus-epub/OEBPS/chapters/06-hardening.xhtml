@@ -1,0 +1,70 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 6: Now Close Every Hole</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 6: Now Close Every Hole</h1>
+
+<p>Goal for this session: run the same attacks against the same range with one
+flag flipped, and watch them fail. This is <code>./start.sh --segmented</code>,
+which folds <code>docker-compose.segmented.yml</code> on top of the base stack.
+A training environment that only shows you the break is half a lesson.</p>
+
+<h2>6.1 What the segmented build turns off</h2>
+
+<table>
+<thead><tr><th>Attack</th><th>What stops it</th></tr></thead>
+<tbody>
+<tr><td>unauth Modbus writes</td><td><code>MODBUS_WRITE_OPEN=0</code>: the PLC re-asserts its golden state every 300 ms scan, so a write is stomped within a tick</td></tr>
+<tr><td>anonymous MQTT publish to the traffic topics</td><td>the broker gets a password file and an <code>acl_file</code>; each <code>pkt/*</code> topic is scoped to its rightful publisher</td></tr>
+<tr><td>default PINs and console passwords</td><td>rotated off their shipped values</td></tr>
+<tr><td>error-based SQLi extraction</td><td><code>VERBOSE_ERRORS=0</code></td></tr>
+<tr><td>weak session tokens</td><td><code>WEAK_SESSIONS=0</code></td></tr>
+<tr><td>bank <code>alg:none</code></td><td><code>JWT_STRICT=1</code>: the verifier rejects <code>none</code> and pins HS256</td></tr>
+<tr><td>payment-gateway receipt IDOR</td><td><code>RECEIPT_AUTH=1</code>: a bearer token is required</td></tr>
+<tr><td>AS/400 blank sign-on</td><td><code>MOCK_AS400_HARDENED=1</code>: a password is required</td></tr>
+<tr><td>z16 default admin</td><td><code>MOCK_Z16_HARDENED=1</code>: the never-revoked <code>IBMUSER</code> is revoked</td></tr>
+<tr><td>Diner Wi-Fi sniffing</td><td><code>NETLAB_TLS=1</code>: the portal and mail go TLS, so the MITM sees ciphertext</td></tr>
+<tr><td>SOHO router pivot</td><td><code>WAN_ADMIN=0</code> (admin only from the home LAN), a rotated <code>ADMIN_PASS</code>, and <code>PORTAL_TLS=1</code> so even the capture is opaque</td></tr>
+<tr><td>Widget Works SNMP</td><td><code>SNMP_HARDENED=1</code>: the write community is dropped and the read community moves off <code>public</code></td></tr>
+</tbody>
+</table>
+
+<h2>6.2 The pattern</h2>
+
+<p>Look down that list. There is no patch in it. Every fix is one of four
+things: <strong>authenticate the channel</strong> (the broker ACL, the SNMPv3
+move, the bearer token), <strong>stop trusting a claim you did not verify</strong>
+(pin the JWT algorithm, require the AS/400 password), <strong>encrypt what was
+in the clear</strong> (TLS the Diner portal and the crew portal), or
+<strong>segment so the reachable thing is not the sensitive thing</strong> (the
+Modbus re-assert, WAN-admin off, the OT network drop at Alert Level 4).</p>
+
+<p>That is the whole defensive syllabus for this class of target. The boring
+attacks have boring fixes. The hard part in the real world is never knowing the
+fix; it is inventory, ownership, and the political will to change a default on a
+system somebody is afraid to touch.</p>
+
+<h2>6.3 What is still open, and why</h2>
+
+<p>The segmented build's detection story is the gateway log tailer, the broker
+ACLs, and the PLC golden re-assert. A dedicated inline IDS (Suricata watching a
+span port) is on the roadmap and not shipped, because a container on a Docker
+bridge only sees its own traffic and broadcast; a real sensor needs a mirror
+interface or a router container, which is a topology change. The book calls
+that out rather than shipping theatre.</p>
+
+<h2>6.4 Exercise</h2>
+
+<p>Pick three techniques you landed in Sessions 2 through 5. For each, before
+you run it against the segmented build, write down which of the four fix
+patterns you expect stopped it and how you would confirm the control is
+actually on (not just configured). Then run it and check yourself against
+<code>docs/verification.md</code> Section D.</p>
+
+</body>
+</html>

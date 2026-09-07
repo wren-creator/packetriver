@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 4: The Utilities</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 4: The Utilities</h1>
+
+<p>Goal for this session: make the physical town misbehave. Water, power, the
+widget-factory line, and sewage are real Modbus/TCP soft-PLCs. Traffic is
+commanded over an open MQTT bus. Rail is a raw-TCP console. There are no
+memory-corruption exploits in this session, because none of these protocols
+require one.</p>
+
+<h2>4.1 Modbus has no opinion about who you are</h2>
+
+<p>Modbus/TCP is from 1979. Request-response over port 502, reading and writing
+coils (single bits: pump run commands, keyswitches) and registers (16-bit
+words: setpoints, sensor values). No authentication, no session, no signing. If
+you can open the port, you are the HMI as far as the PLC is concerned. FrostyGoop,
+the malware that took the heat out of 600 buildings in Lviv in January 2024,
+used function code 6, write single register, the same call the HMI makes every
+second.</p>
+
+<table>
+<thead><tr><th>PLC</th><th>Port</th><th>What a write does</th></tr></thead>
+<tbody>
+<tr><td>water</td><td><code>127.0.0.1:5502</code></td><td>stop the high-lift pump and mains pressure bleeds out over a few ticks; houses go dry, then a main bursts</td></tr>
+<tr><td>power</td><td><code>127.0.0.1:5503</code></td><td>trip a feeder and that load goes dark (houses, streetlights, downtown, or the factory); grid frequency sags</td></tr>
+<tr><td>widget factory</td><td><code>127.0.0.1:5504</code></td><td>bypass the e-stop and overspeed the line, or open the hopper gate with no car under it; the line jams</td></tr>
+<tr><td>sewage</td><td><code>127.0.0.1:5505</code></td><td>open the storm bypass, or stop aeration and dosing; the effluent runs raw and the river plume reaches the swimming beach</td></tr>
+</tbody>
+</table>
+
+<p>Each plant's flag sits in an input-register block that only reads back while
+the PLC is in maintenance mode (a coil you set). The tool is
+<code>pymodbus</code>, or the bundled <code>modbus_attack.py</code>. Real-world
+parallels: Oldsmar, Florida, 2021 (the setpoint change was the attack);
+Maroochy Shire, Queensland, 2000 (an insider released roughly 800,000 litres of
+sewage via radio to pumping stations); the Ukraine grid attacks of 2015 and
+2016. MITRE ATT&amp;CK for ICS: <strong>T0855</strong> (unauthorized command
+message), <strong>T0831</strong> (manipulation of control), <strong>T0836</strong>
+(modify parameter), <strong>T0813</strong> (denial of control).</p>
+
+<h2>4.2 The widget factory has a second door</h2>
+
+<p>Alongside the process plane there is a management plane. The line-management
+box (<code>factory-snmp</code>) runs a real net-snmp agent with the shipped
+community strings. <code>public</code> reads the whole line-management subtree,
+and the reconciliation key is one of the OIDs. A read-write community lets you
+<code>snmpset</code> the line-enable OID and stop the line from the enterprise
+side. Same physical result as the Modbus path, a different plane. Default SNMP
+community strings on OT and network gear are a standing Shodan and pen-test
+finding (CWE-1392). Fix: SNMPv3 with auth and priv, no default communities, and
+no write access from the enterprise network.</p>
+
+<p>And there is a timing puzzle: if a rail car is being loaded (the hopper gate
+is open) at the moment the train is routed onto the spur and derails into the
+factory, it is a pile-up rather than a stopped line. Throughput hard-zeros and
+the line jams on top of the fire.</p>
+
+<h2>4.3 Traffic: the bus will take an instruction from anyone</h2>
+
+<p>The event broker carries the signal controllers' command topic with no ACL
+and no auth. Publish to it and a crossroads locks all-green; the crash counter
+climbs a few seconds later and downtown gridlocks. A separate engineering-mode
+topic takes a short PIN and, on a match, publishes the flag (non-retained, so
+the Level 2 rotation actually takes it away). The tool is
+<code>mosquitto_pub</code> / <code>mosquitto_sub</code>, or
+<code>traffic_attack.py</code>. Unauthenticated MQTT brokers exposed to the
+internet are a standing Shodan finding; roadside signal and ITS controllers
+have repeatedly shipped with default or absent auth (the 2014 University of
+Michigan traffic-signal study). Fix: broker ACLs and auth, signed commands, and
+keep the control bus off any routable path.</p>
+
+<h2>4.4 Rail: a raw console and a shell</h2>
+
+<p>The loop/spur switch has a raw-TCP maintenance console with default
+credentials, and one of its commands hands your input straight to a shell, so
+it is a command-injection foothold, not a label field (CWE-78). Either one
+reads the maintenance key. <code>set switch spur</code> throws the switch; do it
+before the train reaches the branch, which is under the "R" of "Main Rail Line"
+on the map, and the train routes onto the spur, runs it down to the widget
+factory over about five seconds, and piles in. The factory catches fire. The
+Lodz tram incident of 2008 is the canonical "someone threw the switches" story.
+Fix: drop the raw console, or put it behind auth and a source allowlist, and
+never shell out on operator input.</p>
+
+<h2>4.5 What you should notice</h2>
+
+<p>Every one of these is the control channel trusting its own reachability.
+The PLC trusts anything on port 502. The broker trusts anything that can
+publish. The console trusts anything that can open the socket. The fix is
+almost never "patch the protocol", because you cannot. It is segmentation, a
+source allowlist, and moving the control plane somewhere the enterprise and the
+internet cannot route to.</p>
+
+</body>
+</html>

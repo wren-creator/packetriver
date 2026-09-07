@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 7: Capstone and Incident Response</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 7: Capstone and Incident Response</h1>
+
+<p>Two halves. First, chain the whole town for a high score, quietly. Then sit
+on the other side of the table and work the incident.</p>
+
+<h2>7.1 The capstone run</h2>
+
+<p>One run, timed from your first <code>arm</code>. The scoring rewards
+chaining distinct techniques on one subsystem, so plan the order. A worked
+example of the shape, not a script:</p>
+
+<ol>
+<li><strong>Recon by name.</strong> Pull the zone transfer and the reverse
+zone. Read the directory. Now you have the org chart, and you have spent almost
+no heat doing it.</li>
+<li><strong>Get a residential foothold.</strong> The SOHO router on its default
+login, its capture page, the reused rail credential. You are into OT without
+touching a single loud web target.</li>
+<li><strong>Stage the rail derail but do not fire it.</strong> Read the console
+key. Wait for the loading cycle.</li>
+<li><strong>Work Main Street for the chain bonus</strong> while the town is
+calm. The quiet techniques first (IDOR, the exposed backup, the <code>.git</code>
+leak), then the mediums.</li>
+<li><strong>Time the loud moves to the events.</strong> Not while the news crew
+is filming your subsystem. Not with an inspector on site. The parade is the one
+exception: if you are going to hijack a signal, the parade is when it counts.</li>
+<li><strong>The bank last</strong>, or whenever you have accepted that Alert
+Level 2 is coming and you have already used every default credential you were
+going to need.</li>
+</ol>
+
+<p>Compare your run to a loud one: run the same techniques again without regard
+for the events or the meter, and watch the speed multiplier collapse and the
+stealth bonus disappear. The delta is the lesson.</p>
+
+<h2>7.2 The tabletop</h2>
+
+<p>Now you are the SOC. Reset the town, have someone else run a chain against
+it, and work the response from the artefacts you actually have:</p>
+
+<table>
+<thead><tr><th>Question</th><th>Where the answer lives</th></tr></thead>
+<tbody>
+<tr><td>When did it start, and from where?</td><td>the gateway JSON access log (<code>gw-logs</code> volume): tool user-agents, 4xx bursts, path spray</td></tr>
+<tr><td>What did the Alert meter see, and when?</td><td><code>alert.blue_actions</code> in the state snapshot; <code>pkt/alert/level</code> on the bus</td></tr>
+<tr><td>Which subsystems are off-golden right now?</td><td>the map, and <code>GET /api/state</code></td></tr>
+<tr><td>Was OT reached directly or through a pivot?</td><td><code>status.sh</code> containment probe; which web target went loud first</td></tr>
+<tr><td>Did the blue team's automatic responses help or just annoy the attacker?</td><td>compare a run where Level 2 fired mid-chain against one where it did not</td></tr>
+</tbody>
+</table>
+
+<p>Then the recovery: <code>./reset.sh</code> per subsystem, verify golden
+against <code>docs/verification.md</code> Section C, and write the two-paragraph
+"what we would change" that every real incident ends with. For Packet River the
+answer is almost always in Session 6's four patterns. Saying which one, and
+naming the specific default or missing control, is the exercise.</p>
+
+<h2>7.3 Where to go next</h2>
+
+<p>Widgetorium goes deeper on the web half; Cross Creek goes deeper on the ICS
+half with real EtherNet/IP and S7comm and a proper Purdue-model network. If you
+want the RF layer under Session 5's Wi-Fi lane, that is a wireless course, not
+this range. And if you want the mainframe half for real, that is a career, and
+it is the one the author has.</p>
+
+</body>
+</html>

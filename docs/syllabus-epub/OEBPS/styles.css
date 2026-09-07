@@ -1,0 +1,16 @@
+body { font-family: Georgia, "Times New Roman", serif; line-height: 1.5; margin: 1.2em; color: #1a1a1a; }
+h1 { font-family: "Courier New", monospace; font-size: 1.6em; border-bottom: 3px solid #2f6f8f; padding-bottom: 0.2em; margin-top: 0; }
+h2 { font-family: "Courier New", monospace; font-size: 1.22em; color: #235; margin-top: 1.6em; }
+h3 { font-family: "Courier New", monospace; font-size: 1.03em; color: #235; }
+p { margin: 0.8em 0; }
+code, pre { font-family: "Courier New", monospace; }
+pre { background: #0d1620; color: #63d3dd; padding: 0.8em; overflow-x: auto; font-size: 0.85em; border-radius: 4px; }
+code { background: #e9f1f4; padding: 0.1em 0.3em; border-radius: 3px; }
+pre code { background: none; padding: 0; color: inherit; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.9em; }
+th, td { border: 1px solid #ccc; padding: 0.4em 0.6em; text-align: left; vertical-align: top; }
+th { background: #2f6f8f; color: #fff; font-family: "Courier New", monospace; }
+tr:nth-child(even) { background: #eef5f8; }
+blockquote { border-left: 4px solid #2f6f8f; margin: 1em 0; padding: 0.3em 1em; background: #eef5f8; }
+hr { border: none; border-top: 1px solid #ccc; margin: 2em 0; }
+strong { color: #235; }

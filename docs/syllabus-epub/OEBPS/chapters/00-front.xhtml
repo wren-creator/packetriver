@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Packet River 101</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Packet River 101</h1>
+<h3>A Hands-On Training Syllabus for the Packet River Cyber Range</h3>
+<p>By Britley Hoff</p>
+<p>2026 Edition</p>
+<hr/>
+
+<p>The attacks that are actually taking down infrastructure are boring. Not a
+zero-day, not a nation-state exploit chain. A home router still on
+<code>admin</code> / <code>admin</code>. A login sent in the clear. A password
+reused somewhere it should not have been. A message bus that will take an
+instruction from anyone. String three of those together and you are standing
+in front of a rail switch.</p>
+
+<p>Packet River is a small town you break into for a high score, and it is
+built entirely out of those boring attacks. One live map shows the whole place
+running: traffic cycling through four crossroads, a train on its loop, water
+and power flowing to the houses, a clean river with people swimming in it.
+Every building on that map is also a real, deliberately vulnerable service. You
+scan it and attack it with the same open-source tools you would use on a real
+engagement, pull the flag hidden inside the exploit, submit it, and watch the
+town break on screen. Then you hit reset and try again, faster, or quieter.</p>
+
+<p>It is the third in a family with <strong>Widgetorium</strong>, a vulnerable
+web-application lab, and <strong>Cross Creek</strong>, an ICS/OT range. Same
+idea, learn by doing, except this one keeps score.</p>
+
+<h2>How this book is different from the range's own docs</h2>
+
+<p>Packet River deliberately does not ship a copy-paste path to owning the
+town in thirty minutes. This syllabus is the same. Every session below gives
+you the class of bug, the tool family, the surface to look at, what you will
+see when it works, and the fix, with its real-world parallel and its MITRE
+ATT&amp;CK mapping. It does not hand you the exact request, the credential, the
+parameter, or the flag's hiding place. That tier, the sharp step-by-step, lives
+in <code>instructor/answer-key.md</code> in the repo, for people running a
+class. The range also has an opt-in hint that costs points, and hidden notes
+scattered around the town that cost only the looking.</p>
+
+<h2>Standing up the range</h2>
+
+<p>Packet River is one <code>docker-compose</code> stack. Every published port
+binds to <code>127.0.0.1</code>; <code>start.sh</code> refuses to launch if any
+port would bind past loopback, and the attacker box has no route off the
+lab.</p>
+
+<pre>cd packetriver
+./setup.sh              # preflight, build the images
+./start.sh             # bring the town up with the deliberate weaknesses on
+./status.sh            # health, the loopback bind audit, the containment probe
+./start.sh --segmented # the defended town, for Session 6
+./reset.sh             # restore the golden state between cohorts
+</pre>
+
+<p>Then open <strong>http://127.0.0.1:8080/</strong>, sign up, and start a run.
+The attacker workstation is a container:</p>
+
+<pre>docker compose exec player sh
+ls /opt/pktr/scripts
+</pre>
+
+<table>
+<thead><tr><th>Toggle</th><th>Default</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>PKT_EVENTS</code></td><td><code>calm</code></td><td>timed events: a news crew, a state inspector, a Founder's Day parade (Session 1)</td></tr>
+<tr><td><code>PKT_EGGS</code></td><td><code>off</code></td><td><code>subtle</code> or <code>obvious</code> scatters in-world hint fragments</td></tr>
+<tr><td><code>PKT_LIGHT</code></td><td>unset</td><td>skips the bundled attacker box; bring your own shell</td></tr>
+</tbody>
+</table>
+
+<h2>What it is built from</h2>
+
+<p>Polyglot on purpose, so recon and fingerprinting are realistic: PHP/Apache
+for Main Street, Node/Express for the bank, Python/Flask for the payment
+gateway and the soft-PLCs, a real CoreDNS server, a real net-snmp agent, real
+Modbus/TCP, real MQTT, web3270's own TN5250 and TN3270 mocks for the green
+screens. The game's own pieces, the map server and the scoreboard, stay
+single-language. The attacker box carries <code>nmap</code>, <code>sqlmap</code>,
+<code>ffuf</code>, <code>curl</code>, <code>dig</code>, <code>mosquitto-clients</code>,
+<code>pymodbus</code>, the net-snmp clients, <code>tcpdump</code>,
+<code>dsniff</code>, and a set of thin Python wrappers under
+<code>/opt/pktr/scripts</code>.</p>
+
+<h2>Authorised use</h2>
+<blockquote>Use Packet River only: on your own machine; in a lab you control;
+in a classroom or range where you have permission; under written rules of
+engagement for authorised training or assessment. Never point a Packet River
+command, script, payload, scan, or credential at a real system you do not own.
+Some of these attacks have physical consequences in the real world. This range
+exists so you never have to learn that on a live one.</blockquote>
+
+</body>
+</html>

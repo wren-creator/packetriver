@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 5: Recon and the Network Lanes</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 5: Recon and the Network Lanes</h1>
+
+<p>Goal for this session: map the town by name, then work two attacks that are
+a different muscle from everything else in the book, layer 2 and lateral
+movement.</p>
+
+<h2>5.1 The name server</h2>
+
+<p>Every target answers to a business name. A CoreDNS container is the attacker
+box's only resolver, authoritative for <code>packetriver.range</code>, with the
+names as CNAMEs onto the container network so <code>dig</code>,
+<code>nslookup</code>, <code>curl</code>, and <code>nmap water.packetriver.range</code>
+all follow through.</p>
+
+<ul>
+<li><strong>The zone answers a transfer from anyone.</strong>
+<code>recon.py dns</code> (or a plain <code>dig axfr</code>) dumps every host in
+town, plus a stray TXT record for a box that was supposed to be
+decommissioned, with a maintenance token in it. Open AXFR is one of the oldest
+external-recon wins there is, and stale records for retired kit routinely
+outlive the kit. MITRE <strong>T1590.002</strong>. Fix: restrict transfers to
+known secondaries, split an internal view from an external one, and keep
+secrets out of DNS.</li>
+<li><strong>Reverse DNS.</strong> <code>recon.py rev</code> pulls a PTR for
+every box the name server knew at boot. Cross-check it against the forward
+zone.</li>
+<li><strong>The directory.</strong> <code>/directory</code> and
+<code>/whois?q=</code> on the map server list every official name and its
+hostname. A real internal corporate directory leaks exactly this.</li>
+</ul>
+
+<h2>5.2 The Diner's open Wi-Fi</h2>
+
+<p>Honest scope first: Docker has no radio, and shipping something that
+de-authenticates real access points would be irresponsible. This lane is a
+switched LAN taught as open 802.11. The lesson, unencrypted traffic on a shared
+medium is readable and MITM-able, is the same; the RF layer is a real wireless
+course, not this range.</p>
+
+<p>The Diner runs a cleartext rewards portal and a toy POP3 server, and a
+scripted patron signs in and reads mail over the segment every few seconds. A
+switch will not flood their unicast to you, so the attack is an active
+ARP-spoof man-in-the-middle: get between the patron and the access point,
+forward, and read the traffic. The flag is sitting in the patron's inbox.
+<code>wifi_sniff.py</code> scripts <code>arpspoof</code> and
+<code>tcpdump</code>. It is loud on purpose: the access point watches its own
+ARP cache, catches the flipped MAC, and feeds the Alert meter; a sustained
+spoof crosses Level 1. MITRE <strong>T1557.002</strong> (ARP cache poisoning),
+<strong>T1040</strong> (network sniffing). Fix: WPA2-Enterprise or per-client
+isolation, and TLS on the portal and the mail so a MITM gets ciphertext.</p>
+
+<h2>5.3 The SOHO router pivot: residential to OT</h2>
+
+<p>A house on the edge of town runs a consumer router. The homeowner is a
+Packet River &amp; Southern rail engineer who works from the couch. This is the
+remote-worker pivot that groups like Volt Typhoon actually run, and nothing
+else in the range covers it.</p>
+
+<p>The router has WAN-side administration reachable from the town network, the
+admin login is still the shipped <code>admin</code> / <code>admin</code>, and
+its Diagnostics page will hand you a decoded capture of the home LAN, where the
+resident signs in to a rail crew portal over plain HTTP on a loop. Pull the
+capture, read the flag, and the credential in there is reused on the real rail
+maintenance console. Log in with it, read the rail flag, throw the switch.
+<code>soho_pcap.py</code> scripts the router side. MITRE <strong>T1078.001</strong>
+(default accounts), <strong>T1040</strong> (the capture-page abuse),
+<strong>T1078</strong> again (the credential reuse into OT). Fix: disable
+WAN-side administration, force a change off the default at first login, put the
+crew portal behind TLS, and never reuse operator credentials between a web
+portal and a device console.</p>
+
+<h2>5.4 What you should notice</h2>
+
+<p>Recon by name changes how you think about the range. Instead of a list of
+ports on <code>127.0.0.1</code> you have an organisation: a water authority, a
+power company, a railroad, a bank, a row of shops. That is what a real target
+looks like, and the zone transfer that hands it all to you in one request is a
+real finding you will see on real engagements.</p>
+
+</body>
+</html>

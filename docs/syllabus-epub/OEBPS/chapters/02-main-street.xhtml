@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8"/>
+<title>Session 2: Main Street</title>
+<link rel="stylesheet" type="text/css" href="../styles.css"/>
+</head>
+<body>
+<h1>Session 2: Main Street</h1>
+
+<p>Goal for this session: work eight storefronts, one bug class each, so no two
+teach the same thing. They are all vhosts on one shared PHP/Apache container,
+published on <code>127.0.0.1:8090</code> and reachable by name through the
+gateway (<code>generalstore.packetriver.range</code> and so on), each behind a
+login portal. The tool is whatever fits the bug. The map effect is always the
+storefront changing status.</p>
+
+<h2>2.1 The eight</h2>
+
+<table>
+<thead><tr><th>Shop</th><th>Bug class</th><th>Tool family</th><th>What you will see</th></tr></thead>
+<tbody>
+<tr><td>General Store</td><td>error-based SQL injection in the product search, verbose DB errors on</td><td><code>sqlmap</code>, or a hand-built <code>UNION</code></td><td>the database walks you through its own schema; shop reads <code>db_dumped</code></td></tr>
+<tr><td>Hardware &amp; Supply</td><td>IDOR on an order lookup, the record id trusted, never checked against your session</td><td><code>curl</code> / <code>ffuf</code> walking the id</td><td>other people's orders; shop reads <code>db_dumped</code></td></tr>
+<tr><td>Pharmacy</td><td>authentication bypass in the portal login, the query string-built</td><td>a crafted username; <code>sqlmap</code> also finds it</td><td>a session with no valid password; records leaked</td></tr>
+<tr><td>Diner</td><td>a database backup left under the web root</td><td>content discovery (<code>ffuf</code>), or read what the pages give away</td><td>the dump downloads; shop reads <code>db_dumped</code></td></tr>
+<tr><td>Barbershop</td><td>stored XSS in the booking form, picked up by an automated "manager" review that is a regex, never a real browser</td><td>a script payload in a booking note</td><td>the review fires in the manager's context; shop reads <code>defaced</code></td></tr>
+<tr><td>Tavern</td><td>default credentials on the POS/jukebox admin, weak session token</td><td>the vendor default, or <code>hydra</code> a short list</td><td>an admin session; shop reads <code>carded</code></td></tr>
+<tr><td>Dry Cleaners</td><td>an exposed <code>.git</code> directory with a secret in deleted history</td><td><code>git-dumper</code>, then read the log</td><td>the repo reconstructs; a key in an old commit; shop reads <code>db_dumped</code></td></tr>
+<tr><td>Bait &amp; Tackle</td><td>SSRF in a "fetch product image by URL" feature</td><td><code>curl</code> pointing the fetch at something only the server can reach</td><td>an internal response comes back in the page; shop reads <code>db_dumped</code></td></tr>
+</tbody>
+</table>
+
+<h2>2.2 Real-world parallels</h2>
+
+<p>None of these are exotic. The <code>LIKE</code>-clause concatenation is the
+shape behind countless breaches (CWE-89). Broken object-level authorization is
+OWASP API Security number one; the Panera Bread and USPS "Informed Visibility"
+leaks were mass IDOR. Exposed <code>.git</code> is a standing bug-bounty find
+(CWE-527). SSRF to something only the server can reach is Capital One, 2019
+(CWE-918). Default credentials on a point-of-sale admin is Mirai's entire
+business model (CWE-1392).</p>
+
+<h2>2.3 MITRE ATT&amp;CK</h2>
+
+<p>Almost everything here is <strong>T1190</strong> (exploit public-facing
+application) into <strong>T1213</strong> (data from information repositories).
+The barber's stored XSS is <strong>T1059.007</strong>. The default-cred tavern
+is <strong>T1078.001</strong>. The Bait &amp; Tackle SSRF opens the door to
+<strong>T1046</strong> (network service discovery) against the internal side.</p>
+
+<h2>2.4 The fixes</h2>
+
+<table>
+<thead><tr><th>Shop</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>General Store</td><td>parameterised queries; verbose errors off in production</td></tr>
+<tr><td>Hardware</td><td>enforce ownership on every record read</td></tr>
+<tr><td>Pharmacy</td><td>prepared statements and a real credential check</td></tr>
+<tr><td>Diner</td><td>keep backups out of the docroot; block archive extensions at the server</td></tr>
+<tr><td>Barbershop</td><td>output-encode on render; add a CSP; treat back-office views as untrusted-input surfaces</td></tr>
+<tr><td>Tavern</td><td>force a credential change on first use; issue real session tokens</td></tr>
+<tr><td>Dry Cleaners</td><td>do not deploy the repo; block dotfiles at the server; rotate anything that was ever committed</td></tr>
+<tr><td>Bait &amp; Tackle</td><td>allowlist egress, block loopback and link-local and internal ranges, do not return the raw fetch body</td></tr>
+</tbody>
+</table>
+
+<h2>2.5 The recon layer</h2>
+
+<p>The shops share one container, but the gateway hands each vhost a distinct
+<code>Server</code> and <code>X-Powered-By</code> header, so app-layer
+fingerprinting still tells them apart. That is deliberate. Real shared hosting
+looks exactly like this, and a good recon pass notices the difference between
+"<code>Apache/2.4.58 (Ubuntu)</code> with <code>PHP/7.4.33</code>" and
+"<code>LiteSpeed</code>, no PHP header" even when both answer on the same IP.</p>
+
+</body>
+</html>
