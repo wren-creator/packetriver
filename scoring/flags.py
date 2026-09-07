@@ -21,107 +21,136 @@ SCHEMA = pathlib.Path(__file__).with_name("schema.sql")
 
 # technique_id -> definition. `effect` is the effects.py key simmap applies when
 # a valid flag for this technique is submitted.
+#
+# `hint` is Tier-1 orientation ONLY (see docs/learning-design.md): the bug
+# class, the tool family, the surface to look at, and the fix. No working
+# payloads, no exact parameters, no credentials, no path to the flag. It is
+# written to scoring.db as `location_hint`. The step-by-step version - the
+# "answer key" tier - lives in instructor/answer-key.md, not here and not in
+# anything the player's client can pull for free.
 TECHNIQUES = {
     "generalstore_sqli": {
         "subsystem": "shop", "target": "generalstore", "effect": "shop_sqli_dump",
         "severity": "medium", "base": 150,
-        "hint": "UNION out of the product search (3 columns) into staff_notes",
+        "hint": "Error-based SQL injection in the storefront's product search, "
+                "with verbose DB errors to guide you. sqlmap, or a hand-built "
+                "UNION. Fix: parameterised queries.",
     },
     "hardware_idor": {
         "subsystem": "shop", "target": "hardware", "effect": "shop_sqli_dump",
         "severity": "quiet", "base": 100,
-        "hint": "receipt.php?id= has no ownership check; receipts start at 1001",
+        "hint": "IDOR on an order/receipt lookup - the record id is trusted, "
+                "never checked against your session. Walk it with curl/ffuf. "
+                "Fix: enforce ownership server-side.",
     },
     "pharmacy_authbypass": {
         "subsystem": "shop", "target": "pharmacy", "effect": "shop_sqli_dump",
         "severity": "medium", "base": 125,
-        "hint": "concatenated login query; username  ' OR role='staff' LIMIT 1 -- -",
+        "hint": "Authentication bypass in the portal login - the query is "
+                "string-built, so input becomes logic. Fix: prepared "
+                "statements and a real auth check.",
     },
     "diner_backup": {
         "subsystem": "shop", "target": "diner", "effect": "shop_sqli_dump",
         "severity": "quiet", "base": 100,
-        "hint": "a database backup was left in the web root: /diner/db_backup.sql",
+        "hint": "A database backup got left somewhere under the web root. "
+                "Content discovery - ffuf, or just read what the pages give "
+                "away. Fix: keep backups out of the docroot.",
     },
     "barber_xss": {
         "subsystem": "shop", "target": "barber", "effect": "shop_xss_deface",
         "severity": "medium", "base": 100,
-        "hint": "stored XSS in the appointment note; the manager 'bot' writes its "
-                "flag back onto your booking when the script fires",
+        "hint": "Stored XSS in the booking form; an automated 'manager' review "
+                "opens each new booking, so your script runs in their context. "
+                "Fix: output-encode, add a CSP.",
     },
     "tavern_defaultcreds": {
         "subsystem": "shop", "target": "tavern", "effect": "shop_carded",
         "severity": "medium", "base": 125,
-        "hint": "the POS/jukebox admin ships as admin / admin",
+        "hint": "Default credentials on the POS/jukebox admin. Try the vendor "
+                "defaults, or hydra a short list. Fix: force a credential "
+                "change on first use.",
     },
     "drycleaner_gitleak": {
         "subsystem": "shop", "target": "drycleaner", "effect": "shop_sqli_dump",
         "severity": "quiet", "base": 100,
-        "hint": "/drycleaner/.git/ is browsable; git-dumper it and read config.php's history",
+        "hint": "A version-control directory is exposed under the web root - "
+                "reconstruct it and read deleted history. git-dumper. Fix: "
+                "don't deploy the repo; block dotfiles at the server.",
     },
     "baittackle_ssrf": {
         "subsystem": "shop", "target": "baittackle", "effect": "shop_sqli_dump",
         "severity": "medium", "base": 150,
-        "hint": "fetch.php?url= is an open SSRF; reach the localhost-only "
-                "/baittackle/_internal/inv.php",
+        "hint": "SSRF in a 'fetch product image by URL' feature - point it at "
+                "something only the server can reach. curl. Fix: allowlist "
+                "egress, block loopback and link-local.",
     },
 
     # --- civic (Town Hall, Police, Fire) + payments ---
     "townhall_deface": {
         "subsystem": "civic", "target": "cityhall", "effect": "cityhall_deface",
         "severity": "loud", "base": 100,
-        "hint": "the announcements admin (/townhall/admin.php) takes clerk/clerk "
-                "and stores the notice raw; the confirmation code is the flag",
+        "hint": "A weak admin login on the announcements page, and the notice "
+                "is rendered without encoding (stored XSS / defacement). Fix: "
+                "real auth plus output encoding.",
     },
     "townhall_lfi": {
         "subsystem": "civic", "target": "cityhall", "effect": "cityhall_payroll",
         "severity": "loud", "base": 175,
-        "hint": "payroll login is a concatenated query; then payslip.php?doc= is "
-                "an LFI: ?doc=../../../../run/secret/cityhall/flag.txt",
+        "hint": "Path traversal in a document viewer, reached after a weak "
+                "payroll login. curl. Fix: canonicalise the path and confine "
+                "it to a base directory.",
     },
     "police_leak": {
         "subsystem": "civic", "target": "police", "effect": "police_deface",
         "severity": "quiet", "base": 75,
-        "hint": "/police/dispatch/config.json is world-readable",
+        "hint": "A config file under the web root is world-readable. Content "
+                "discovery. Fix: keep secrets out of the docroot.",
     },
     "fire_defaultcreds": {
         "subsystem": "civic", "target": "fire", "effect": "fire_deface",
         "severity": "medium", "base": 75,
-        "hint": "the station alarm panel (/fire/) takes admin/fire",
+        "hint": "Default credentials on the station alarm panel. Fix: change "
+                "the defaults at install and don't ship shared ones.",
     },
     "as400_empmast": {
         "subsystem": "civic", "target": "cityhall", "effect": "cityhall_payroll",
         "severity": "loud", "base": 200,
-        "hint": "TN5250 to the AS/400 - a blank password signs you on as any "
-                "profile (or QSECOFR/QSECOFR). STRSQL: SELECT * FROM "
-                "PAYROLL.PAYKEY (the payroll library is *PUBLIC *ALL)",
+        "hint": "TN5250 green screen. A weak sign-on gets you a session, and "
+                "the payroll library is left readable to the public, so "
+                "Interactive SQL walks right in. Fix: require passwords, "
+                "rotate shipped defaults, lock down library authority.",
     },
     "paygw_receipt_idor": {
         "subsystem": "shop", "target": "paygw", "effect": "paygw_carded",
         "severity": "loud", "base": 150,
-        "hint": "the card gateway's GET /receipt/<txn_id> has no auth or "
-                "ownership check; walk the ids",
+        "hint": "IDOR on the card gateway's receipt endpoint - no auth, "
+                "sequential ids. curl. Fix: authorise every read.",
     },
 
     # --- First Packet Bank & Trust ---
     "bank_jwt_none": {
         "subsystem": "bank", "target": "bank", "effect": "bank_drain",
         "severity": "loud", "base": 200,
-        "hint": "the JWT check honours {\"alg\":\"none\"}; forge a role:admin "
-                "token, then the staff dashboard shows the wire settlement token",
+        "hint": "The JWT check accepts an unsigned token (alg:none) - forge an "
+                "elevated claim, and a staff-only view leaks the settlement "
+                "token. Fix: pin the algorithm and verify the signature.",
     },
     "bank_account_idor": {
         "subsystem": "bank", "target": "bank", "effect": "bank_leak",
         "severity": "medium", "base": 125,
-        "hint": "GET /api/accounts/<id> has no ownership check; the municipal "
-                "account's memo holds a reconciliation token",
+        "hint": "IDOR on the accounts API - no ownership check. Walk the "
+                "account ids; one memo carries the token. Fix: enforce "
+                "ownership on every account read.",
     },
     "z16_racf": {
         "subsystem": "bank", "target": "bank", "effect": "bank_drain",
         "severity": "loud", "base": 275,
-        "hint": "TN3270 to the z16 - IBMUSER/SYS1 still logs on. At READY: "
-                "RLIST FACILITY BANK.XFER.APPROVE - the profile is UACC(READ) "
-                "and in WARNING mode, and the recon key sits in its "
-                "INSTALLATION DATA",
+        "hint": "TN3270 green screen. A never-revoked default admin still logs "
+                "on; a RACF resource profile is world-readable and in WARNING "
+                "mode (fail-open), with a secret parked in its metadata. The "
+                "RLIST command family. Fix: revoke defaults, UACC(NONE) plus "
+                "an access list, take profiles out of WARNING.",
     },
     "water_modbus_pump": {
         "subsystem": "utility",
@@ -129,9 +158,10 @@ TECHNIQUES = {
         "effect": "noop",   # the physical damage was the player's Modbus write
         "severity": "loud",
         "base": 175,
-        "hint": "unauth Modbus write on :502 - stop the high-lift pump; the flag "
-                "is in the input-register block that fills when you set the "
-                "maintenance-mode coil (8)",
+        "hint": "Unauthenticated, unvalidated Modbus writes on the field bus - "
+                "the protocol has no auth. pymodbus / modbus_attack.py. The "
+                "flag block unlocks while the PLC is in maintenance mode. Fix: "
+                "segment OT, source-allowlist, authenticated protocol.",
     },
     "power_modbus_feeder": {
         "subsystem": "utility",
@@ -139,9 +169,10 @@ TECHNIQUES = {
         "effect": "noop",
         "severity": "loud",
         "base": 175,
-        "hint": "unauth Modbus write on :503 - open a feeder breaker; the flag "
-                "is in the input-register block gated by the maintenance-mode "
-                "coil (8)",
+        "hint": "Unauthenticated, unvalidated Modbus writes on the substation "
+                "bus - no auth on the protocol. pymodbus / modbus_attack.py. "
+                "The flag block unlocks while the PLC is in maintenance mode. "
+                "Fix: segment OT, source-allowlist, authenticated protocol.",
     },
     "factory_modbus": {
         "subsystem": "utility",
@@ -149,9 +180,11 @@ TECHNIQUES = {
         "effect": "noop",
         "severity": "loud",
         "base": 175,
-        "hint": "unauth Modbus write on :504 - bypass the assembly-line e-stop "
-                "and overspeed it, or open the hopper gate with no rail car in "
-                "position; flag in the maintenance-mode input registers",
+        "hint": "Unauthenticated Modbus writes to the assembly-line PLC - the "
+                "safety interlocks are just coils, and nothing checks the "
+                "writer. pymodbus / modbus_attack.py. The flag block unlocks "
+                "in maintenance mode. Fix: segment OT, source-allowlist, "
+                "authenticated protocol.",
     },
 }
 

@@ -25,12 +25,14 @@ Tiers 1-3 are what a solo player sees. Tier 4 is for the person running a class.
 
 ### Keep the public hints honest
 
-`scoring/flags.py`'s `hint` strings and some `docs/districts/*.md` lines are
-currently close to complete solutions (e.g. a full `UNION SELECT` with the real
-column order and table name). Audit them down to Tier-1 direction; move the
-sharp version to `instructor/` or behind the Tier-2 hint-penalty path. The
-`location_hint` column in `scoring.db` is an internal breadcrumb - if a future
-UI surfaces it, it goes through the Tier-2 penalty, never for free.
+`scoring/flags.py`'s `hint` strings are Tier-1 (done): bug class, tool, surface,
+fix - no payloads, parameters, credentials, or path to the flag. They are
+written to `scoring.db` as `location_hint`; if a future UI surfaces that, it
+goes through the Tier-2 hint-penalty, never for free. The step-by-step for
+every technique lives in `instructor/answer-key.md` (Tier 4).
+
+`docs/districts/*.md` still carry exact payloads and paths in places - those
+need the same audit (tracked in `ROADMAP.md`).
 
 ## Easter eggs as in-world help
 

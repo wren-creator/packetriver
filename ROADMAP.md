@@ -85,12 +85,14 @@ reuse map live in the design doc.
   `docs/verification.md`, the CTF flag-check script, the ZAP automation plan,
   the final pixel-art base image, README to its final game-page form with a
   labelled map screenshot.
-  - [ ] **Guidance, not walkthroughs** (see `docs/learning-design.md`). The
+  - **Guidance, not walkthroughs** (see `docs/learning-design.md`). The
     game must not ship a copy-paste path to controlling the town in 30
-    minutes. Audit `scoring/flags.py` `hint` strings + `docs/districts/*.md`
-    down to Tier-1 direction (bug class / tool / effect / fix, no working
-    payloads); move the sharp versions to `instructor/` or behind the
-    hint-penalty path.
+    minutes.
+    - [x] `scoring/flags.py` `hint` strings audited to Tier-1 direction; the
+      sharp step-by-step moved to `instructor/answer-key.md`.
+    - [ ] `docs/districts/*.md` still carry exact payloads / paths / creds in
+      several places - audit those down to Tier-1 too, leaning on
+      `instructor/answer-key.md` for the sharp version.
   - [ ] **Easter-egg hints.** Hide help as in-world artifacts (a stale
     `README.old`, a `.bak` config, a `robots.txt`, a note baked into a
     texture, an NPC line). Each egg gives a *fragment* - a technique name, one
