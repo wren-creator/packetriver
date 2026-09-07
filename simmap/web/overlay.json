@@ -204,12 +204,12 @@
       "path": "/fire/",
       "technique": "fire_defaultcreds"
     },
-    "railstation": {
+    "railcontrol": {
       "x": 0.5022,
       "y": 0.7945,
       "w": 0.0678,
       "h": 0.1072,
-      "label": "Railroad Station",
+      "label": "Railroad Control",
       "kind": "rail"
     }
   },
