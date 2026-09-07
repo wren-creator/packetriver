@@ -60,6 +60,34 @@ reuse map live in the design doc.
   `bus/*.segmented` (authenticated broker with per-topic ACLs, all weaknesses
   off). Follow-ups: campaign codes (Phase 6, EPUB-tied), web-tier + mainframe
   hardening flags in the segmented build, a real Suricata `ids` service.
+- [ ] **Recon layer - give every target a name (`*.packetriver.range`).**
+  Today everything is `127.0.0.1:<port>`. Add a `dns` container (dnsmasq or
+  CoreDNS) as the `player` box's resolver, authoritative for
+  `packetriver.range`, plus Docker network aliases so containers resolve each
+  other. Players then do `dig` / `nslookup` / reverse-PTR sweeps and recon by
+  business name (`firstpacketbank.packetriver.range`, `water.packetriver.range`).
+  - The zone is **deliberately AXFR-able** - one `dig axfr` discovers the whole
+    town (its own low-value `dns_axfr` recon technique); TXT-record breadcrumbs
+    and PTR records season it. Players start with only the resolver IP.
+  - `gateway` finally does real `Host:`-header vhost routing (always the plan,
+    never finished) so the 8 shops - still one shared container - are reached
+    by name; each vhost gets a distinct `Server` / `X-Powered-By` header and a
+    custom 404 so app-layer fingerprinting still tells them apart. Do NOT split
+    the shops into 8 containers (RAM, boot time; shared hosting is realistic).
+  - The real separate containers (bank, z16, AS/400, PLCs, traffic/rail) get
+    their own A records, naturally distinct on a port scan.
+  - **Official-sounding names** for every target (they become the DNS
+    hostnames): "Packet River Municipal Water Authority", "Packet River Power &
+    Light", "Packet River & Southern Railroad - Dispatch", "First Packet Bank &
+    Trust", etc. One cohesive municipal / corporate naming scheme.
+  - **No cross-portal navigation.** A portal must stand alone - no nav bar or
+    directory linking sibling portals (drop the field-plc HMI `<nav>` and the
+    `/` index that lists all four plants). You land on each item independently,
+    from the map or from recon by name. This is what makes per-item recon the
+    point rather than a formality.
+  - Extras: a mock `whois` / an internal corporate-directory page that seeds a
+    few hostnames (ties into the easter-egg hints); `.local` is out (mDNS
+    conflict on macOS). Threads into 5a/5b and gives the EPUB its Chapter 1.
 - [ ] **Phase 5 - Network-attack lanes (a different skill from web exploits).**
   - [ ] **5a - The Diner Wi-Fi lane.** `netlab` (needs `cap_add: NET_ADMIN`):
     a mock open AP, a captive portal, cleartext HTTP/POP3 on a sniffable
