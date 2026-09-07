@@ -18,6 +18,7 @@ A read-only status page sits on :8095 as the recognisable front door.
 """
 import json
 import os
+import secrets
 import threading
 
 import paho.mqtt.client as mqtt
@@ -25,7 +26,8 @@ from flask import Flask
 
 MQTT_HOST = os.environ.get("MQTT_HOST", "bus")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
-ENG_PIN = os.environ.get("ENG_PIN", "0000")
+ENG_PIN = os.environ.get("ENG_PIN", "0000")   # rotated by the blue team at Alert L2
+_ORIG_PIN = ENG_PIN
 IDS = [1, 2, 3, 4, 5]
 VALID_MODES = {"AUTO", "ALL-GREEN"}
 
@@ -37,6 +39,8 @@ except OSError:
 
 state = {i: {"mode": "AUTO", "phase": "auto"} for i in IDS}
 _cli = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="traffic-plc")
+if os.environ.get("MQTT_USER"):
+    _cli.username_pw_set(os.environ["MQTT_USER"], os.environ.get("MQTT_PASS", ""))
 
 
 def publish_state(i):
@@ -55,20 +59,25 @@ def on_connect(c, u, flags, rc, props):
 def on_message(c, u, msg):
     body = msg.payload.decode(errors="replace").strip().upper()
     if msg.topic == "pkt/reset":
+        global ENG_PIN
         try:
             scope = json.loads(msg.payload.decode() or "{}").get("scope", "all")
         except ValueError:
             scope = "all"
+        c.publish("pkt/traffic/flag", None, retain=True)   # clear any retained flag
         if scope in ("all", "traffic"):
             for i in IDS:
                 state[i]["mode"] = "AUTO"
                 publish_state(i)
-            c.publish("pkt/traffic/flag", "", retain=True)   # clear the retained flag
-            print("[traffic-plc] reset -> all AUTO")
+            ENG_PIN = _ORIG_PIN               # golden restore includes the PIN
+            print("[traffic-plc] reset -> all AUTO, PIN restored")
+        elif scope == "creds":
+            ENG_PIN = f"{secrets.randbelow(10000):04d}"   # blue-team L2 rotation
+            print("[traffic-plc] engineering PIN rotated")
         return
     if msg.topic == "pkt/traffic/eng":
         if body == ENG_PIN:
-            c.publish("pkt/traffic/flag", FLAG, retain=True)
+            c.publish("pkt/traffic/flag", FLAG)   # not retained - a live response
             print("[traffic-plc] engineering mode unlocked -> flag published")
         else:
             print(f"[traffic-plc] eng unlock rejected: {body!r}")

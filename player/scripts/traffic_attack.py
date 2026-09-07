@@ -14,6 +14,7 @@ lab-only guard first.
 """
 import subprocess
 import sys
+import time
 
 sys.path.insert(0, "/opt/pktr/scripts")
 from targets import guard  # noqa: E402
@@ -43,12 +44,19 @@ def main():
             pub(f"pkt/traffic/{i}/set", "AUTO")
         print("[+] handed back to the auto cycle")
     elif cmd == "flag":
+        # subscribe first (the flag is published as a live, non-retained reply),
+        # then send the engineering-mode unlock
+        sub = subprocess.Popen(
+            ["mosquitto_sub", "-h", HOST, "-t", "pkt/traffic/flag", "-C", "1", "-W", "6"],
+            stdout=subprocess.PIPE, text=True)
+        time.sleep(0.5)
         pub("pkt/traffic/eng", ENG_PIN)
-        out = subprocess.run(
-            ["mosquitto_sub", "-h", HOST, "-t", "pkt/traffic/flag", "-C", "1", "-W", "5"],
-            capture_output=True, text=True)
-        flag = out.stdout.strip()
-        print(flag if flag else "[!] no flag published - check the PIN / broker")
+        try:
+            flag = (sub.communicate(timeout=7)[0] or "").strip()
+        except subprocess.TimeoutExpired:
+            sub.kill()
+            flag = ""
+        print(flag if flag else "[!] no flag - the PIN was rejected (rotated?) or the broker is locked")
     else:
         sys.exit(f"unknown command: {cmd}")
 

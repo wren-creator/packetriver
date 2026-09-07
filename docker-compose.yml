@@ -28,6 +28,8 @@ services:
       scoring: { condition: service_healthy }
     ports:
       - "127.0.0.1:8080:80"
+    volumes:
+      - gw-logs:/var/log/nginx
     networks: [edge-net, it-net]
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://simmap:8000/health >/dev/null 2>&1 || exit 1"]
@@ -48,6 +50,8 @@ services:
       DONATION_CASHAPP: "${DONATION_CASHAPP:-britleywren}"
       MQTT_HOST: "bus"
       FIELD_PLC_HOST: "field-plc"
+    volumes:
+      - gw-logs:/gwlogs:ro
     networks: [it-net, bus-net]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
@@ -319,3 +323,4 @@ volumes:
   scoring-data:
   db-data:
   pkt-flags:
+  gw-logs:

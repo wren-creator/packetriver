@@ -32,6 +32,9 @@ class Bus:
         self.on_change = on_change or (lambda: None)
         self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
                                    client_id="simmap")
+        if os.environ.get("MQTT_USER"):
+            self._client.username_pw_set(os.environ["MQTT_USER"],
+                                         os.environ.get("MQTT_PASS", ""))
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
 
@@ -99,3 +102,6 @@ class Bus:
 
     def publish_physical(self, name: str, payload: dict | None = None):
         self._client.publish(f"pkt/sim/physical/{name}", json.dumps(payload or {}))
+
+    def publish(self, topic: str, payload: str, retain: bool = False):
+        self._client.publish(topic, payload, retain=retain)

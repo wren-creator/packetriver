@@ -1,0 +1,24 @@
+# Packet River hardened broker ACL (docker-compose.segmented.yml).
+# Anonymous access is off; every pkt/* topic is scoped to its rightful owner.
+# The flat build ships none of this - pkt/traffic/# is world-writable there,
+# which is the traffic-light district's whole vulnerability.
+
+user simmap
+topic readwrite pkt/#
+
+user scoring
+topic write pkt/score/#
+topic read pkt/alert/#
+topic write pkt/reset
+topic write pkt/campaign
+
+user signals
+topic read pkt/traffic/+/set
+topic write pkt/traffic/+/state
+topic readwrite pkt/traffic/eng
+topic write pkt/traffic/flag
+topic read pkt/reset
+
+user railops
+topic write pkt/rail/#
+topic read pkt/reset

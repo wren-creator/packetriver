@@ -11,5 +11,6 @@ RUN addgroup -S rp && adduser -S rp -G rp
 USER rp
 
 EXPOSE 2323 8096
+ENV PYTHONUNBUFFERED=1
 ENV MQTT_HOST=bus MQTT_PORT=1883 CONSOLE_USER=maint CONSOLE_PASS=maint
 CMD ["python", "console.py"]

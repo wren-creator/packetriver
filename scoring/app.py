@@ -62,6 +62,8 @@ def init_db() -> None:
 def mqtt_connect() -> None:
     global _mqtt
     _mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="scoring")
+    if os.environ.get("MQTT_USER"):
+        _mqtt.username_pw_set(os.environ["MQTT_USER"], os.environ.get("MQTT_PASS", ""))
 
     def on_connect(c, u, flags_, rc, props):
         c.subscribe("pkt/alert/level")

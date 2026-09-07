@@ -1,0 +1,61 @@
+# Packet River - HARDENED topology.
+#
+#   ./start.sh --segmented
+#
+# Folded on top of docker-compose.yml. Every deliberate weakness is turned off
+# so you can run the same attacks and watch them fail:
+#
+#   * field PLCs re-assert their safe state every scan (MODBUS_WRITE_OPEN=0),
+#     so unauth Modbus writes get stomped within a tick
+#   * the broker requires auth and scopes every pkt/* topic (acl_file), so the
+#     anonymous publish to pkt/traffic/# is refused
+#   * default credentials and PINs are rotated off their shipped values
+#   * verbose DB errors and predictable session tokens are off
+#
+# The full "and here is why" writeups are in docs/scenarios.md.
+
+services:
+
+  bus:
+    volumes:
+      - ./bus/mosquitto.segmented.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./bus/passwd.segmented:/mosquitto/config/passwd:ro
+      - ./bus/acl.segmented:/mosquitto/config/acl:ro
+
+  simmap:
+    environment:
+      MQTT_USER: "simmap"
+      MQTT_PASS: "simmap-seg-2f9a1"
+
+  scoring:
+    environment:
+      MQTT_USER: "scoring"
+      MQTT_PASS: "scoring-seg-7c3e0"
+
+  websites:
+    environment:
+      VERBOSE_ERRORS: "0"
+      WEAK_SESSIONS: "0"
+
+  field-plc:
+    environment:
+      MODBUS_WRITE_OPEN: "0"
+      HMI_PASS: "R1ver-Ops-2026"
+
+  traffic-plc:
+    environment:
+      MQTT_USER: "signals"
+      MQTT_PASS: "signals-seg-b41d8"
+      ENG_PIN: "83017"
+
+  rail-plc:
+    environment:
+      MQTT_USER: "railops"
+      MQTT_PASS: "railops-seg-9e6f2"
+      CONSOLE_USER: "rsc_maint"
+      CONSOLE_PASS: "sw1tch-Key-2026"
+
+# Hardening the web-tier and mainframe targets in the segmented build (verbose
+# errors + weak sessions are already covered above; the JWT-none check, the AS/400
+# QSECURITY level, and the z16 RACF posture need per-service flags) is a
+# follow-up - see ROADMAP.md.

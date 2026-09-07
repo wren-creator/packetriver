@@ -50,11 +50,16 @@ reuse map live in the design doc.
     `WARNING` mode, `NOPROTECTALL`; flag in the profile's `INSTALLATION DATA`.
     Player-side client `z16_3270.py` (built - no arm64 `x3270`). A CICS
     inquiry / CEMT lane and a full interactive in-browser 3270 stay follow-ups.
-- [ ] **Phase 4 - Sewage + traffic + rail + Alert Level + blue team.**
-  `traffic-plc`, `rail-plc`, sewage on `field-plc`, the river + swimmers +
-  swimming beach, the leaky-bucket Alert meter, the blue-team response
-  (password rotation, rate limiting, segmentation), campaign codes,
-  `docker-compose.segmented.yml`.
+- [x] **Phase 4 - Sewage + traffic + rail + Alert Level + blue team.**
+  Sewage as a 4th `field-plc` Modbus PLC (`sewage_modbus`); `traffic-plc`
+  commanded over the open MQTT bus (`traffic_mqtt`); `rail-plc` with a
+  raw-TCP console + command injection (`rail_console`); the derail into the
+  factory. The leaky-bucket Alert meter with hysteresis + `blueteam.py`
+  (L2 credential rotation that actually bites, L5 auto-restore) + `logtail.py`
+  turning scan noise into heat. `docker-compose.segmented.yml` +
+  `bus/*.segmented` (authenticated broker with per-topic ACLs, all weaknesses
+  off). Follow-ups: campaign codes (Phase 6, EPUB-tied), web-tier + mainframe
+  hardening flags in the segmented build, a real Suricata `ids` service.
 - [ ] **Phase 5 - Network-attack lanes (a different skill from web exploits).**
   - [ ] **5a - The Diner Wi-Fi lane.** `netlab` (needs `cap_add: NET_ADMIN`):
     a mock open AP, a captive portal, cleartext HTTP/POP3 on a sniffable

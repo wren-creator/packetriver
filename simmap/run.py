@@ -5,7 +5,9 @@ import os
 import threading
 import time
 
+import blueteam
 import icsloops
+import logtail
 import server
 from bus import Bus
 from models import TownState
@@ -25,11 +27,13 @@ def main() -> None:
     # field-plc; take those subsystems off the built-in idle physics.
     town.external.update({"water", "power", "factory", "sewage"})
     icsloops.start(town, lock)
+    logtail.start(town, lock)
 
     tick = float(os.environ.get("TICK_SECONDS", "1.0"))
 
     def loop() -> None:
         last = time.time()
+        prev_level = 0
         while True:
             time.sleep(tick)
             now = time.time()
@@ -37,6 +41,9 @@ def main() -> None:
             last = now
             with lock:
                 town.step(dt)
+                for lv in range(prev_level + 1, town.alert.level + 1):
+                    blueteam.respond(town, lv, bus.publish)
+                prev_level = town.alert.level
                 snap = town.snapshot()
             try:
                 bus.publish_state(snap)

@@ -140,9 +140,13 @@ class CityHall:
 class Alert:
     level: int = 0
     heat: float = 0.0
+    blue_actions: list = field(default_factory=list)   # SOC responses, newest last
 
 
+# (rise_at, level). Falling back a level needs heat below the NEXT band's rise
+# point minus a margin, so the meter does not flap around a threshold.
 ALERT_THRESHOLDS = [(150, 5), (110, 4), (75, 3), (45, 2), (20, 1)]
+ALERT_HYSTERESIS = 8.0
 
 
 class TownState:
@@ -278,15 +282,26 @@ class TownState:
 
     def _step_alert(self, dt: float) -> None:
         a = self.alert
-        a.heat *= 0.5 ** (dt / 120.0)
-        a.level = 0
+        a.heat *= 0.5 ** (dt / 120.0)          # ~2 min half-life leaky bucket
+        target = 0
         for thresh, lvl in ALERT_THRESHOLDS:
             if a.heat >= thresh:
-                a.level = lvl
+                target = lvl
                 break
+        if target > a.level:
+            a.level = target                   # rise immediately
+        elif target < a.level:
+            # only fall a level once heat is clearly below that level's rise point
+            rise_at = next(t for t, lv in ALERT_THRESHOLDS if lv == a.level)
+            if a.heat < rise_at - ALERT_HYSTERESIS:
+                a.level = target
 
     def add_heat(self, amount: float) -> None:
         self.alert.heat += amount
+
+    def note_blue_action(self, text: str) -> None:
+        self.alert.blue_actions.append(text)
+        self.alert.blue_actions[:] = self.alert.blue_actions[-6:]
 
     # -- snapshot ----------------------------------------------------
     def snapshot(self) -> dict:
@@ -358,5 +373,9 @@ class TownState:
             "police": {"site_status": self.police.site_status, "dispatch_pwned": self.police.dispatch_pwned},
             "fire": {"site_status": self.fire.site_status, "dispatch_pwned": self.fire.dispatch_pwned},
             "houses": houses,
-            "alert": {"level": self.alert.level, "heat": round(self.alert.heat, 1)},
+            "alert": {
+                "level": self.alert.level,
+                "heat": round(self.alert.heat, 1),
+                "blue_actions": list(self.alert.blue_actions),
+            },
         }

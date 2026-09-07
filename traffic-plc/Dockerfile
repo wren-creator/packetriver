@@ -12,5 +12,6 @@ RUN addgroup -S tp && adduser -S tp -G tp
 USER tp
 
 EXPOSE 8095
+ENV PYTHONUNBUFFERED=1
 ENV MQTT_HOST=bus MQTT_PORT=1883 ENG_PIN=0000
 CMD ["python", "controller.py"]

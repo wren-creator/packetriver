@@ -4,6 +4,57 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Phase 4 - Sewage + Traffic + Rail + Alert Level + blue team
+
+**Three new OT exploit districts** (each verified end to end, flag -> submit ->
+map degrades -> reset restores):
+
+- **Sewage** (`sewage_modbus`, base 175): a 4th soft-PLC on `field-plc`
+  (`:505` / host `:5505`) - aeration, disinfection dosing, treated-return
+  pump, storm-bypass gate. Unauth Modbus writes open the bypass or stop
+  aeration; `effluent_path` flips to raw, the outfall goes algae-green, the
+  river plume ramps and the swimmers sicken. `models/sewage.py`, an icsloops
+  sewage loop, a Sewage Treatment panel on the HMI, `modbus_attack.py sewage`.
+- **Traffic** (`traffic_mqtt`, base 175): `traffic-plc`, five signal
+  controllers that take their commanded mode off the bus. `pkt/traffic/<id>/set`
+  has no ACL and no auth on the flat broker; publish to it and a crossroads
+  locks ALL-GREEN. `pkt/traffic/eng` takes a PIN and coughs up the flag (a
+  live, non-retained reply). `traffic_attack.py`; player image gains
+  `mosquitto-clients`.
+- **Rail** (`rail_console`, base 200): `rail-plc`, the loop/spur switch
+  controller with a raw-TCP maintenance console on `:2323`. Default creds
+  `maint/maint`, and `set label` concatenates operator input into a shell call
+  (command injection). `set switch spur` throws the switch; simmap reads
+  `pkt/rail/switch` and, when the train crosses the branch, derails it into the
+  factory (fire). `rail_attack.py`.
+
+**Alert Level + blue team:**
+
+- The leaky-bucket Alert meter (`models/town.py`) gets downward hysteresis and
+  a `blue_actions` list. `simmap/blueteam.py` runs on every level rise: L1 SOC
+  banner, **L2 rotates the traffic PIN + rail console password** over
+  `pkt/reset {scope:"creds"}` (an in-progress attacker's next canned command
+  fails until a reset), L3/L4 banners, **L5 auto golden-restore of the
+  worst-hit subsystem**. `pkt/alert/level` feeds `scoring`'s stealth bonus.
+  The UI toasts each SOC action.
+- `simmap/logtail.py` tails the gateway's JSON access log (shared volume) and
+  turns scanner noise - tool user-agents, 4xx bursts, path sprays - into Alert
+  heat, so a careless approach costs you even before you land anything.
+
+**Segmented build:** `docker-compose.segmented.yml` + `bus/mosquitto.segmented.conf`
++ `acl.segmented` + `passwd.segmented`. `./start.sh --segmented` turns every
+weakness off: `MODBUS_WRITE_OPEN=0`, an authenticated broker with per-topic
+ACLs, rotated PIN / console creds / HMI password, verbose errors + weak
+sessions off. Run the same attacks, watch them fail. (Web-tier and mainframe
+hardening flags are a follow-up.)
+
+- `scoring/flags.py`: `sewage_modbus`, `traffic_mqtt`, `rail_console`.
+  `/api/config` phase -> 4. `.env.example` gains the PIN + console creds.
+- Reset panel `sewage` / `traffic` / `rail` scopes restore their district
+  (and any rotated creds).
+- `docs/districts/{sewage,traffic,rail}.md`, answer-key entries.
+- Campaign codes (the EPUB practice-mode hook) are deferred to Phase 6.
+
 ### Map alignment pass + a feed-stability fix
 - The `/ws` feed no longer pulses live/down: `simmap` was on
   `GeventWebSocketWorker` while flask-sock does its own WS framing, and the two

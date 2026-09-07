@@ -15,6 +15,7 @@ Deliberate weaknesses:
 A read-only status page sits on :8096 as the recognisable front door.
 """
 import os
+import secrets
 import socket
 import subprocess
 import threading
@@ -25,7 +26,8 @@ from flask import Flask
 MQTT_HOST = os.environ.get("MQTT_HOST", "bus")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 USER = os.environ.get("CONSOLE_USER", "maint")
-PASS = os.environ.get("CONSOLE_PASS", "maint")
+PASS = os.environ.get("CONSOLE_PASS", "maint")   # rotated by the blue team at Alert L2
+_ORIG_PASS = PASS
 PORT = 2323
 
 try:
@@ -36,6 +38,8 @@ except OSError:
 
 switch = {"position": "loop", "label": "MAIN-LOOP-SW"}
 _cli = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="rail-plc")
+if os.environ.get("MQTT_USER"):
+    _cli.username_pw_set(os.environ["MQTT_USER"], os.environ.get("MQTT_PASS", ""))
 
 
 def publish_switch():
@@ -48,6 +52,7 @@ def _on_connect(c, u, flags, rc, props):
 
 
 def _on_message(c, u, msg):
+    global PASS
     import json as _j
     try:
         scope = _j.loads(msg.payload.decode() or "{}").get("scope", "all")
@@ -56,8 +61,12 @@ def _on_message(c, u, msg):
     if scope in ("all", "rail"):
         switch["position"] = "loop"
         switch["label"] = "MAIN-LOOP-SW"
+        PASS = _ORIG_PASS                      # golden restore includes the creds
         publish_switch()
-        print("[rail-plc] reset -> switch loop")
+        print("[rail-plc] reset -> switch loop, creds restored")
+    elif scope == "creds":
+        PASS = secrets.token_hex(6)            # blue-team L2 rotation
+        print("[rail-plc] console password rotated")
 
 
 _cli.on_connect = _on_connect

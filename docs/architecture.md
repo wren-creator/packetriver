@@ -123,6 +123,24 @@ with `?edit=1` for the drag-and-copy overlay editor (`docs/overlay-editing.md`;
 - `simmap` publishes `pkt/sim/state` (retained, once per tick) and
   `pkt/sim/physical/<name>` on threshold crossings (Phase 4 uses these for the
   Alert meter and the cascade score bonus).
+- **Traffic + rail** (Phase 4) are held by their own containers. `traffic-plc`
+  takes each intersection's commanded mode off `pkt/traffic/<id>/set` (no ACL
+  on the flat broker - that is the bug) and republishes `pkt/traffic/<id>/state`;
+  `rail-plc` publishes `pkt/rail/switch` from its raw-TCP console. `simmap`
+  subscribes to both and mirrors them onto `TownState`; the crash / derail
+  physics stay in `models/town.py`.
+- **Alert Level + blue team** (Phase 4): `models/town.py` runs the leaky-bucket
+  heat meter (half-life ~2 min, downward hysteresis). Heat comes from event
+  severity (`bus.py`), wrong submissions, and `logtail.py` reading the
+  gateway's JSON access log off a shared volume for scan bursts. On each level
+  rise the tick loop calls `blueteam.py`: L2 rotates the traffic PIN and the
+  rail console password (`pkt/reset {scope:"creds"}`), L5 auto-restores the
+  worst-hit subsystem. `pkt/alert/level` is published for `scoring`.
+- **Segmented build:** `./start.sh --segmented` folds in
+  `docker-compose.segmented.yml` - `MODBUS_WRITE_OPEN=0`, an authenticated
+  broker (`bus/mosquitto.segmented.conf` + `acl.segmented` + `passwd.segmented`)
+  with each `pkt/*` topic scoped to its owner, and every default credential
+  rotated.
 - Every tick, `simmap` also broadcasts the full snapshot to every `/ws` client.
   New clients get a full snapshot on connect and on `{"type":"resync"}`; the UI
   reconnects with backoff and derives all animation from state, never from

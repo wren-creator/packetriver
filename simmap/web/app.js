@@ -193,6 +193,14 @@ function render(s) {
   const lvl = (s.alert && s.alert.level) || 0;
   $("hud-alert").dataset.lvl = lvl;
   $("hud-alert-lvl").textContent = lvl;
+
+  // surface the blue team's latest response as a toast
+  const acts = (s.alert && s.alert.blue_actions) || [];
+  const last = acts[acts.length - 1] || "";
+  if (last && last !== render._lastSoc) {
+    render._lastSoc = last;
+    toast("SOC: " + last);
+  }
 }
 
 // ------------------------------------------------------------ transport

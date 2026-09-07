@@ -79,22 +79,29 @@ would rather attack from your own shell.
 
 ## Status
 
-Early build. See `ROADMAP.md`. **Phases 0-3** are in:
+Early build. See `ROADMAP.md`. **Phases 0-4** are in:
 
 - the pixel-art live map with its overlay
 - all of **Main Street** (8 storefronts, one bug class each), **Town Hall**,
   **Police**, **Fire**, the **payment gateway**, and **First Packet Bank &
   Trust**, each behind its login portal
-- the **water, power, and widget-factory** districts on real Modbus, with an
-  operator HMI
+- the **water, power, widget-factory, and sewage** districts on real Modbus,
+  with an operator HMI
+- **traffic control** (commanded over an open MQTT bus) and **rail control**
+  (a raw-TCP console with a command-injection bug), plus the derail into the
+  factory
 - an **AS/400** behind Town Hall (TN5250) and an **IBM z16** behind the Bank
   (TN3270), both real green screens with curated bugs
-- the score / run / leaderboard loop, the reset panel, and the boxed-in
-  attacker box with a browser terminal
+- the **Alert Level** meter and a **blue-team** response (credential rotation,
+  auto-restore) that reacts to how loud you are
+- the score / run / leaderboard loop, the reset panel, the `?edit=1` overlay
+  editor, and the boxed-in attacker box with a browser terminal
+- `./start.sh --segmented` - the hardened town: run the same attacks, watch
+  them fail
 
-Sewage, traffic, rail, the Alert-Level meter, the blue-team response, and the
-Wi-Fi lanes land over Phases 4-6. Overlay alignment against the map art has a
-drag-and-copy editor (`?edit=1`, see `docs/overlay-editing.md`); a final pass
+The Wi-Fi lanes and the "101" EPUB land over Phases 5-6. Overlay alignment
+against the map art has a drag-and-copy editor (`?edit=1`, see
+`docs/overlay-editing.md`); a final pass
 waits for the Phase 6 art.
 
 ## More
