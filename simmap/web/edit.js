@@ -197,9 +197,10 @@
       push({ id: key, kind: "point",
         get: () => L[key].slice(), set: (x, y) => { L[key] = [r4(x), r4(y)]; } });
     });
-    if (L.river) {
-      const rv = L.river;
-      push({ id: "river", kind: "rect",
+    for (const key of ["river", "beachZone"]) {
+      const rv = L[key];
+      if (!rv) continue;
+      push({ id: key, kind: "rect",
         get: () => [rv.x, rv.y], set: (x, y) => { rv.x = r4(x); rv.y = r4(y); },
         getSize: () => [rv.w, rv.h],
         setSize: (w, h) => { rv.w = r4(Math.max(0.01, w)); rv.h = r4(Math.max(0.01, h)); },

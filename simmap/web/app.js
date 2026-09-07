@@ -42,6 +42,24 @@ function buildOverlay(layout) {
 
   const r = layout.river;
   REFS.river = el("rect", { x: X(r.x), y: Y(r.y), width: X(r.w), height: Y(r.h), class: "river-body" }, svg);
+  // contamination plume: emerges at the outfall and spreads downstream toward
+  // the swimming beach as river_contamination ramps (not a full-height wash)
+  const oy = layout.outfall.length ? layout.outfall[layout.outfall.length - 1][1] : 0.15;
+  REFS.plume = el("rect", {
+    x: X(r.x), y: Y(oy - 0.02), width: X(r.w * 0.72), height: 0, class: "plume" }, svg);
+  // the swim zone: a blocky "pixelated" contamination mosaic from the beach
+  // edge (town side) across to the far bank, revealed as the water fouls
+  const bz = layout.beachZone;
+  if (bz) {
+    REFS.beach = el("g", { class: "beach-mosaic" }, svg);
+    const cell = X(0.011);
+    for (let gx = X(bz.x); gx < X(bz.x + bz.w); gx += cell) {
+      for (let gy = Y(bz.y); gy < Y(bz.y + bz.h); gy += cell) {
+        el("rect", { x: gx, y: gy, width: cell - 0.6, height: cell - 0.6,
+          opacity: (0.45 + Math.random() * 0.55).toFixed(2) }, REFS.beach);
+      }
+    }
+  }
   // treated effluent flowing to the river: a moving blue line, green when the
   // treatment has been messed with
   REFS.outfall = el("polyline", {
@@ -175,7 +193,14 @@ function render(s) {
   if (s.water) REFS.waterMain.classList.toggle("stopped", s.water.quality === "dry");
   if (s.sewage) {
     const raw = s.sewage.effluent_path === "raw";
-    REFS.river.classList.toggle("foul", s.sewage.river_contamination > 0.4);
+    const c = Math.max(0, Math.min(1, s.sewage.river_contamination));
+    // plume grows from the outfall downstream; ~8% of the river column when it
+    // first appears, ~70% at full contamination
+    REFS.plume.setAttribute("height", Y(0.08 + 0.62 * c));
+    REFS.plume.style.opacity = c > 0.03 ? (0.16 + 0.5 * c) : 0;
+    if (REFS.beach)
+      REFS.beach.style.opacity = (s.sewage.swimmers_sick || c > 0.35)
+        ? (0.3 + 0.5 * c).toFixed(2) : 0;
     REFS.outfall.classList.toggle("foul", raw);
     REFS.swimmers.forEach(sw => sw.classList.toggle("sick", s.sewage.swimmers_sick));
   }
