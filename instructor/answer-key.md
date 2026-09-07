@@ -176,6 +176,16 @@ PLC, authenticated protocol, re-assert safe state (the hardened build's
   e-stop and overspeed the line, or open the hopper gate with no car in
   position. `modbus_attack.py factory estop-bypass | hopper-dump | line-stop`.
 
+### `factory_snmp` — (map: line stops) — Phase G
+- The move: `factory-snmp` udp/161 (`127.0.0.1:1161`). `snmpwalk -v2c -c public
+  factory-snmp .1.3.6.1.4.1.53864.1` dumps the subtree; the flag is
+  `...53864.1.3.0` (opsNote), also `snmpget -Ovq -c public ... .3.0`.
+  `snmpset -v2c -c private factory-snmp .1.3.6.1.4.1.53864.1.1.0 i 0` stops the
+  line (publishes `pkt/factory/cmd`). `snmp_attack.py walk|flag|stop|start`.
+- Derail pile-up: time `rail_console` `set switch spur` so the hopper gate is
+  open (a car loading) as the train hits the branch - throughput hard-zeros.
+- Fix: SNMPv3 auth+priv, no default communities, no enterprise-side write.
+
 ### `sewage_modbus` — (map: raw effluent to the beach) — Phase 4
 - The move: `127.0.0.1:5505` (container `:505`). Open the storm bypass gate
   (`BYPASS_GATE`, coil 3) and/or stop aeration (coil 0) + dosing (coil 1).

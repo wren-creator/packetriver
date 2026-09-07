@@ -198,6 +198,20 @@ TECHNIQUES = {
                 "block unlocks in maintenance mode. Fix: segment OT, "
                 "source-allowlist, authenticated protocol.",
     },
+    "factory_snmp": {
+        "subsystem": "utility",
+        "target": "factory",
+        "effect": "noop",   # the physical stop was the player's SNMP write
+        "severity": "medium",
+        "base": 150,
+        "hint": "The Widget Works line-management box runs an SNMP agent with "
+                "the shipped community strings - `public` reads the whole "
+                "line-management subtree (the reconciliation key is one of the "
+                "OIDs), and a read-write community lets you set the "
+                "line-enable OID and stop the line. snmpwalk / snmpset. Fix: "
+                "SNMPv3 with auth+priv, no default communities, no write "
+                "access from the enterprise side.",
+    },
     "traffic_mqtt": {
         "subsystem": "utility",
         "target": "traffic",

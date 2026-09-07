@@ -358,6 +358,11 @@ class TownState:
                 r.factory_fire = True
                 self.factory.on_fire = True
                 r.train_speed = 0.0
+                # a loading car in the way turns a derail into a pile-up: the
+                # line is buried, not just stopped
+                if self.factory.hopper_open:
+                    self.factory.throughput_pct = 0.0
+                    self.factory.line_jam = True
             return
         prev = r.train_pos
         r.train_pos += r.train_speed * dt

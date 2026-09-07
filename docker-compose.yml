@@ -228,6 +228,27 @@ services:
       timeout: 5s
       retries: 8
 
+  # --- the Widget Works line-management SNMP box (default community strings) ---
+  factory-snmp:
+    <<: *common
+    build: ./factory-snmp
+    container_name: packetriver-factory-snmp
+    depends_on:
+      bus:     { condition: service_healthy }
+      scoring: { condition: service_healthy }
+    environment:
+      MQTT_HOST: "bus"
+    volumes:
+      - pkt-flags:/run/secret:ro
+    ports:
+      - "127.0.0.1:1161:161/udp"
+    networks: [bus-net, it-net, edge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "snmpget -v2c -c public -t 2 -r 1 udp:127.0.0.1:161 .1.3.6.1.4.1.53864.1.4.0 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
   # --- the traffic signal controllers (commanded over the open MQTT bus) ---
   traffic-plc:
     <<: *common

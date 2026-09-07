@@ -187,10 +187,16 @@ reuse map live in the design doc.
   pivot to the AS/400; pop the bank's online banking then pivot to the z16.
 - [x] **Widget Factory PLC controls.** Assembly line (conveyor run/stop, line
   speed, e-stop interlock) + train loading (gantry / hopper gate /
-  car-in-position) on `field-plc` :504. Landed in Phase 3b. Still open: tying a
-  car-loaded-while-the-switch-is-thrown to the rail district (Phase 4).
-- [ ] Widget Factory ops site (weak SNMP) alongside the PLC controls, instead of
-  the factory being a pure consequence entity.
+  car-in-position) on `field-plc` :504. Landed in Phase 3b.
+  - [x] A car being loaded (hopper gate open) when the train derails onto the
+    spur is now a pile-up: throughput hard-zeros and the line jams on top of
+    the fire.
+- [x] Widget Factory ops site (weak SNMP). `factory-snmp` is a real net-snmp
+  agent with the shipped community strings - `public` reads the
+  line-management subtree (the `factory_snmp` flag is an OID), a read-write
+  community `snmpset`s the line-enable OID and stops the line
+  (`pkt/factory/cmd` -> simmap). Hardened: `SNMP_HARDENED=1` drops the write
+  community and moves the read community off `public`.
 - [x] `ttyd` browser terminal in the `player` box - added in Phase 3c (the map's
   "green screen ↗" link on Town Hall opens it).
 - [x] Timed events. `PKT_EVENTS=off|calm|lively` drives a news crew (loud

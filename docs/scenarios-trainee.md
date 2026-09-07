@@ -1,6 +1,6 @@
 # Packet River scenarios, trainee edition
 
-Twenty-six planted weaknesses in six groups. This is the instructor edition
+Twenty-seven planted weaknesses in six groups. This is the instructor edition
 with the **Fix** line removed from each entry: work out the remediation
 yourself, then check it against [`scenarios.md`](scenarios.md).
 
@@ -282,6 +282,16 @@ rail is a raw-TCP console. Full writeups in
 **Confirm / exploit with:** `pymodbus` / `modbus_attack.py`. Answer key has the coils.
 **Physical consequence:** the effluent path goes raw; river contamination integrates up and the plume mosaic spreads from the beach; swimmers sicken (cascade bonus).
 **Points / severity:** 175 / loud.
+**Fix:** _work this out, then check the instructor edition._
+
+### factory_snmp - Widget Works line management over SNMP
+**Where:** the `factory-snmp` agent on `udp/161` (`127.0.0.1:1161`).
+**Real-world parallel:** default SNMP community strings on OT and network gear are a standing Shodan / pen-test finding.
+**Vulnerability:** the shipped communities are still set. `public` reads the line-management subtree (the reconciliation key is an OID); a read-write community sets the line-enable OID and stops the line.
+**MITRE ATT&CK for ICS:** T0855 (unauthorized command message), T0813 (denial of control).
+**Confirm / exploit with:** `snmpwalk` / `snmpset`, or `snmp_attack.py`. The flag is one of the OIDs.
+**Physical consequence:** `noop` flag; the SNMP write itself stops the line on the map (`pkt/factory/cmd`).
+**Points / severity:** 150 / medium.
 **Fix:** _work this out, then check the instructor edition._
 
 ### traffic_mqtt — open MQTT command topic

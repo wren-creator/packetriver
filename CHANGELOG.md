@@ -4,6 +4,18 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Widget Works - a management plane
+
+- New `factory-snmp` container: a real net-snmp agent with the shipped
+  community strings. `public` reads the line-management subtree (the new
+  `factory_snmp` flag, base 150, is an OID); a read-write community `snmpset`s
+  the line-enable OID and stops the assembly line (`pkt/factory/cmd` ->
+  simmap). Same end state as the Modbus path, a different plane. `player` gains
+  the net-snmp clients and `snmp_attack.py`. Hardened: `SNMP_HARDENED=1`.
+- A rail car being loaded (hopper gate open) when the train derails onto the
+  spur is now a pile-up - throughput hard-zeros and the line jams on top of
+  the fire. Time the `rail_console` derail against the loading cycle.
+
 ### Recon layer - the deferred pieces
 
 - **Real `Host:`-header vhost routing.** The shop and civic CNAMEs point at the

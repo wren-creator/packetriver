@@ -1,6 +1,6 @@
 # Packet River scenarios, instructor edition
 
-Twenty-six planted weaknesses in six groups. Trainees work from
+Twenty-seven planted weaknesses in six groups. Trainees work from
 [`scenarios-trainee.md`](scenarios-trainee.md), which is this file with the
 **Fix** line removed from each entry.
 
@@ -283,6 +283,16 @@ rail is a raw-TCP console. Full writeups in
 **Physical consequence:** the effluent path goes raw; river contamination integrates up and the plume mosaic spreads from the beach; swimmers sicken (cascade bonus).
 **Points / severity:** 175 / loud.
 **Fix:** as above, segment, source-allowlist, authenticate.
+
+### factory_snmp - Widget Works line management over SNMP
+**Where:** the `factory-snmp` agent on `udp/161` (`127.0.0.1:1161`).
+**Real-world parallel:** default SNMP community strings on OT and network gear are a standing Shodan / pen-test finding.
+**Vulnerability:** the shipped communities are still set. `public` reads the line-management subtree (the reconciliation key is an OID); a read-write community sets the line-enable OID and stops the line.
+**MITRE ATT&CK for ICS:** T0855 (unauthorized command message), T0813 (denial of control).
+**Confirm / exploit with:** `snmpwalk` / `snmpset`, or `snmp_attack.py`. The flag is the `opsNote` OID.
+**Physical consequence:** `noop` flag; the SNMP write itself stops the line on the map (`pkt/factory/cmd`).
+**Points / severity:** 150 / medium.
+**Fix:** SNMPv3 auth+priv, no default communities, no write from the enterprise network.
 
 ### traffic_mqtt — open MQTT command topic
 **Where:** the `bus` broker on `127.0.0.1:1883`; the signal controllers' command topic and an engineering-mode topic.

@@ -15,8 +15,8 @@ import sys
 ALLOWED_NAMES = {
     "gateway", "simmap", "scoring", "bus", "db", "websites", "paygw",
     "bank", "as400", "z16", "netlab", "netlab-patron", "traffic-plc",
-    "rail-plc", "field-plc", "dns", "soho-router", "soho-resident",
-    "generalstore.town.local",
+    "rail-plc", "field-plc", "factory-snmp", "dns", "soho-router",
+    "soho-resident", "generalstore.town.local",
 }
 # the town's own name space - every one of these resolves to a 172.31/16
 # container anyway, but allow the names so a lookup failure reads clearly
