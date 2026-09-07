@@ -96,16 +96,15 @@ baittackle), `Bank` (balance, `alarm_armed`, `atm_drained`), `Civic` x2
 once per tick with coarse first-order-lag math (open a feeder and the frequency
 sags; open the sewage bypass and the river contamination integrates up until
 the swimmers get sick; the bank alarm follows the industrial feeder unless it
-was cut). `snapshot()` flattens everything, adds the derived per-house
-water/power state and a monotonic `state_seq`, and that dict is what every
-client renders onto the overlay.
+was cut). `snapshot()` flattens everything and adds a monotonic `state_seq`; that dict
+is what every client renders onto the overlay.
 
 ### The map overlay (`simmap/web/`)
 
 `index.html` layers a transparent `<svg>` over `basemap.png`. `app.js` fetches
 `overlay.json` (percentage coords, `0..1`, for every building hotspot, traffic
-head, house, streetlight, the rail path, the river, the swimmers, the two
-utility flows), builds the overlay elements once, then mutates their `fill` /
+signal, streetlight, the residential power / water dots, the rail path + spur,
+the river, the swimmers, and the water / power flow lines), builds the overlay elements once, then mutates their `fill` /
 `class` / `visibility` from each snapshot. Clicking a building hotspot opens its
 service (Phase 1+); Phase 0 just names it. `overlay.json` is pinned to the
 current base art and gets re-calibrated when the image changes — open the map
