@@ -4,6 +4,28 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Map pass before going public
+
+- **Sewage contamination visual**: the full-height green river wash is gone.
+  It's now a blocky "pixelated" mosaic over a draggable `beachZone` (beach
+  edge across to the far bank), revealed as `river_contamination` climbs.
+- **`houses` retired**: the 14 combined power-window + water-drop markers were
+  redundant once `powerResidential` (31 yellow) and `waterResidential` (31
+  blue) landed, and drew a double marker. Removed from the overlay, the render,
+  the editor, the CSS, and the town snapshot.
+- New distribution dot layers, each dimming with its feeder / main:
+  `powerResidential` (31), `powerBusiness` (18), `powerPlant` (12),
+  `waterResidential` (31); `streetlights` 11 -> 12 and lit white.
+- Two new animated substation feeds: `powerFeederBiz` (downtown / Main Street)
+  and `powerFeederPlant` (the Widget Factory). `waterMain` and `powerFeeder`
+  densified to 7 vertices each; `railPath` 16 -> 19; the spur is a 4-point
+  `spurPath` polyline.
+- `?edit=1` editor: handles now render in the live map colour of what they
+  edit (with a legend), and `beachZone` / `spurPath` / the new dot layers are
+  all draggable. Bigger, readable device labels on the plant mimics; the
+  power / factory / sewage plant portals carry the town name.
+- `overlay.json` re-aligned against the base art with the editor.
+
 ### Per-plant HMI credentials + rotation
 
 - The four field-plc SCADA HMIs no longer share `operator` / `operator`. Each
