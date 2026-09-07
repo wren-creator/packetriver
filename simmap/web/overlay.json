@@ -13,7 +13,8 @@
       "label": "Power Substation",
       "kind": "utility",
       "port": 8093,
-      "technique": "power_modbus_feeder"
+      "technique": "power_modbus_feeder",
+      "path": "/power"
     },
     "water": {
       "x": 0.7285,
@@ -23,7 +24,8 @@
       "label": "Packet River Water Company",
       "kind": "utility",
       "port": 8093,
-      "technique": "water_modbus_pump"
+      "technique": "water_modbus_pump",
+      "path": "/water"
     },
     "watertower": {
       "x": 0.905,
@@ -39,7 +41,10 @@
       "w": 0.0917,
       "h": 0.1288,
       "label": "Sewage Plant",
-      "kind": "utility"
+      "kind": "utility",
+      "port": 8093,
+      "path": "/sewage",
+      "technique": "sewage_modbus"
     },
     "factory": {
       "x": 0.5566,
@@ -49,7 +54,7 @@
       "label": "Widget Factory",
       "kind": "utility",
       "port": 8093,
-      "path": "/",
+      "path": "/factory",
       "technique": "factory_modbus"
     },
     "tavern": {
