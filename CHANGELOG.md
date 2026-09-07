@@ -4,6 +4,22 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Learning design - guidance, not walkthroughs
+- `docs/learning-design.md`: the game must not ship a copy-paste path to
+  controlling the town in 30 minutes. Four help tiers (orientation / opt-in
+  nudge that costs points / hidden easter eggs / instructor answer key) and
+  the rule that an easter egg gives a fragment, never a finished command.
+- `scoring/flags.py` `hint` strings + `docs/districts/*.md` audited to Tier-1:
+  bug class, tool family, the surface to look at, the fix - no working
+  payloads, parameters, credentials, or flag locations. Two matching spills in
+  `docs/architecture.md` scrubbed.
+- The step-by-step for all 20 techniques moved to `instructor/answer-key.md`
+  (Tier 4, not something the player's client can pull for free).
+- `ROADMAP.md`: Phase 5 split into 5a (Diner Wi-Fi) + 5b (a new idea - a
+  default-cred SOHO router in a house; the homeowner is a railroad engineer
+  who logs into the rail portal in cleartext, so you sniff the router and
+  replay the reused creds into OT). Phase 6 gains the easter-egg hint system.
+
 ### Phase 3d - the Packet River IBM z16 (RACF green screen)
 - `mainframe/z16/`: a real TN3270E host (RACF logon panel, TSO READY, ISPF,
   SDSF, JCL/SUBMIT), vendored from web3270's `mock-lpar` (GPL-3.0, attribution

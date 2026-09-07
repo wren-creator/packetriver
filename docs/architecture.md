@@ -34,11 +34,12 @@ of most scenarios.
 Later phases hang the vulnerable districts off `gateway` (by `Host:` header)
 and off the OT network: `websites` (8 storefronts + Town Hall + Police + Fire,
 one PHP/Apache container), `bank` (Express: online banking, JWT `none`, account
-IDOR, ATM, a grid-tied alarm panel), `db` (MariaDB), `paygw` (fake card
-gateway), `field-plc` (water + sewage + electric soft-PLCs in one container),
-`traffic-plc`, `rail-plc`, `netlab` (the Diner open-Wi-Fi sniff/MITM lane), and
-`player` (the attacker box). Cinema and Bakery render on the map but are set
-dressing.
+IDOR, a grid-tied alarm panel), `db` (MariaDB), `paygw` (fake card gateway),
+`field-plc` (water + power + widget-factory soft-PLCs in one container; sewage
+lands in Phase 4), `as400` (TN5250 green screen behind Town Hall, Phase 3c),
+`z16` (TN3270E green screen behind the Bank, Phase 3d), `traffic-plc`,
+`rail-plc`, `netlab` (the Diner open-Wi-Fi sniff/MITM lane), and `player` (the
+attacker box). Cinema and Bakery render on the map but are set dressing.
 
 ## Services (through Phase 2)
 
