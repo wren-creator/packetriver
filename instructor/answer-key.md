@@ -150,7 +150,12 @@ Flags are `PKTR{<technique_id>_<random hex>}` and are minted fresh on every
 
 For all three: unauthenticated, unvalidated Modbus/TCP writes on `field-plc`.
 The physical damage *is* the exploit; the flag just proves you had write
-access. Each PLC's flag sits in input registers `100..131` and only populates
+access. (The plant HMI login is not needed for any of this — but if you want
+in, each plant has its own operator credential, minted at boot and rotated at
+Alert L2; the current set is on the unauthenticated `GET /ops/handover.txt`
+"shift handover" sheet on `field-plc:8093`. `QSECOFR` / `IBMUSER` / the shop
+default creds, by contrast, are deliberately static — a never-rotated default
+is that lesson.) Each PLC's flag sits in input registers `100..131` and only populates
 while the maintenance-mode coil (`8`) is set. `modbus_attack.py <plant> flag`
 sets the coil and decodes it. Fix for all: segment OT, source-allowlist the
 PLC, authenticated protocol, re-assert safe state (the hardened build's

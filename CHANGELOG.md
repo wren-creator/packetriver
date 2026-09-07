@@ -4,6 +4,29 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Per-plant HMI credentials + rotation
+
+- The four field-plc SCADA HMIs no longer share `operator` / `operator`. Each
+  plant has its own operator login, minted fresh at boot by a new
+  `scoring/creds.py` into `/run/secret/creds/`. `field-plc` reads its own live
+  per request (no restart needed), falling back to `HMI_USER`/`HMI_PASS` only
+  if the vault isn't mounted.
+- The current set is discoverable at `GET /ops/handover.txt` on `field-plc:8093`
+  - an unauthenticated "shift handover" sheet, the kind an ops team leaves on
+  the historian - so the answer key points at *where the creds live*, not at a
+  value. It always reflects the latest rotation.
+- Rotation: the blue team now publishes `pkt/creds/rotate` at Alert Level 2
+  (alongside the existing traffic-PIN / rail-console rotation); `scoring`
+  re-mints the set and rewrites the handover sheet. An in-progress attacker's
+  saved HMI login stops working until a reset. Verified end to end.
+- The "credential IS the bug" logins - AS/400 `QSECOFR`, z16 `IBMUSER`, the
+  shop default creds - are deliberately left static; a never-rotated default
+  is the whole lesson there. Wall-clock rotation (`PKT_CRED_ROTATE_MIN`) and
+  cross-service credential leakage are roadmapped.
+- The HMI login pages now signpost the bypass ("field bus in service -
+  engineering writes accepted on Modbus/TCP 50x") so nobody rabbit-holes on
+  the login.
+
 ### Field HMIs rebuilt as vendor mimic panels
 
 - Each of the four field plants (`/water`, `/power`, `/factory`, `/sewage`)

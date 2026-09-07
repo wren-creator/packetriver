@@ -4,4 +4,5 @@
 # start the API.
 set -e
 python flags.py
+python creds.py
 exec python -u app.py

@@ -9,7 +9,9 @@ The HMI reads and writes the same Modbus datastores the field bus exposes. It
 is the recognisable front door; the scored bug is the *unauthenticated* Modbus
 write that skips the login entirely.
 """
+import json
 import os
+import pathlib
 
 from flask import Flask, jsonify, redirect, request, session
 
@@ -18,8 +20,20 @@ from store import FCTX, FLOCK, PCTX, PLOCK, SGCTX, SGLOCK, WCTX, WLOCK, rd, wr
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("HMI_SECRET", "field-plc-dev")
-USER = os.environ.get("HMI_USER", "operator")
-PASS = os.environ.get("HMI_PASS", "operator")
+
+# Per-plant operator logins are minted by `scoring` into /run/secret/creds/ and
+# rotate on policy (blue team rolls them at Alert L2). Read live per request so
+# a rotation needs no restart; fall back to the shipped default if the vault
+# isn't mounted. The login is NOT the scored bug - the Modbus bus is.
+CRED_DIR = pathlib.Path("/run/secret/creds")
+
+
+def plant_creds(plant):
+    try:
+        c = json.loads((CRED_DIR / f"hmi-{plant}.json").read_text())
+        return c.get("user", "operator"), c.get("pass", "operator")
+    except (OSError, ValueError):
+        return os.environ.get("HMI_USER", "operator"), os.environ.get("HMI_PASS", "operator")
 
 CTX = {"water": (WCTX, WLOCK), "power": (PCTX, PLOCK),
        "factory": (FCTX, FLOCK), "sewage": (SGCTX, SGLOCK)}
@@ -192,6 +206,7 @@ def shell(plant, heading, body_html):
 
 
 def login_form(plant, err=""):
+    ports = {"water": 502, "power": 503, "factory": 504, "sewage": 505}
     return shell(plant, "Sign in", f"""
       <form class=portal method=post action="/{plant}/login">
         <h2 style="font-size:13px;letter-spacing:.08em;color:#2b5c86">OPERATOR SIGN-IN</h2>
@@ -199,6 +214,8 @@ def login_form(plant, err=""):
         <label>Operator ID</label><input name=user autofocus autocomplete=off>
         <label>Password</label><input name=password type=password>
         <button type=submit>Sign in</button>
+        <p style="font-size:11px;color:#666;margin-top:14px">Field bus in service &mdash;
+           engineering writes accepted on Modbus/TCP {ports.get(plant, 502)}.</p>
       </form>""")
 
 
@@ -429,8 +446,9 @@ def plant_page(plant):
 def plant_login(plant):
     if plant not in PLANTS:
         return redirect("/")
-    if request.form.get("user") == USER and request.form.get("password") == PASS:
-        session[f"op_{plant}"] = request.form["user"]
+    u, p = plant_creds(plant)
+    if request.form.get("user") == u and request.form.get("password") == p:
+        session[f"op_{plant}"] = u
         return redirect(f"/{plant}")
     return login_form(plant, "Wrong operator ID or password."), 401
 
@@ -439,6 +457,16 @@ def plant_login(plant):
 def plant_logout(plant):
     session.pop(f"op_{plant}", None)
     return redirect(f"/{plant}" if plant in PLANTS else "/")
+
+
+@app.get("/ops/handover.txt")
+def ops_handover():
+    # the shift-handover sheet an ops team leaves on the historian. No auth -
+    # a real, small finding, and it always shows the current (rotated) set.
+    try:
+        return (CRED_DIR / "handover.txt").read_text(), 200, {"Content-Type": "text/plain"}
+    except OSError:
+        return "no handover sheet on file\n", 200, {"Content-Type": "text/plain"}
 
 
 @app.get("/health")

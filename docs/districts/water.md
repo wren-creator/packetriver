@@ -10,7 +10,7 @@ Step-by-step: [`../../instructor/answer-key.md`](../../instructor/answer-key.md)
 | | |
 |---|---|
 | Surfaces | operator terminal at `http://127.0.0.1:8093/water` (mimic HMI - pumps, tower level, valve, AUTO/HAND) · Modbus/TCP on the field bus (`127.0.0.1:5502`). |
-| Front door | the HMI portal. Getting in is not the bug; it just shows you the plant. |
+| Front door | the plant's operator terminal. Each plant has its own operator login, minted fresh at boot and rotated on policy (the blue team rolls the set at Alert L2). The current values are on the unauthenticated shift-handover sheet the ops team left on the box (`/ops/handover.txt`). Getting in is not the scored bug - the Modbus bus is - but it is a small finding of its own. |
 | The bug | Modbus writes are accepted from any source with no authentication or validation (`MODBUS_WRITE_OPEN=1`). You can stop the high-lift pump, close valves, or move setpoints — chemical dose included. |
 | Tool | `modbus_attack.py`, or `pymodbus` / `mbtget` by hand. |
 | Physical result | `simmap`'s `WaterModel` reads the pump coil each tick; with the high-lift pump off the distribution pressure bleeds from ~62 psi to zero over a few seconds. `houses_supplied` drops to 0, every house on the map loses its water drop, `water.quality` -> `dry`. Chlorine off -> `quality` -> `brown`. |

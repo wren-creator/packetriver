@@ -52,7 +52,8 @@ def respond(town, level: int, publish) -> None:
     publish("pkt/alert/action", f'{{"level": {level}, "action": "{action}"}}')
 
     if level == 2:
-        publish("pkt/reset", '{"scope": "creds"}')
+        publish("pkt/reset", '{"scope": "creds"}')   # traffic PIN + rail console
+        publish("pkt/creds/rotate", "{}")            # field-HMI operator logins
     elif level == 5:
         scope = _worst_scope(town)
         if scope:

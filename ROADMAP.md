@@ -112,6 +112,14 @@ reuse map live in the design doc.
 
 ## Ideas / bucket list
 
+- **Credential hygiene, deeper.** The field-plc HMI logins are now per-plant,
+  minted at boot, rotated at Alert L2, discoverable via `/ops/handover.txt`.
+  Next: (a) a wall-clock rotation option (`PKT_CRED_ROTATE_MIN`, off by
+  default - a timer that rotates mid-run is a frustration/CI trap, so it stays
+  opt-in); (b) cross-service credential leakage - bury one plant's HMI cred in
+  the drycleaner `.git` history or the police `config.json` so it becomes a
+  chain; (c) the "credential IS the bug" logins (`QSECOFR`, `IBMUSER`, the shop
+  defaults) stay static on purpose - a never-rotated default is the lesson.
 - **Midrange + mainframe tier.** Give the big civic systems the machines a
   real small town would run them on:
   - [x] an **AS/400 (IBM i)** behind **City Hall** and the **Widget Factory**,

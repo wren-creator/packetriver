@@ -67,9 +67,18 @@ def mqtt_connect() -> None:
 
     def on_connect(c, u, flags_, rc, props):
         c.subscribe("pkt/alert/level")
+        c.subscribe("pkt/creds/rotate")
 
     def on_message(c, u, msg):
         global _alert_level
+        if msg.topic == "pkt/creds/rotate":
+            try:
+                import creds
+                creds.generate()
+                c.publish("pkt/creds/changed", "{}")
+            except Exception as exc:
+                print("[scoring] cred rotate:", exc)
+            return
         try:
             _alert_level = int(json.loads(msg.payload.decode() or "{}").get("level", 0))
         except Exception:

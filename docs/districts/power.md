@@ -10,6 +10,7 @@ Step-by-step: [`../../instructor/answer-key.md`](../../instructor/answer-key.md)
 | | |
 |---|---|
 | Surfaces | operator terminal at `http://127.0.0.1:8093/power` (mimic HMI - one-line diagram, breakers, AUTO/HAND) · Modbus/TCP on the field bus (`127.0.0.1:5503`). |
+| Front door | the plant's operator terminal. Each plant has its own operator login, minted fresh at boot and rotated on policy (the blue team rolls the set at Alert L2). The current values are on the unauthenticated shift-handover sheet the ops team left on the box (`/ops/handover.txt`). Getting in is not the scored bug - the Modbus bus is - but it is a small finding of its own. |
 | The bug | unauthenticated, unvalidated Modbus writes (`MODBUS_WRITE_OPEN=1`). The protocol has no auth, and nothing checks the writer — you can open breakers or push generation out of range. |
 | Tool | `modbus_attack.py`, or `pymodbus` by hand. |
 | Physical result | `PowerModel` reads the breaker coils each tick. Open a feeder and that zone goes dark on the map (houses, streetlights, the business district, the traffic heads via the business feeder). Open the main and the whole town goes dark and the bus frequency dives as the island collapses (60 -> ~56 Hz). |
