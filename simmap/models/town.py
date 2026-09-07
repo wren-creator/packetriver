@@ -11,9 +11,11 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
-# One full auto cycle, ~4s per entry.
-TRAFFIC_CYCLE = ["ns-green", "all-red", "ew-green", "all-red"]
-PHASE_SECONDS = 4.0
+# One full auto cycle: a long green each way, a short all-red between. On the
+# map each crossroads is a single signal dot, so it sits green most of the
+# time and blinks red briefly on the changeover - until it is hijacked to
+# ALL-GREEN.
+TRAFFIC_CYCLE = [("ns-green", 6.0), ("all-red", 2.0), ("ew-green", 6.0), ("all-red", 2.0)]
 
 # The train runs the visible top track (train_pos 0..1), then spends the rest
 # of the cycle off-screen before re-entering from the start.
@@ -153,7 +155,13 @@ class TownState:
     def reset(self, scope: str = "all") -> None:
         s = scope
         if s in ("all", "traffic"):
-            self.traffic = [Intersection(id=i) for i in range(1, 5)]
+            # stagger the corners so they don't all blink red at the same instant
+            self.traffic = []
+            for i in range(1, 6):
+                x = Intersection(id=i)
+                x._phase_i = (i - 1) % len(TRAFFIC_CYCLE)
+                x._t = ((i - 1) * 1.7) % TRAFFIC_CYCLE[x._phase_i][1]
+                self.traffic.append(x)
         if s in ("all", "rail"):
             self.rail = Rail()
         if s in ("all", "factory"):
@@ -207,10 +215,10 @@ class TownState:
                 continue
             x.mode = "auto"
             x._t += dt
-            if x._t >= PHASE_SECONDS:
+            if x._t >= TRAFFIC_CYCLE[x._phase_i][1]:
                 x._t = 0.0
                 x._phase_i = (x._phase_i + 1) % len(TRAFFIC_CYCLE)
-            x.phase = TRAFFIC_CYCLE[x._phase_i]
+            x.phase = TRAFFIC_CYCLE[x._phase_i][0]
 
     def _step_rail(self, dt: float) -> None:
         r = self.rail

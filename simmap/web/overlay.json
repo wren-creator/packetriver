@@ -233,6 +233,11 @@
       "id": 4,
       "x": 0.536,
       "y": 0.6809
+    },
+    {
+      "id": 5,
+      "x": 0.5375,
+      "y": 0.4343
     }
   ],
   "houses": [
@@ -337,10 +342,6 @@
     {
       "x": 0.3323,
       "y": 0.935
-    },
-    {
-      "x": 0.5375,
-      "y": 0.4343
     }
   ],
   "_railNote": "railPath is just the visible top run: the train enters from off the left edge, crosses the Main Rail Line, and exits off the right; it stays hidden the rest of the cycle before re-entering.",
