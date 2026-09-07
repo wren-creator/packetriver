@@ -88,7 +88,48 @@ def api_config():
         "cashapp": os.environ.get("DONATION_CASHAPP", "britleywren"),
         "reset_scopes": RESET_SCOPES,
         "phase": 4,
+        "eggs": os.environ.get("PKT_EGGS", "off"),
     }
+
+
+_EGGS = os.environ.get("PKT_EGGS", "off")
+_GOSSIP = {
+    "subtle": [
+        "the Diner never put a password on the wifi. everyone just hops on.",
+        "that house out past the tracks, the router's still on whatever it shipped with.",
+        "the traffic box downtown will take an instruction from about anyone.",
+        "somebody left the whole phone book on the town's name server.",
+    ],
+    "obvious": [
+        "the Diner's guest wifi is wide open and nothing on it is encrypted - a "
+        "credential and a whole inbox go across it in the clear.",
+        "the rail engineer past the tracks works from home on a router still set to "
+        "admin/admin, and its diagnostics page will dump the LAN traffic for you.",
+        "the traffic controllers take their orders off the message bus with no "
+        "authentication - publish to the right topic and a crossroads locks green.",
+        "the town DNS answers a zone transfer to anyone, and there's a stale record "
+        "in it nobody cleaned up.",
+    ],
+}
+
+
+@app.get("/robots.txt")
+def robots():
+    if _EGGS == "off":
+        return "User-agent: *\nDisallow:\n", 200, {"Content-Type": "text/plain"}
+    return ("User-agent: *\nDisallow: /hints\n"
+            "# the town talks. /hints\n"), 200, {"Content-Type": "text/plain"}
+
+
+@app.get("/hints")
+def hints():
+    if _EGGS == "off":
+        return "not found\n", 404, {"Content-Type": "text/plain"}
+    lines = _GOSSIP.get(_EGGS, _GOSSIP["subtle"])
+    body = "things people are saying around Packet River\n" \
+           "-------------------------------------------\n" + \
+           "\n".join(f"- {ln}" for ln in lines) + "\n"
+    return body, 200, {"Content-Type": "text/plain"}
 
 
 @app.post("/api/debug/effect")

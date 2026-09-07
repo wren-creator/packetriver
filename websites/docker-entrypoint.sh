@@ -89,6 +89,52 @@ PHP
 )
 echo "[websites] planted drycleaner .git"
 
+# --- easter-egg hints (PKT_EGGS = subtle | obvious) ---------------------
+EGGS="${PKT_EGGS:-off}"
+if [ "$EGGS" != "off" ]; then
+  if [ "$EGGS" = "obvious" ]; then
+    cat > "$SITE/robots.txt" <<'ROB'
+# nothing here is real SEO. read the lines.
+User-agent: *
+Disallow: /generalstore/search.php   # trusts your input in a LIKE clause, verbose errors on -> error-based SQLi
+Disallow: /hardware/order.php        # the record id is yours to change; nobody checks it -> IDOR
+Disallow: /pharmacy/                 # the login query is string-built
+Disallow: /diner/db_backup.sql       # a nightly dump left in the web root
+Disallow: /barber/                   # the note you leave is opened by a bot in the manager's session
+Disallow: /tavern/admin/             # vendor default still on it
+Disallow: /drycleaner/.git/          # the repo shipped with the site; history included
+Disallow: /baittackle/               # "fetch image by URL" will fetch anything the server can reach
+ROB
+  else
+    cat > "$SITE/robots.txt" <<'ROB'
+User-agent: *
+Disallow: /generalstore/search.php
+Disallow: /hardware/order.php
+Disallow: /diner/db_backup.sql
+Disallow: /drycleaner/.git/
+Disallow: /baittackle/fetch.php
+# housekeeping is behind. some of these were never meant to answer.
+ROB
+  fi
+  chown www-data:www-data "$SITE/robots.txt"
+
+  if [ "$EGGS" = "obvious" ]; then
+    cat > "$SITE/drycleaner/README.old" <<'RM'
+Packet River Cleaners - site notes (OLD - see wiki)
+Deploy is a plain `git pull` into the web root. Yes, that means .git/ ships too.
+There was a recovery key in config.php early on; it was removed in a later
+commit but the earlier one is still in history. TODO: scrub, redeploy clean.
+RM
+  else
+    cat > "$SITE/drycleaner/README.old" <<'RM'
+deploy = git pull into webroot. (todo: this drags .git along. and that key we
+moved out of config.php is still back in the history somewhere.)
+RM
+  fi
+  chown www-data:www-data "$SITE/drycleaner/README.old"
+  echo "[websites] easter eggs planted ($EGGS)"
+fi
+
 # --- barber: the manager-review bot -------------------------------------
 export BARBER_MGR_TOKEN="$(cat /proc/sys/kernel/random/uuid)"
 (

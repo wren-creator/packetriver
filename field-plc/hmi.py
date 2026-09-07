@@ -206,9 +206,29 @@ def shell(plant, heading, body_html):
 <div id=toast hidden></div>"""
 
 
+EGGS = os.environ.get("PKT_EGGS", "off")
+_EGG_LOGIN = {
+    "subtle": "<!-- op logins get rotated. last shift's are on the historian handover. -->",
+    "obvious": "<!-- operator passwords rotate on a schedule now. the current set is on the "
+               "shift-handover sheet the historian serves at /ops/handover.txt (no login). -->",
+}
+_EGG_NOTES = {
+    "subtle": "field bus notes\n--------------\n- writes are open on the bus. no auth on the protocol.\n"
+              "- the session flag block sits in the input registers; it only reads back\n"
+              "  while the PLC is in maintenance mode (a coil).\n",
+    "obvious": "field bus engineering notes\n---------------------------\n"
+               "- Modbus/TCP takes writes from anything that can reach the port. there is no\n"
+               "  authentication in the protocol. segment it; we haven't.\n"
+               "- this run's flag is packed into an input-register block. it stays zeroed\n"
+               "  until the maintenance-mode coil is set, then it reads back as ASCII.\n"
+               "- pymodbus, or the bundled modbus_attack.py, does both.\n",
+}
+
+
 def login_form(plant, err=""):
     ports = {"water": 502, "power": 503, "factory": 504, "sewage": 505}
-    return shell(plant, "Sign in", f"""
+    egg = _EGG_LOGIN.get(EGGS, "")
+    return shell(plant, "Sign in", f"""{egg}
       <form class=portal method=post action="/{plant}/login">
         <h2 style="font-size:13px;letter-spacing:.08em;color:#2b5c86">OPERATOR SIGN-IN</h2>
         {'<p class=err>' + err + '</p>' if err else ''}
@@ -471,6 +491,13 @@ def ops_handover():
         return (CRED_DIR / "handover.txt").read_text(), 200, {"Content-Type": "text/plain"}
     except OSError:
         return "no handover sheet on file\n", 200, {"Content-Type": "text/plain"}
+
+
+@app.get("/eng/notes.txt")
+def eng_notes():
+    if EGGS == "off":
+        return "not found\n", 404, {"Content-Type": "text/plain"}
+    return _EGG_NOTES.get(EGGS, _EGG_NOTES["subtle"]), 200, {"Content-Type": "text/plain"}
 
 
 @app.get("/health")
