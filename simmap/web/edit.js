@@ -100,6 +100,11 @@
     p.id = "pe-panel";
     p.innerHTML = `
       <h4 title="click to collapse">OVERLAY EDITOR ▾</h4>
+      <div class="row mono" style="gap:4px">
+        <span style="color:#f0cf5c">&#9679;P-res</span><span style="color:#e88a2e">&#9679;P-biz</span>
+        <span style="color:#9aa0aa">&#9679;P-plant</span><span style="color:#4aa8e0">&#9679;W-res</span>
+        <span style="color:#f2f2ec">&#9679;light</span><span style="color:#d98a6a">&#9679;rail</span>
+      </div>
       <div class="row mono">cursor <span id="pe-cur">–</span></div>
       <div class="row"><span class="sel" id="pe-sel">nothing selected</span></div>
       <div class="row">
@@ -191,7 +196,7 @@
     pts("powerPlant", "P-plant");
     pts("waterResidential", "W-res");
 
-    ["railPath", "spurPath", "outfall", "waterMain", "powerFeeder", "swimmers"].forEach((key) => {
+    ["railPath", "spurPath", "outfall", "waterMain", "powerFeeder", "powerFeederBiz", "powerFeederPlant", "swimmers"].forEach((key) => {
       const arr = L[key];
       if (!Array.isArray(arr)) return;
       arr.forEach((_, i) => push({ id: key + " " + i, kind: "vertex", arr, key,
@@ -240,7 +245,7 @@
   function drawShapes() {
     ui.shapes.innerHTML = "";
     // polylines
-    ["railPath", "spurPath", "outfall", "waterMain", "powerFeeder"].forEach((key) => {
+    ["railPath", "spurPath", "outfall", "waterMain", "powerFeeder", "powerFeederBiz", "powerFeederPlant"].forEach((key) => {
       const arr = L[key];
       if (!Array.isArray(arr) || arr.length < 2) return;
       mk("polyline", { class: "pe-shape",
@@ -254,12 +259,30 @@
     });
   }
 
+  // handle fill matches the live map colour of whatever it edits, so you can
+  // tell the layers apart while dragging
+  const HANDLE_COLOUR = [
+    [/^P-res /, "#f0cf5c"], [/^P-biz /, "#e88a2e"], [/^P-plant /, "#9aa0aa"],
+    [/^W-res /, "#4aa8e0"], [/^light /, "#f2f2ec"], [/^house /, "#d9a24f"],
+    [/^int /, "#8fd18f"], [/^railPath /, "#d98a6a"], [/^spurPath /, "#d98a6a"],
+    [/^swimmers /, "#ffe4b8"], [/^outfall /, "#7cb03a"], [/^waterMain /, "#2f8fbf"],
+    [/^powerFeeder/, "#e3a52e"], [/^river$/, "#3a8fb0"], [/^beachZone$/, "#6fae54"],
+  ];
+  const colourFor = (id) => {
+    for (const [re, c] of HANDLE_COLOUR) if (re.test(id)) return c;
+    return "#12b6d8";
+  };
+
   function drawHandles() {
     ui.handles.innerHTML = "";
     handles.forEach((h) => {
       const [x, y] = h.get();
-      const c = mk("circle", { class: "pe-h" + (sel === h ? " sel" : ""),
-        cx: px(x), cy: py(y), r: sel === h ? 7 : 5 }, ui.handles);
+      const attrs = { class: "pe-h" + (sel === h ? " sel" : ""),
+        cx: px(x), cy: py(y), r: sel === h ? 7 : 5 };
+      // inline style (not the fill attr) so it beats the .pe-h CSS rule;
+      // when selected we leave it off so .pe-h.sel's magenta wins
+      if (sel !== h) attrs.style = "fill:" + colourFor(h.id);
+      const c = mk("circle", attrs, ui.handles);
       c.addEventListener("pointerdown", (e) => beginDrag(e, h, "move"));
       if (h.getSize) {
         const [w, hh] = h.getSize();

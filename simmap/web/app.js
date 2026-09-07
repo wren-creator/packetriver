@@ -63,12 +63,13 @@ function buildOverlay(layout) {
   REFS.swimmers = layout.swimmers.map(p =>
     el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, class: "swimmer" }, svg));
 
-  REFS.waterMain = el("polyline", {
-    points: layout.waterMain.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
-    fill: "none", stroke: "#2f8fbf", "stroke-width": 4, class: "flow" }, svg);
-  REFS.powerFeeder = el("polyline", {
-    points: layout.powerFeeder.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
-    fill: "none", stroke: "#e3a52e", "stroke-width": 4, class: "flow" }, svg);
+  const feed = (key, colour) => layout[key] && el("polyline", {
+    points: layout[key].map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
+    fill: "none", stroke: colour, "stroke-width": 4, class: "flow" }, svg);
+  REFS.waterMain       = feed("waterMain", "#2f8fbf");
+  REFS.powerFeeder     = feed("powerFeeder", "#e3a52e");     // residential
+  REFS.powerFeederBiz  = feed("powerFeederBiz", "#e3a52e");  // downtown / Main St
+  REFS.powerFeederPlant = feed("powerFeederPlant", "#e3a52e"); // widget factory
 
   REFS.rail = el("polyline", {
     points: layout.railPath.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
@@ -208,6 +209,8 @@ function render(s) {
   if (s.power) {
     const f = s.power.feeders || {};
     REFS.powerFeeder.classList.toggle("stopped", f.residential === false);
+    if (REFS.powerFeederBiz) REFS.powerFeederBiz.classList.toggle("stopped", f.business === false);
+    if (REFS.powerFeederPlant) REFS.powerFeederPlant.classList.toggle("stopped", f.industrial === false);
     const lit = (arr, up) => arr.forEach(d => d.classList.toggle("on", up));
     lit(REFS.streetlights, f.streetlights !== false);
     lit(REFS.powerRes, f.residential !== false);
