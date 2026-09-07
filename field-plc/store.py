@@ -26,7 +26,8 @@ def _ctx():
 
 WCTX, WLOCK = _ctx()
 PCTX, PLOCK = _ctx()
-FCTX, FLOCK = _ctx()   # widget factory
+FCTX, FLOCK = _ctx()    # widget factory
+SGCTX, SGLOCK = _ctx()  # sewage treatment
 
 
 def rd(ctx, lock, fc, addr, count=1):

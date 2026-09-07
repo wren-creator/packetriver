@@ -35,6 +35,19 @@ FACTORY = dict(
     sp_clamp=dict(LINE_SPEED=(20, 90)),
 )
 
+# --- sewage treatment + treated return (container port 505) ------------
+# AERATION drives the biological stage, CHEM_DOSE the disinfection, RETURN_PUMP
+# pushes the treated effluent back to the river. BYPASS_GATE routes flow
+# straight to the outfall untreated - the "storm bypass" that should never sit
+# open. Open it (or stop aeration + dosing) and raw effluent reaches the beach.
+SEWAGE = dict(
+    coil=dict(AERATION=0, CHEM_DOSE=1, RETURN_PUMP=2, BYPASS_GATE=3, MAINT_MODE=8),
+    hr=dict(DOSE_SP=0, DO_LEVEL=10, TURBIDITY=11, EFFLUENT_QUALITY=12, FLOW=13),
+    di=dict(HIGH_TURBIDITY=0, BYPASS_OPEN=1),
+    golden=dict(DOSE_SP=140),                         # 1.40 mg/L
+    sp_clamp=dict(DOSE_SP=(80, 260)),
+)
+
 FLAG_IR_BASE = 100     # input registers FLAG_IR_BASE .. +FLAG_IR_LEN hold the flag
 FLAG_IR_LEN = 32       # 64 bytes, plenty for PKTR{...}
 

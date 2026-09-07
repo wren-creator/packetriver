@@ -27,7 +27,7 @@ _bus = Bus(_town, _lock, on_change=server.broadcast)
 server.BUS = _bus
 threading.Thread(target=_bus.start, daemon=True).start()
 
-_town.external.update({"water", "power", "factory"})
+_town.external.update({"water", "power", "factory", "sewage"})
 icsloops.start(_town, _lock)
 
 _TICK = float(os.environ.get("TICK_SECONDS", "1.0"))

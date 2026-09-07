@@ -9,8 +9,8 @@ import os
 
 from flask import Flask, redirect, request, session
 
-from maps import FACTORY, POWER, WATER
-from store import FCTX, FLOCK, PCTX, PLOCK, WCTX, WLOCK, rd
+from maps import FACTORY, POWER, SEWAGE, WATER
+from store import FCTX, FLOCK, PCTX, PLOCK, SGCTX, SGLOCK, WCTX, WLOCK, rd
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("HMI_SECRET", "field-plc-dev")
@@ -105,6 +105,25 @@ def index():
     ]
     factory_alarms = ["LINE JAM / UNSAFE STATE"] if fdi[FACTORY["di"]["LINE_JAM"]] else []
 
+    sco = rd(SGCTX, SGLOCK, 1, 0, 10)
+    shr = rd(SGCTX, SGLOCK, 3, 0, 16)
+    sdi = rd(SGCTX, SGLOCK, 2, 0, 4)
+    sewage_rows = [
+        ("Aeration basin", onoff(sco[SEWAGE["coil"]["AERATION"]])),
+        ("Disinfection dosing", onoff(sco[SEWAGE["coil"]["CHEM_DOSE"]])),
+        ("Treated-return pump", onoff(sco[SEWAGE["coil"]["RETURN_PUMP"]])),
+        ("Storm bypass gate", ("OPEN" if sco[SEWAGE["coil"]["BYPASS_GATE"]]
+         else "closed").replace("OPEN", "<span class=alarm>OPEN</span>")),
+        ("Dose setpoint", f"{shr[SEWAGE['hr']['DOSE_SP']] / 100:.2f} mg/L"),
+        ("Dissolved oxygen", f"{shr[SEWAGE['hr']['DO_LEVEL']] / 10:.1f} mg/L"),
+        ("Effluent turbidity", f"{shr[SEWAGE['hr']['TURBIDITY']] / 10:.1f} NTU"),
+        ("Effluent quality", f"{shr[SEWAGE['hr']['EFFLUENT_QUALITY']] / 10:.1f} %"),
+    ]
+    sewage_alarms = [n for n, a in (
+        ("HIGH EFFLUENT TURBIDITY", sdi[SEWAGE["di"]["HIGH_TURBIDITY"]]),
+        ("STORM BYPASS OPEN - DISCHARGING UNTREATED", sdi[SEWAGE["di"]["BYPASS_OPEN"]]),
+    ) if a]
+
     def tbl(rows):
         return "<table>" + "".join(
             f"<tr><td class=k>{k}</td><td>{v}</td></tr>" for k, v in rows) + "</table>"
@@ -116,6 +135,9 @@ def index():
         f"<div class=card><h2>Power Substation</h2>{tbl(power_rows)}</div>"
         f"<div class=card><h2>Widget Factory</h2>{tbl(factory_rows)}"
         + (f"<p class=alarm>&#9888; {' &nbsp; '.join(factory_alarms)}</p>" if factory_alarms else "")
+        + "</div>"
+        f"<div class=card><h2>Sewage Treatment</h2>{tbl(sewage_rows)}"
+        + (f"<p class=alarm>&#9888; {' &nbsp; '.join(sewage_alarms)}</p>" if sewage_alarms else "")
         + "</div>"
         "<p><a href=/logout>Log out</a></p>"
     )

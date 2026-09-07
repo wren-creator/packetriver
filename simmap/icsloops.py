@@ -17,10 +17,11 @@ from pymodbus.client import ModbusTcpClient
 
 from models.factory import FactoryModel
 from models.power import PowerModel
+from models.sewage import SewageModel
 from models.water import WaterModel
 
 FIELD_HOST = os.environ.get("FIELD_PLC_HOST", "field-plc")
-WATER_PORT, POWER_PORT, FACTORY_PORT = 502, 503, 504
+WATER_PORT, POWER_PORT, FACTORY_PORT, SEWAGE_PORT = 502, 503, 504, 505
 TICK = float(os.environ.get("TICK_SECONDS", "1.0"))
 
 W = dict(INTAKE=0, HIGHLIFT=1, CHLORINE=2, MAIN_VALVE=3, MAINT=8,
@@ -29,15 +30,19 @@ P = dict(MAIN=0, RES=1, BIZ=2, IND=3, ST=4, GEN=5, MAINT=8,
          GEN_SP=0, FREQ=10, VOLT=11, LOAD=12)
 F = dict(LINE_RUN=0, ESTOP_BYPASS=1, GANTRY=2, HOPPER_GATE=3, MAINT=8,
          LINE_SPEED=0, CARS=10, THRU=11, CAR_IN_POS=0, LINE_JAM=1)
+SG = dict(AERATION=0, CHEM_DOSE=1, RETURN_PUMP=2, BYPASS_GATE=3, MAINT=8,
+          DOSE_SP=0, DO=10, TURB=11, QUAL=12, FLOW=13)
 FEEDER_COIL = {"residential": P["RES"], "business": P["BIZ"],
                "industrial": P["IND"], "streetlights": P["ST"]}
 WATER_GOLDEN_SP = (620, 120)   # high-lift psi x10, chlorine ppm x100
 POWER_GOLDEN_SP = 80           # generation MW x10
 FACTORY_GOLDEN_SP = 70
+SEWAGE_GOLDEN_SP = 140         # disinfection dose mg/L x100
 
 _wc: ModbusTcpClient | None = None
 _pc: ModbusTcpClient | None = None
 _fc: ModbusTcpClient | None = None
+_sc: ModbusTcpClient | None = None
 _io_lock = threading.Lock()    # serialise writes we issue from effects/reset
 
 
@@ -146,10 +151,45 @@ def _factory_loop(town, lock) -> None:
         time.sleep(max(0.0, TICK - (time.time() - t0)))
 
 
+def _sewage_loop(town, lock) -> None:
+    global _sc
+    _sc = _conn(SEWAGE_PORT)
+    model = SewageModel()
+    while True:
+        t0 = time.time()
+        try:
+            if not _sc.connected:
+                _sc.connect()
+            with _io_lock:
+                co = _sc.read_coils(0, 12, slave=1).bits
+                hr = _sc.read_holding_registers(0, 16, slave=1).registers
+            model.step(
+                TICK,
+                aeration=bool(co[SG["AERATION"]]), chem_dose=bool(co[SG["CHEM_DOSE"]]),
+                return_pump=bool(co[SG["RETURN_PUMP"]]), bypass_gate=bool(co[SG["BYPASS_GATE"]]),
+                sp_mgl=hr[SG["DOSE_SP"]] / 100.0,
+            )
+            with _io_lock:
+                _sc.write_registers(SG["DO"], [
+                    int(model.do_mgl * 10), int(model.turbidity_ntu * 10),
+                    int(model.quality_pct * 10), int(model.flow_mgd * 10),
+                ], slave=1)
+            with lock:
+                sg = town.sewage
+                sg.effluent_path = model.effluent_path
+                sg.aeration_on = bool(co[SG["AERATION"]])
+                sg.treatment_pct = round(model.quality_pct, 1)
+                sg.turbidity_ntu = round(model.turbidity_ntu, 1)
+        except Exception as exc:
+            print("[icsloops] sewage:", exc)
+        time.sleep(max(0.0, TICK - (time.time() - t0)))
+
+
 def start(town, lock) -> None:
     threading.Thread(target=_water_loop, args=(town, lock), daemon=True).start()
     threading.Thread(target=_power_loop, args=(town, lock), daemon=True).start()
     threading.Thread(target=_factory_loop, args=(town, lock), daemon=True).start()
+    threading.Thread(target=_sewage_loop, args=(town, lock), daemon=True).start()
 
 
 # -- pokes (debug menu + pkt/reset) ----------------------------------
@@ -171,8 +211,28 @@ def _f(coil, val):
             _fc.write_coil(coil, bool(val), slave=1)
 
 
+def _s(coil, val):
+    if _sc:
+        with _io_lock:
+            _sc.write_coil(coil, bool(val), slave=1)
+
+
 def stop_highlift():
     _w(W["HIGHLIFT"], False)
+
+
+def sewage_bypass():
+    _s(SG["BYPASS_GATE"], True)
+    _s(SG["AERATION"], False)
+
+
+def restore_sewage():
+    if not _sc:
+        return
+    with _io_lock:
+        _sc.write_coils(0, [True, True, True, False], slave=1)
+        _sc.write_register(SG["DOSE_SP"], SEWAGE_GOLDEN_SP, slave=1)
+        _sc.write_coil(SG["MAINT"], False, slave=1)
 
 
 def factory_line_stop():

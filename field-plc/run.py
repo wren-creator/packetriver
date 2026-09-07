@@ -22,8 +22,8 @@ import time
 from pymodbus.server import StartTcpServer
 
 import maps
-from maps import FACTORY, POWER, WATER, FLAG_IR_BASE, FLAG_IR_LEN, pack_flag
-from store import FCTX, FLOCK, PCTX, PLOCK, WCTX, WLOCK, rd, wr
+from maps import FACTORY, POWER, SEWAGE, WATER, FLAG_IR_BASE, FLAG_IR_LEN, pack_flag
+from store import FCTX, FLOCK, PCTX, PLOCK, SGCTX, SGLOCK, WCTX, WLOCK, rd, wr
 
 WRITE_OPEN = os.environ.get("MODBUS_WRITE_OPEN", "1") == "1"
 FLAG_DIR = "/run/secret"
@@ -40,6 +40,7 @@ def _read_flag(name: str) -> str:
 WATER_FLAG = _read_flag("water_modbus_pump")
 POWER_FLAG = _read_flag("power_modbus_feeder")
 FACTORY_FLAG = _read_flag("factory_modbus")
+SEWAGE_FLAG = _read_flag("sewage_modbus")
 
 
 def seed() -> None:
@@ -51,6 +52,8 @@ def seed() -> None:
     wr(PCTX, PLOCK, 3, POWER["hr"]["GEN_SP"], [POWER["golden"]["GEN_SP"]])
     wr(FCTX, FLOCK, 1, 0, [1, 0, 1, 0])            # LINE_RUN, ESTOP_BYPASS off, GANTRY, HOPPER_GATE closed
     wr(FCTX, FLOCK, 3, FACTORY["hr"]["LINE_SPEED"], [FACTORY["golden"]["LINE_SPEED"]])
+    wr(SGCTX, SGLOCK, 1, 0, [1, 1, 1, 0])          # AERATION, CHEM_DOSE, RETURN_PUMP on; BYPASS_GATE closed
+    wr(SGCTX, SGLOCK, 3, SEWAGE["hr"]["DOSE_SP"], [SEWAGE["golden"]["DOSE_SP"]])
     print(f"[field-plc] seeded golden state; WRITE_OPEN={WRITE_OPEN}")
 
 
@@ -78,6 +81,8 @@ def scan_loop() -> None:
                 wr(FCTX, FLOCK, 1, FACTORY["coil"]["ESTOP_BYPASS"], [0])
                 wr(FCTX, FLOCK, 1, FACTORY["coil"]["HOPPER_GATE"], [0])
                 _clamp(FCTX, FLOCK, FACTORY["hr"]["LINE_SPEED"], *FACTORY["sp_clamp"]["LINE_SPEED"])
+                wr(SGCTX, SGLOCK, 1, 0, [1, 1, 1, 0])   # aeration/dose/return on, bypass shut
+                _clamp(SGCTX, SGLOCK, SEWAGE["hr"]["DOSE_SP"], *SEWAGE["sp_clamp"]["DOSE_SP"])
 
             # alarms derived from the PVs simmap writes back
             wp = rd(WCTX, WLOCK, 3, WATER["hr"]["MAIN_PRESSURE"])[0] / 10.0
@@ -97,9 +102,16 @@ def scan_loop() -> None:
                       or not fco[FACTORY["coil"]["LINE_RUN"]])
             wr(FCTX, FLOCK, 2, FACTORY["di"]["LINE_JAM"], [jam])
 
+            # sewage: high turbidity + bypass-open DIs off the coils simmap sees
+            sco = rd(SGCTX, SGLOCK, 1, 0, 8)
+            sq = rd(SGCTX, SGLOCK, 3, SEWAGE["hr"]["EFFLUENT_QUALITY"])[0]
+            wr(SGCTX, SGLOCK, 2, SEWAGE["di"]["HIGH_TURBIDITY"], [int(sq < 40)])
+            wr(SGCTX, SGLOCK, 2, SEWAGE["di"]["BYPASS_OPEN"], [int(bool(sco[SEWAGE["coil"]["BYPASS_GATE"]]))])
+
             _flag_block(WCTX, WLOCK, WATER["coil"]["MAINT_MODE"], WATER_FLAG)
             _flag_block(PCTX, PLOCK, POWER["coil"]["MAINT_MODE"], POWER_FLAG)
             _flag_block(FCTX, FLOCK, FACTORY["coil"]["MAINT_MODE"], FACTORY_FLAG)
+            _flag_block(SGCTX, SGLOCK, SEWAGE["coil"]["MAINT_MODE"], SEWAGE_FLAG)
         except Exception as exc:  # keep the loop alive
             print("[field-plc] scan error:", exc)
         time.sleep(0.3)
@@ -114,6 +126,7 @@ def main() -> None:
     threading.Thread(target=_serve, args=(WCTX, 502), daemon=True).start()
     threading.Thread(target=_serve, args=(PCTX, 503), daemon=True).start()
     threading.Thread(target=_serve, args=(FCTX, 504), daemon=True).start()
+    threading.Thread(target=_serve, args=(SGCTX, 505), daemon=True).start()
     threading.Thread(target=scan_loop, daemon=True).start()
     import hmi
     hmi.app.run(host="0.0.0.0", port=8093, threaded=True, use_reloader=False)

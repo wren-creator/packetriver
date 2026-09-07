@@ -115,6 +115,8 @@ def api_debug_reset():
             icsloops.restore_power()
         if scope in ("all", "factory"):
             icsloops.restore_factory()
+        if scope in ("all", "sewage"):
+            icsloops.restore_sewage()
     except Exception as exc:
         print("[server] reset poke:", exc)
     broadcast()

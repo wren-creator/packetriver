@@ -170,3 +170,9 @@ PLC, authenticated protocol, re-assert safe state (the hardened build's
 - The move: `127.0.0.1:5504` (container `:504`). Bypass the assembly-line
   e-stop and overspeed the line, or open the hopper gate with no car in
   position. `modbus_attack.py factory estop-bypass | hopper-dump | line-stop`.
+
+### `sewage_modbus` — (map: raw effluent to the beach) — Phase 4
+- The move: `127.0.0.1:5505` (container `:505`). Open the storm bypass gate
+  (`BYPASS_GATE`, coil 3) and/or stop aeration (coil 0) + dosing (coil 1).
+  `modbus_attack.py sewage bypass`. `effluent_path` flips to `raw` within a
+  few ticks; the river plume then ramps and the swimmers sicken.

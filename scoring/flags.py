@@ -186,6 +186,18 @@ TECHNIQUES = {
                 "in maintenance mode. Fix: segment OT, source-allowlist, "
                 "authenticated protocol.",
     },
+    "sewage_modbus": {
+        "subsystem": "utility",
+        "target": "sewage",
+        "effect": "noop",
+        "severity": "loud",
+        "base": 175,
+        "hint": "Unauthenticated Modbus writes to the sewage PLC - open the "
+                "storm bypass, or stop aeration and dosing, and the effluent "
+                "runs raw to the river. pymodbus / modbus_attack.py. The flag "
+                "block unlocks in maintenance mode. Fix: segment OT, "
+                "source-allowlist, authenticated protocol.",
+    },
 }
 
 

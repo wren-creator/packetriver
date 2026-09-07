@@ -23,7 +23,7 @@ def main() -> None:
 
     # the water + power districts are driven by the real Modbus PLCs in
     # field-plc; take those subsystems off the built-in idle physics.
-    town.external.update({"water", "power", "factory"})
+    town.external.update({"water", "power", "factory", "sewage"})
     icsloops.start(town, lock)
 
     tick = float(os.environ.get("TICK_SECONDS", "1.0"))

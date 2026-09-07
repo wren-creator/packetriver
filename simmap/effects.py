@@ -70,10 +70,7 @@ EFFECTS = {
     "factory_line_stop": lambda town, p: _ics().factory_line_stop(),
     "factory_estop_bypass": lambda town, p: _ics().factory_estop_bypass(),
     "factory_hopper_dump": lambda town, p: _ics().factory_hopper_dump(),
-    "sewage_bypass": lambda town, p: (
-        setattr(town.sewage, "effluent_path", "raw"),
-        setattr(town.sewage, "aeration_on", False),
-    ),
+    "sewage_bypass": lambda town, p: _ics().sewage_bypass(),
 
     # a valid flag submission for an OT technique scores + raises Alert heat;
     # the physical damage was already done by the player's Modbus write.

@@ -76,6 +76,8 @@ class Water:
 class Sewage:
     effluent_path: str = "treated"  # treated | raw
     aeration_on: bool = True
+    treatment_pct: float = 96.0
+    turbidity_ntu: float = 3.0
     river_contamination: float = 0.0
     swimmers_sick: bool = False
 
@@ -250,7 +252,11 @@ class TownState:
             "brown" if w.mains_pressure_pct < 70 else "clean"
 
     def _step_sewage(self, dt: float) -> None:
+        # the plant state (effluent_path, aeration) comes from the PLC loop when
+        # "sewage" is external; the river plume physics run here regardless.
         sg = self.sewage
+        if "sewage" not in self.external:
+            sg.effluent_path = "raw" if not sg.aeration_on else "treated"
         if sg.effluent_path == "raw":
             sg.river_contamination = min(1.0, sg.river_contamination + 0.04 * dt)
         else:
@@ -321,6 +327,8 @@ class TownState:
             "sewage": {
                 "effluent_path": self.sewage.effluent_path,
                 "aeration_on": self.sewage.aeration_on,
+                "treatment_pct": round(self.sewage.treatment_pct, 1),
+                "turbidity_ntu": round(self.sewage.turbidity_ntu, 1),
                 "river_contamination": round(self.sewage.river_contamination, 3),
                 "swimmers_sick": self.sewage.swimmers_sick,
             },
