@@ -9,7 +9,7 @@ Step-by-step: [`../../instructor/answer-key.md`](../../instructor/answer-key.md)
 
 | | |
 |---|---|
-| Surfaces | operator HMI at `http://127.0.0.1:8093/` (shared with water) · Modbus/TCP on the field bus (`127.0.0.1:5503`). |
+| Surfaces | operator terminal at `http://127.0.0.1:8093/power` (mimic HMI - one-line diagram, breakers, AUTO/HAND) · Modbus/TCP on the field bus (`127.0.0.1:5503`). |
 | The bug | unauthenticated, unvalidated Modbus writes (`MODBUS_WRITE_OPEN=1`). The protocol has no auth, and nothing checks the writer — you can open breakers or push generation out of range. |
 | Tool | `modbus_attack.py`, or `pymodbus` by hand. |
 | Physical result | `PowerModel` reads the breaker coils each tick. Open a feeder and that zone goes dark on the map (houses, streetlights, the business district, the traffic heads via the business feeder). Open the main and the whole town goes dark and the bus frequency dives as the island collapses (60 -> ~56 Hz). |

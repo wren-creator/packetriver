@@ -9,7 +9,7 @@ Step-by-step: [`../../instructor/answer-key.md`](../../instructor/answer-key.md)
 
 | | |
 |---|---|
-| Surfaces | operator HMI at `http://127.0.0.1:8093/` (shared with water / power / factory) · Modbus/TCP on the field bus (`127.0.0.1:5505`). |
+| Surfaces | operator terminal at `http://127.0.0.1:8093/sewage` (mimic HMI - pumps, aeration, bypass gate, AUTO/HAND) · Modbus/TCP on the field bus (`127.0.0.1:5505`). |
 | The bug | unauthenticated, unvalidated Modbus writes (`MODBUS_WRITE_OPEN=1`). Open the storm bypass, or stop aeration and dosing — nothing checks the writer. |
 | Tool | `modbus_attack.py`, or `pymodbus` by hand. |
 | Physical result | `simmap`'s `SewageModel` reads the coils each tick. With the bypass open (or aeration + dosing off) the effluent-quality index collapses, `effluent_path` flips to `raw`, and the outfall line on the map turns algae-green. Over the next ~10 s `river_contamination` ramps up, the plume spreads down toward the swimming beach, and the swimmers turn sick. |

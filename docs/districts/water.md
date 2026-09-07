@@ -9,7 +9,7 @@ Step-by-step: [`../../instructor/answer-key.md`](../../instructor/answer-key.md)
 
 | | |
 |---|---|
-| Surfaces | operator HMI at `http://127.0.0.1:8093/` (login portal, read-only status) · Modbus/TCP on the field bus (`127.0.0.1:5502`). |
+| Surfaces | operator terminal at `http://127.0.0.1:8093/water` (mimic HMI - pumps, tower level, valve, AUTO/HAND) · Modbus/TCP on the field bus (`127.0.0.1:5502`). |
 | Front door | the HMI portal. Getting in is not the bug; it just shows you the plant. |
 | The bug | Modbus writes are accepted from any source with no authentication or validation (`MODBUS_WRITE_OPEN=1`). You can stop the high-lift pump, close valves, or move setpoints — chemical dose included. |
 | Tool | `modbus_attack.py`, or `pymodbus` / `mbtget` by hand. |

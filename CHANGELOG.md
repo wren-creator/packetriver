@@ -4,6 +4,26 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Field HMIs rebuilt as vendor mimic panels
+
+- Each of the four field plants (`/water`, `/power`, `/factory`, `/sewage`)
+  is now its own operator terminal: its own login page, its own session, and
+  its own vendor theme (AQUAVIEW / GRIDMASTER / PLANTLINK / CLARUS) - they no
+  longer share one combined status page.
+- Cross Creek-style: a data-driven SVG P&ID mimic per plant (pipes, pumps,
+  tanks with live fill, breakers, valves), live tag boxes that float above
+  their tap point, clickable devices that open an AUTO/HAND + START/STOP
+  faceplate, and a setpoints dialog. One renderer; each plant is a `PLANTS[]`
+  entry.
+- The HMI reads and writes the same Modbus datastores over authenticated
+  routes (`/<plant>/api/state`, `/<plant>/api/cmd`) - verified: stopping the
+  high-lift pump from the water HMI drains the town. HAND is a new HR block
+  (`HAND_BASE=20`); in the segmented build the scan loop re-asserts golden
+  state but skips HAND devices, while the unauthenticated Modbus attack -
+  which never touches the HAND flags - still gets stomped.
+- Fixed a pre-existing `(tuple).replace()` bug in the old factory HMI rows
+  that 500'd the whole page.
+
 ### Phase 4 - Sewage + Traffic + Rail + Alert Level + blue team
 
 **Three new OT exploit districts** (each verified end to end, flag -> submit ->
