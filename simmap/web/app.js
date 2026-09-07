@@ -42,11 +42,6 @@ function buildOverlay(layout) {
 
   const r = layout.river;
   REFS.river = el("rect", { x: X(r.x), y: Y(r.y), width: X(r.w), height: Y(r.h), class: "river-body" }, svg);
-  // contamination plume: emerges at the outfall and spreads downstream toward
-  // the swimming beach as river_contamination ramps (not a full-height wash)
-  const oy = layout.outfall.length ? layout.outfall[layout.outfall.length - 1][1] : 0.15;
-  REFS.plume = el("rect", {
-    x: X(r.x), y: Y(oy - 0.02), width: X(r.w * 0.72), height: 0, class: "plume" }, svg);
   // the swim zone: a blocky "pixelated" contamination mosaic from the beach
   // edge (town side) across to the far bank, revealed as the water fouls
   const bz = layout.beachZone;
@@ -194,13 +189,11 @@ function render(s) {
   if (s.sewage) {
     const raw = s.sewage.effluent_path === "raw";
     const c = Math.max(0, Math.min(1, s.sewage.river_contamination));
-    // plume grows from the outfall downstream; ~8% of the river column when it
-    // first appears, ~70% at full contamination
-    REFS.plume.setAttribute("height", Y(0.08 + 0.62 * c));
-    REFS.plume.style.opacity = c > 0.03 ? (0.16 + 0.5 * c) : 0;
+    // the only contamination visual: the pixelated swim-zone mosaic, revealed
+    // as the water fouls
     if (REFS.beach)
-      REFS.beach.style.opacity = (s.sewage.swimmers_sick || c > 0.35)
-        ? (0.3 + 0.5 * c).toFixed(2) : 0;
+      REFS.beach.style.opacity = (s.sewage.swimmers_sick || c > 0.2)
+        ? (0.35 + 0.5 * c).toFixed(2) : 0;
     REFS.outfall.classList.toggle("foul", raw);
     REFS.swimmers.forEach(sw => sw.classList.toggle("sick", s.sewage.swimmers_sick));
   }

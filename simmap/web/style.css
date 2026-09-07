@@ -194,8 +194,6 @@ body {
    blurred so the placeholder rectangle reads as a plume, not a hard edge.
    (Phase 4 replaces this with a river-shaped path + gradient.) */
 .river-body { fill: var(--river-foul); opacity: 0; }
-.plume { fill: var(--river-foul); filter: blur(7px); opacity: 0;
-         transition: height 1.2s ease, opacity 1.2s ease; }
 .beach-mosaic { opacity: 0; transition: opacity 1.4s ease; }
 .beach-mosaic rect { fill: var(--river-foul); }
 .swimmer { fill: #ffe4b8; stroke: #c98b45; stroke-width: .6; }
