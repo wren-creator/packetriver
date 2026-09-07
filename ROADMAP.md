@@ -125,9 +125,10 @@ reuse map live in the design doc.
   - [x] an **AS/400 (IBM i)** behind **City Hall** and the **Widget Factory**,
     running payroll (TN5250 green screen). Landed in Phase 3c. Remaining depth:
     a runnable RPG IV / DDS payroll app (the `rpg/` interpreter is vendored but
-    the payroll path is SQL-only today), library-list / command-line injection,
-    and a full interactive in-browser 5250 (web3270 `session.js` behind a Node
-    renderer) instead of the built extraction client.
+    the payroll path is SQL-only today), library-list / command-line injection.
+    (Interactive green screen already works via web3270's Manual Connection at
+    `host.docker.internal:8992` - see `docs/districts/mainframe.md`; vendoring
+    `session.js` into the map panel is the remaining polish.)
   - [x] an **IBM z16** behind **First Packet Bank & Trust** for core banking
     (TN3270E, z/OS, RACF). Landed in Phase 3d - a RACF command family with
     three curated findings. Remaining depth: CICS transaction abuse

@@ -90,8 +90,10 @@ Early build. See `ROADMAP.md`. **Phases 0-4** are in:
 - **traffic control** (commanded over an open MQTT bus) and **rail control**
   (a raw-TCP console with a command-injection bug), plus the derail into the
   factory
-- an **AS/400** behind Town Hall (TN5250) and an **IBM z16** behind the Bank
-  (TN3270), both real green screens with curated bugs
+- an **AS/400** behind Town Hall (TN5250, `:8992`) and an **IBM z16** behind
+  the Bank (TN3270, `:8991`), both real green screens with curated bugs -
+  drive them from the map's `ttyd` link, the bundled Python clients, or your
+  own TN5250/TN3270 terminal (see `docs/districts/mainframe.md`)
 - the **Alert Level** meter and a **blue-team** response (credential rotation,
   auto-restore) that reacts to how loud you are
 - the score / run / leaderboard loop, the reset panel, the `?edit=1` overlay

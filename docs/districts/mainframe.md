@@ -12,6 +12,29 @@ These pages give **direction, not a walkthrough** (see
 sign-on, the SQL statement, the RACF command, the flag's field — is in
 [`../../instructor/answer-key.md`](../../instructor/answer-key.md).
 
+### Connecting your own terminal
+
+The map's **green screen ↗** link opens a `ttyd` terminal on the player box,
+and `as400_5250.py` / `z16_3270.py` drive the scored path headless. For a full
+interactive session you can also point any TN5250 / TN3270 client at the
+published ports — both containers *are* web3270's own mocks, so its terminal
+handles them by construction.
+
+In [web3270](https://github.com/wren-creator/web3270), use the UI's **Manual
+Connection** panel ("＋ New session / manual connect…") — no `lpars.txt` edit
+needed:
+
+| Host | Host field | Port | Type / model |
+|---|---|---|---|
+| Packet River AS/400 | `host.docker.internal` | `8992` | AS400 / 5250, model `3179-2` |
+| Packet River z16    | `host.docker.internal` | `8991` | TSO / TN3270E, model `3278-2` |
+
+web3270's Bridge runs in its own container, so from inside it `127.0.0.1` is
+the bridge, not your host — use `host.docker.internal` (its compose maps that
+to the host gateway). `127.0.0.1:8992` / `127.0.0.1:8991` only work from a
+client running directly on the host (a bare `node server.js`, `x3270`, `c3270`,
+`tn5250` — none of which ship on arm64, hence the purpose-built scripts).
+
 ---
 
 ## The Packet River AS/400  (`as400_empmast`) — Phase 3c
@@ -56,10 +79,10 @@ how the client talks to the host, not how to exploit it.
 - The client does not parse the WTD order stream — it decodes the whole record
   as CP037 and regexes `PKTR\{...\}` out of the SQL result panel.
 
-A full interactive in-browser green screen (vendoring web3270's
-`tn5250/session.js` behind a Node CLI renderer) is tracked in the roadmap; the
-`ttyd` link on the map already gives a real terminal for hand-driving it once
-that lands.
+For a full interactive green screen, point web3270 at `host.docker.internal:8992`
+(see "Connecting your own terminal" above), or hand-drive it from the `ttyd`
+link on the map. Vendoring web3270's `tn5250/session.js` into the map panel
+itself is still a roadmap follow-up.
 
 ---
 
@@ -105,6 +128,7 @@ How the client talks TN3270E to the host, not how to exploit it.
 - The client does not parse the 3270 order stream — it decodes the whole record
   as CP037 and regexes `PKTR\{...\}` off the result panel.
 
-A full interactive in-browser 3270 (web3270's `tn3270/session.js` behind a Node
-renderer) is the roadmap follow-up; the `ttyd` link already gives a real
-terminal for hand-driving RACF, TSO, ISPF, and SDSF today.
+For a full interactive green screen, point web3270 at `host.docker.internal:8991`
+(see "Connecting your own terminal" above), or hand-drive RACF / TSO / ISPF /
+SDSF from the `ttyd` link. Vendoring web3270's `tn3270/session.js` into the map
+panel itself is still a roadmap follow-up.
