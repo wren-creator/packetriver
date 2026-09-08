@@ -4,6 +4,19 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### Containment audit - the pivot-isolation check was a false alarm
+
+- `status.sh`'s `player → traffic-plc` check fired `audit FAILED ... stop the
+  town` on a healthy flat town. Two bugs: it probed port 8092 (traffic-plc
+  listens on 8095, so the probe hit a closed port), and its exit-code test was
+  inverted against the internet check right above it, so a *failed* connect
+  landed in the `bad` branch. A properly segmented town would have failed it
+  too.
+- Fixed the port and the branch sense. The real gap it was meant to catch - no
+  `ot-net`, so `player` shares `it-net` with the PLCs - is now one non-fatal
+  `[!]` warn and `./status.sh` exits 0, matching `docs/verification.md` A1.
+  Building real OT segmentation is now a tracked ROADMAP item.
+
 ### Portals ask for credentials again
 
 - Every login portal (the shops, the field HMI, the bank, the SOHO router) now

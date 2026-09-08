@@ -214,6 +214,18 @@ reuse map live in the design doc.
   `docs/districts/timed-events.md`.
 - [ ] Closer-to-real RF for the Wi-Fi lane would be its own wireless range, not
   this repo.
+- [ ] **Real OT segmentation (`ot-net`).** Today `player` shares `it-net` with
+  `traffic-plc` / `rail-plc` / `field-plc`, so it reaches the PLC ports with no
+  pivot. `status.sh` reports this as one non-fatal `[!]` (was a false-positive
+  hard fail before the check was fixed - inverted exit-code test + wrong probe
+  port). Closing it for real means an internal `ot-net` with the PLC protocol
+  side moved onto it and reachable only after a foothold on `websites` (or
+  another dual-homed host). Gotchas: the bundled attack scripts all run direct
+  from `player` and assume a route to the PLCs; the published `:8095/:8096`
+  status ports need an `edge-net` path back to the host, which `player` also
+  rides; `simmap`'s Modbus loop would need to be multi-homed onto `ot-net`. This
+  is a routing/pivot-framework change (Phase 7 sized), same family as the
+  span-port IDS note in `docker-compose.segmented.yml`.
 
 ## Related work in the sibling repos
 

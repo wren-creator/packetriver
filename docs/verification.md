@@ -20,7 +20,7 @@ valid submission and `POST /api/score/submit` returns `{"accepted": true}`.
 
 | # | Command | Pass condition |
 |---|---|---|
-| A1 | `./status.sh` | exits 0; every service healthy; prints the loopback audit with no `[x]` except the known Phase-4 `player → traffic-plc` pivot line |
+| A1 | `./status.sh` | exits 0; every service healthy; loopback audit all `[+]`; the only `[!]` is the known Phase-4 gap (`player can reach traffic-plc:8095 directly`, no `ot-net` yet); no `[x]` anywhere |
 | A2 | `docker compose ps --format '{{.Name}}\t{{.Ports}}'` | every published mapping reads `127.0.0.1:` |
 | A3 | `docker compose exec player sh -c 'cat /etc/resolv.conf'` | resolver is the town DNS (`172.31.20.253` via `ExtServers`), search `packetriver.range` |
 | A4 | `docker compose exec player python3 -c 'import socket;print(socket.socket().connect_ex(("1.1.1.1",53)))'` | non-zero (internet unreachable) |

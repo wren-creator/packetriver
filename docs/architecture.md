@@ -91,8 +91,10 @@ Five bridges. All but `edge-net` are `internal: true` (no route off-box);
 There is no separate `ot-net` in the current build - the PLC protocol ports sit
 on `it-net`. The Phase-4 pivot-isolation goal (move `player` off the OT segment
 so it reaches the PLCs only after a foothold on `websites`) is not done yet;
-`status.sh` flags it. `player`'s resolver is the `dns` container
-(`172.31.20.253`), set via compose `dns:`.
+`status.sh` reports it as a single non-fatal `[!]` warn (`player can reach
+traffic-plc:8095 directly`) and still exits 0. Closing the gap for real is a
+ROADMAP item. `player`'s resolver is the `dns` container (`172.31.20.253`), set
+via compose `dns:`.
 
 ## Anti-cheat
 
@@ -109,8 +111,9 @@ smoke-tests the whole mint → plant → submit → score loop.
 Every published port binds to `127.0.0.1`. `lib.sh:assert_loopback_only` parses
 `docker compose config` and refuses to start if any `published:` port lacks
 `host_ip: 127.0.0.1`. `status.sh` re-audits the running bindings and checks the
-`player` box cannot reach the internet (the pivot-isolation check is aspirational
-- see Networks).
+`player` box cannot reach the internet. It also probes `player → traffic-plc:8095`;
+until `ot-net` exists that path is open, so the audit prints one `[!]` warn for it
+and still exits 0 (see Networks).
 
 ## The OT loop (`simmap/icsloops.py`)
 

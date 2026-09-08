@@ -6,6 +6,8 @@ set -uo pipefail
 cd "$(dirname "$0")"
 source ./lib.sh
 
+PIVOT_GAP=0
+
 require_docker
 
 FILES=(-f docker-compose.yml)
@@ -52,15 +54,21 @@ if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetriver-pl
     bad "player container reached a public address, stop the town"
     AUDIT_FAIL=1
   fi
-  # traffic-plc lives on ot-net; the player has no business reaching it before a pivot
+  # The player has no business reaching the PLC status port before a pivot. Same
+  # exit-code convention as the internet check above: connect_ex()==0 on a
+  # successful connect -> sys.exit(True) -> rc 1 -> the shell `if` is false ->
+  # the `else` (bad/warn) branch. A failed connect -> rc 0 -> the `ok` branch.
+  # NOTE: there is no ot-net yet, so today this warns rather than fails - the
+  # player shares it-net with traffic-plc. Tracked in ROADMAP.md ("real OT
+  # segmentation"); docs/verification.md A1 expects this one warn line.
   if dc "${FILES[@]}" ps --format '{{.Name}}' 2>/dev/null | grep -q packetriver-traffic-plc; then
     if dc "${FILES[@]}" exec -T player python3 -c \
-         'import socket,sys; s=socket.socket(); s.settimeout(3); sys.exit(s.connect_ex(("traffic-plc",8092)) == 0)' \
+         'import socket,sys; s=socket.socket(); s.settimeout(3); sys.exit(s.connect_ex(("traffic-plc",8095)) == 0)' \
          2>/dev/null; then
-      bad "player reached traffic-plc directly, pivot isolation is broken"
-      AUDIT_FAIL=1
-    else
       ok "player cannot reach the OT segment without pivoting"
+    else
+      warn "player can reach traffic-plc:8095 directly - known Phase-4 gap, no ot-net yet (see ROADMAP.md)"
+      PIVOT_GAP=1
     fi
   fi
 else
@@ -68,10 +76,13 @@ else
 fi
 
 echo
-if [ "$AUDIT_FAIL" -eq 0 ]; then
-  ok "audit clean: town is loopback-only and the player box is boxed in"
-else
+if [ "$AUDIT_FAIL" -ne 0 ]; then
   bad "audit FAILED: something is reachable it should not be, stop the town"
+elif [ "$PIVOT_GAP" -ne 0 ]; then
+  ok "audit clean: town is loopback-only, no internet from the player box"
+  warn "1 known gap: no ot-net yet, so the player reaches the PLCs without a pivot (ROADMAP.md)"
+else
+  ok "audit clean: town is loopback-only and the player box is boxed in"
 fi
 
 [ "$AUDIT_FAIL" -eq 0 ] || exit 1
