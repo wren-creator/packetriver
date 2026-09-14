@@ -52,11 +52,13 @@ packs/<name>/
 
 Every technique id, map-building id, and effect name a pack defines **must**
 be prefixed with the pack's own directory name (dashes become underscores),
-e.g. a pack at `packs/grain-coop/` uses ids like `graincoop_s7_stop_cpu`.
+e.g. a pack at `packs/grain-coop/` uses ids like `grain_coop_cip_writeauth`.
 This is checked automatically at boot - a pack that violates it, or that
 collides with an existing id, fails the town's health check immediately
 rather than silently breaking a flag or a map badge mid-game.
 
 ## Currently available
 
-*(none published yet - Grain Co-op / Vendor Dialects is in progress)*
+- **Grain Co-op (Vendor Dialects)** - a grain elevator controller on real
+  EtherNet/IP (CIP), the base town's first non-Modbus field protocol.
+  Repo: `packetriver-pack-grain-coop`. `./start.sh --pack grain-coop`.

@@ -255,7 +255,7 @@ into `packs/<name>/` at install time and never merged into this repo. See
   boot; `start.sh`/`stop.sh`/`reset.sh` support repeatable `--pack <name>`
   and remember active packs between runs (`.packetriver-active-packs`);
   `setup.sh` folds each installed pack's `.env.pack.example` into `.env`.
-- **Pack 1 - Grain Co-op (vendor dialects).** A new industrial target
+- [x] **Pack 1 - Grain Co-op (vendor dialects).** A new industrial target
   speaking real EtherNet/IP (CIP), not Modbus - the base town's first vendor
   dialect - closely reusing the `field-plc` HMI/blue-team chassis pattern.
   Fills the gap Phase 2 already named as deferred (a spike confirmed
@@ -277,8 +277,14 @@ into `packs/<name>/` at install time and never merged into this repo. See
     full loop: register, run, submit the flag pulled off the real
     unauthenticated CIP write, scoring accepts it (target `graincoop`, run
     total 394).
-  - [ ] Tier-1 district doc + instructor answer key (Pack 1's remaining
-    piece, per the "docs in the same commit as the technique" rule).
+  - [x] Tier-1 district doc + instructor answer key, and a segmented/hardened
+    override (`GRAINCOOP_CIP_NO_AUTH=0`) - verified live: the same
+    unauthenticated write gets rejected with a privilege-violation status
+    instead of silently succeeding.
+  - [ ] A bundled `player`-box attack script (every other OT target gets one,
+    e.g. `modbus_attack.py` - this pack's raw-protocol move is documented in
+    its own answer key but has no wrapper script yet).
+  - [ ] Easter-egg hints (`PKT_EGGS`) - none yet, optional.
 - [ ] **Pack 2 - Regional Medical Center.** A brand-new civic web district,
   bug class not yet used elsewhere in the town (IDOR + insecure file upload,
   or NoSQL/GraphQL injection - TBD). Needs a `gateway/nginx.conf` vhost
