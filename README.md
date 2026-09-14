@@ -73,6 +73,13 @@ you a working payload. Stuck? There is an opt-in hint that costs points, and
 hidden notes scattered around the town that cost only the looking. See
 [`docs/learning-design.md`](docs/learning-design.md).
 
+## Expansion packs
+
+Paid add-on districts drop straight into `packs/<name>/` as their own
+separate repo and never touch this one - see [`packs/README.md`](packs/README.md)
+for the install step and `ROADMAP.md`'s "Expansion packs" section for what's
+in progress.
+
 ## Requirements
 
 Docker with Compose v2 (or v1), and about 1 GB of free memory for the full

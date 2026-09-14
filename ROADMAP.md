@@ -235,3 +235,54 @@ reuse map live in the design doc.
   (`webapp/src/lib/helpers.php`). Cross Creek: on the water + power HMI
   dashboard templates (the login pages already had a support note). Committed
   locally in each sibling repo, unpushed.
+
+## Expansion packs
+
+Self-contained add-on districts/services layered onto the base town via
+compose's native `-f` multi-file merge (`./start.sh --pack <name>`), the same
+mechanism `--segmented` already uses. Packs are paid upgrades: only the
+loader mechanism ships here, each pack's actual content (service code,
+scoring/overlay fragments, and its own training material - district doc,
+instructor answer key, easter eggs) lives in its own separate repo, dropped
+into `packs/<name>/` at install time and never merged into this repo. See
+`packs/README.md`.
+
+- [x] **Pack-loader mechanism.** `PKT_PACKS` env var; `scoring/flags.py` +
+  `simmap/server.py` + `simmap/packs_loader.py` (+ `simmap/effects.py`) merge
+  in pack fragments (`packs/<name>/scoring.techniques.json`,
+  `overlay.pack.json`, `simmap_effects.py`) with a mandatory `<name>_`
+  technique/building/effect-id prefix, fatal-erroring on any collision at
+  boot; `start.sh`/`stop.sh`/`reset.sh` support repeatable `--pack <name>`
+  and remember active packs between runs (`.packetriver-active-packs`);
+  `setup.sh` folds each installed pack's `.env.pack.example` into `.env`.
+- [ ] **Pack 1 - Grain Co-op (vendor dialects).** A new industrial target
+  speaking real S7comm or EtherNet/IP-CIP (not Modbus), closely reusing the
+  `field-plc` HMI/blue-team chassis - fills the gap Phase 2 already named as
+  deferred. Repo: `packetriver-pack-grain-coop` (link once created). *Not
+  started.*
+- [ ] **Pack 2 - Regional Medical Center.** A brand-new civic web district,
+  bug class not yet used elsewhere in the town (IDOR + insecure file upload,
+  or NoSQL/GraphQL injection - TBD). Needs a `gateway/nginx.conf` vhost
+  addition, unlike Pack 1's directly-published OT-style ports. *Planned, not
+  started.*
+- [ ] **Pack 3+ - Cross-Service Chains.** Burying one district's credential in
+  another district's `.git` history / `config.json` so it becomes a
+  discoverable chain, plus a dwell-time "patience" stealth-scoring bonus
+  (already in "Ideas / bucket list" above, under credential hygiene). Built
+  only after the mechanism is proven on Packs 1-2; does not gate them.
+  *Planned, later.*
+
+### Candidate packs (backlog, no build order assigned)
+
+Each targets a bug class the base town + Packs 1-2 do not teach:
+
+- [ ] **Logistics Hub** - XXE via a legacy B2B SOAP/XML freight-scheduling or
+  invoice service, potentially chaining to internal SSRF.
+- [ ] **Tech Startup / Co-working Space** - SSTI and/or CI/CD pipeline
+  poisoning (lightweight Gitea + build runner; poison a pipeline config to
+  execute in the runner's context and steal a deploy token).
+- [ ] **Casino / Betting Shop** - race condition / TOCTOU on fund transfers or
+  coupon redemption (threaded-request exploitation - a skill nothing else in
+  the town teaches).
+- [ ] **Law Firm** - insecure deserialization (Java/Python-pickle/PHP object
+  injection) leading to RCE over case-file handling.
