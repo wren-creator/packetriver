@@ -8,12 +8,15 @@ import time
 import blueteam
 import icsloops
 import logtail
+import packs_loader
 import server
 from bus import Bus
 from models import TownState
 
 
 def main() -> None:
+    packs_loader.load_all()
+
     town = TownState()
     lock = threading.Lock()
     server.STATE["town"] = town

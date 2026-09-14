@@ -15,26 +15,33 @@ if [ "${1:-}" != "-y" ]; then
   case "$ans" in y|Y|yes|YES) ;; *) info "cancelled"; exit 0 ;; esac
 fi
 
-FILES=(-f docker-compose.yml)
+load_active_packs
+PKT_SEGMENTED=0
 if dc -f docker-compose.yml -f docker-compose.segmented.yml ps --format '{{.Name}}' 2>/dev/null \
      | grep -q packetriver-ids; then
-  FILES+=(-f docker-compose.segmented.yml)
+  PKT_SEGMENTED=1
+fi
+
+if ! compose_files; then
+  warn "one or more active packs are missing from packs/ - resetting the base town only"
+  COMPOSE_FILES=(-f docker-compose.yml)
+  [ "$PKT_SEGMENTED" = "1" ] && [ -f docker-compose.segmented.yml ] && COMPOSE_FILES+=(-f docker-compose.segmented.yml)
 fi
 
 info "down -v"
-dc "${FILES[@]}" down -v
+dc "${COMPOSE_FILES[@]}" down -v
 
 info "rebuild + up"
-if ! assert_loopback_only "${FILES[@]}"; then
+if ! assert_loopback_only "${COMPOSE_FILES[@]}"; then
   bad "loopback guard failed, not restarting"
   exit 1
 fi
-dc "${FILES[@]}" up -d --build
+dc "${COMPOSE_FILES[@]}" up -d --build
 
 info "waiting for health (up to 150s)"
 deadline=$(( $(date +%s) + 150 ))
 while :; do
-  unhealthy="$(dc "${FILES[@]}" ps --format '{{.Name}} {{.Health}}' 2>/dev/null \
+  unhealthy="$(dc "${COMPOSE_FILES[@]}" ps --format '{{.Name}} {{.Health}}' 2>/dev/null \
               | awk '$2 != "healthy" && $2 != "" {print $1}')"
   [ -z "$unhealthy" ] && break
   [ "$(date +%s)" -ge "$deadline" ] && { warn "still not healthy: $unhealthy"; break; }
@@ -42,3 +49,4 @@ while :; do
 done
 
 ok "reset complete, town is back to golden state"
+[ -n "${PKT_PACKS:-}" ] && echo "  active packs: $PKT_PACKS"

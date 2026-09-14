@@ -26,6 +26,20 @@ else
   info ".env already present, leaving it alone"
 fi
 
+# Fold in defaults for any expansion pack dropped into packs/<name>/ (see
+# packs/README.md). Marker-commented so re-running setup.sh stays safe and
+# never overwrites a value you've already changed.
+shopt -s nullglob
+for pack_env in packs/*/.env.pack.example; do
+  pack="$(basename "$(dirname "$pack_env")")"
+  marker="# --- pack: $pack ---"
+  if ! grep -qF "$marker" .env 2>/dev/null; then
+    { echo; echo "$marker"; cat "$pack_env"; } >> .env
+    ok "added $pack pack defaults to .env"
+  fi
+done
+shopt -u nullglob
+
 info "verifying nothing would bind beyond 127.0.0.1"
 if assert_loopback_only -f docker-compose.yml; then
   ok "loopback-only bindings confirmed"

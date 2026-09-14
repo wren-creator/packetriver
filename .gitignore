@@ -18,5 +18,13 @@ __pycache__/
 # --- built ebook is committed on purpose; scratch build dirs are not ---
 docs/syllabus-epub/build/
 
+# --- expansion packs: paid add-ons, each its own separate git repo, dropped
+#     into packs/<name>/ at install time. Never merged into this repo - only
+#     packs/README.md (the install instructions) is tracked here.
+#     See packs/README.md.
+packs/*
+!packs/README.md
+.packetriver-active-packs
+
 # --- committed on purpose ---
 # .claude/ .vscode/ .cursor/ are tracked intentionally when present.

@@ -56,12 +56,52 @@ assert_loopback_only() {
   return 0
 }
 
-# Which compose files make up the current invocation. Defaults to the flat
-# town; callers pass --segmented to fold in the hardened override.
-compose_files() {
-  local args=(-f docker-compose.yml)
-  if [ "${PKT_SEGMENTED:-0}" = "1" ]; then
-    args+=(-f docker-compose.segmented.yml)
+# --- Expansion packs -------------------------------------------------------
+# Packs are self-contained add-ons dropped into packs/<name>/, never
+# committed to this repo (see packs/README.md). PKT_PACKS is a
+# comma-separated list of active pack names. start.sh sets it from repeated
+# --pack <name> flags and persists it to ACTIVE_PACKS_FILE so stop.sh /
+# reset.sh reconstruct the same file list without the user re-typing --pack
+# on every lifecycle command.
+ACTIVE_PACKS_FILE=".packetriver-active-packs"
+
+save_active_packs() {
+  if [ -n "${PKT_PACKS:-}" ]; then
+    printf '%s\n' "$PKT_PACKS" > "$ACTIVE_PACKS_FILE"
+  else
+    rm -f "$ACTIVE_PACKS_FILE"
   fi
-  printf '%s\n' "${args[@]}"
+}
+
+load_active_packs() {
+  if [ -z "${PKT_PACKS:-}" ] && [ -f "$ACTIVE_PACKS_FILE" ]; then
+    PKT_PACKS="$(cat "$ACTIVE_PACKS_FILE")"
+  fi
+}
+
+# Build the -f file list for this invocation into the global array
+# COMPOSE_FILES: base [+ base-segmented] [+ each active pack's compose file]
+# [+ each active pack's segmented override]. Reads PKT_SEGMENTED=1 and
+# PKT_PACKS="a,b,c" from env. Returns non-zero (with a bad() message) if a
+# named pack isn't actually present under packs/.
+compose_files() {
+  COMPOSE_FILES=(-f docker-compose.yml)
+  if [ "${PKT_SEGMENTED:-0}" = "1" ] && [ -f docker-compose.segmented.yml ]; then
+    COMPOSE_FILES+=(-f docker-compose.segmented.yml)
+  fi
+  local name dir
+  local IFS=','
+  for name in ${PKT_PACKS:-}; do
+    [ -z "$name" ] && continue
+    dir="packs/$name"
+    if [ ! -f "$dir/docker-compose.yml" ]; then
+      bad "no such pack: $name (expected $dir/docker-compose.yml - see packs/README.md)"
+      return 1
+    fi
+    COMPOSE_FILES+=(-f "$dir/docker-compose.yml")
+    if [ "${PKT_SEGMENTED:-0}" = "1" ] && [ -f "$dir/docker-compose.segmented.yml" ]; then
+      COMPOSE_FILES+=(-f "$dir/docker-compose.segmented.yml")
+    fi
+  done
+  return 0
 }

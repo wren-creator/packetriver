@@ -19,6 +19,12 @@ from models.town import RESET_SCOPES
 
 WEB = pathlib.Path(__file__).parent / "web"
 
+# Expansion packs (see packs/README.md) are never committed to this repo -
+# they're dropped into packs/<name>/ and bind-mounted read-only here at
+# /app/packs. PKT_PACKS (set by start.sh --pack <name>) names which ones are
+# active this run.
+PACKS_DIR = pathlib.Path("/app/packs")
+
 app = Flask(__name__)
 # No ping_interval: flask-sock's simple-websocket keepalive runs a second
 # thread that writes PING frames straight to the socket, bypassing SEND_LOCK
@@ -245,6 +251,55 @@ def api_debug_reset():
         print("[server] reset poke:", exc)
     broadcast()
     return {"ok": True, "scope": scope}
+
+
+def _active_pack_names() -> list[str]:
+    return [n for n in os.environ.get("PKT_PACKS", "").split(",") if n]
+
+
+def _merged_overlay() -> dict:
+    """The base overlay.json plus every active pack's overlay.pack.json
+    buildings, merged in. Every pack building id must be prefixed with the
+    pack's own name (dashes become underscores); anything that doesn't
+    match, or collides with an existing id, is a fatal error - see
+    packs_loader.validate_packs(), called once at boot so this never breaks
+    mid-game."""
+    base = json.loads((WEB / "overlay.json").read_text())
+    buildings = dict(base.get("buildings", {}))
+    for name in _active_pack_names():
+        prefix = name.replace("-", "_") + "_"
+        frag_path = PACKS_DIR / name / "overlay.pack.json"
+        if not frag_path.is_file():
+            raise RuntimeError(
+                f"pack '{name}' is active (PKT_PACKS) but has no {frag_path} "
+                f"- is it actually installed under packs/{name}/?"
+            )
+        frag = json.loads(frag_path.read_text())
+        for bid, b in frag.get("buildings", {}).items():
+            if not bid.startswith(prefix):
+                raise RuntimeError(
+                    f"pack '{name}' building id '{bid}' must be prefixed "
+                    f"'{prefix}'"
+                )
+            if bid in buildings:
+                raise RuntimeError(
+                    f"pack '{name}' building id '{bid}' collides with an "
+                    "existing building id"
+                )
+            buildings[bid] = b
+    base["buildings"] = buildings
+    return base
+
+
+def validate_packs() -> None:
+    """Called once at boot (see packs_loader.load_all). Raises if any active
+    pack is missing or breaks the naming/collision rule."""
+    _merged_overlay()
+
+
+@app.get("/overlay.json")
+def overlay_json():
+    return _merged_overlay()
 
 
 @app.get("/<path:path>")

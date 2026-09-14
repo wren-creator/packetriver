@@ -11,13 +11,22 @@ target that owns it, never in simmap, the browser, or the player box.
 """
 from __future__ import annotations
 
+import json
+import os
 import pathlib
 import secrets
 import sqlite3
+import sys
 
 SECRET_DIR = pathlib.Path("/run/secret")
 DB_PATH = pathlib.Path("/data/scoring.db")
 SCHEMA = pathlib.Path(__file__).with_name("schema.sql")
+
+# Expansion packs (see packs/README.md) are never committed to this repo -
+# they're dropped into packs/<name>/ and bind-mounted read-only here at
+# /app/packs. PKT_PACKS (set by start.sh --pack <name>) names which ones are
+# active this run.
+PACKS_DIR = pathlib.Path("/app/packs")
 
 # technique_id -> definition. `effect` is the effects.py key simmap applies when
 # a valid flag for this technique is submitted.
@@ -287,12 +296,48 @@ TECHNIQUES = {
 }
 
 
+def _active_pack_names() -> list[str]:
+    return [n for n in os.environ.get("PKT_PACKS", "").split(",") if n]
+
+
+def _fatal(msg: str) -> None:
+    print(f"[flags] FATAL: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def load_pack_techniques() -> dict:
+    """Merge in each active pack's scoring.techniques.json. Every pack
+    technique_id must be prefixed with the pack's own name (dashes become
+    underscores); anything that doesn't match, or collides with an existing
+    id (base town or an earlier pack), is a fatal boot error - caught here,
+    not discovered mid-game as a flag that never appears. See
+    packs/README.md."""
+    merged: dict = {}
+    for name in _active_pack_names():
+        prefix = name.replace("-", "_") + "_"
+        frag_path = PACKS_DIR / name / "scoring.techniques.json"
+        if not frag_path.is_file():
+            _fatal(f"pack '{name}' is active (PKT_PACKS) but has no {frag_path} "
+                    f"- is it actually installed under packs/{name}/?")
+        frag = json.loads(frag_path.read_text())
+        for tid, t in frag.items():
+            if not tid.startswith(prefix):
+                _fatal(f"pack '{name}' technique '{tid}' must be prefixed "
+                        f"'{prefix}'")
+            if tid in TECHNIQUES or tid in merged:
+                _fatal(f"pack '{name}' technique '{tid}' collides with an "
+                        "existing technique_id")
+            merged[tid] = t
+    return merged
+
+
 def generate() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.executescript(SCHEMA.read_text())
+    all_techniques = {**TECHNIQUES, **load_pack_techniques()}
     n = 0
-    for tid, t in TECHNIQUES.items():
+    for tid, t in all_techniques.items():
         flag = f"PKTR{{{tid}_{secrets.token_hex(8)}}}"
         conn.execute(
             "INSERT OR REPLACE INTO flags "
