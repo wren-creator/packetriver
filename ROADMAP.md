@@ -269,9 +269,16 @@ into `packs/<name>/` at install time and never merged into this repo. See
     wire format and tool family. Verified live against the running
     container: register, read-before, unauthenticated write, read-after all
     round-trip correctly; `pkt/reset` restores golden state.
-  - [ ] Scoring + map + effect hookup (the flag is still a stub).
-  - [ ] Tier-1 district doc + instructor answer key (lands with the scoring
-    hookup, per the "docs in the same commit as the technique" rule).
+  - [x] Scoring + map + effect hookup. `grain_coop_cip_writeauth` (severity
+    loud, base 175) mints and plants a real flag; `grain_coop_elevator` is a
+    real building on the town map (utility kind, straight to grain-plc's own
+    HMI, no gateway change needed); the technique reuses the base town's
+    `noop` effect, same reasoning as the Modbus OT techniques. Verified live,
+    full loop: register, run, submit the flag pulled off the real
+    unauthenticated CIP write, scoring accepts it (target `graincoop`, run
+    total 394).
+  - [ ] Tier-1 district doc + instructor answer key (Pack 1's remaining
+    piece, per the "docs in the same commit as the technique" rule).
 - [ ] **Pack 2 - Regional Medical Center.** A brand-new civic web district,
   bug class not yet used elsewhere in the town (IDOR + insecure file upload,
   or NoSQL/GraphQL injection - TBD). Needs a `gateway/nginx.conf` vhost
