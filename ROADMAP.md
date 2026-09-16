@@ -261,7 +261,7 @@ into `packs/<name>/` at install time and never merged into this repo. See
   Fills the gap Phase 2 already named as deferred (a spike confirmed
   `python-snap7` needs an external `libsnap7.so` with no reliable arm64
   story, so this pack is CIP, hand-rolled, no native dependency - not S7).
-  Repo: `packetriver-pack-grain-coop`.
+  Distribution TBD, not released yet.
   - [x] `grain-plc`: a real EtherNet/IP encapsulation layer (RegisterSession,
     SendRRData/Get+Set_Attribute_Single) fronting a vendor-specific elevator
     object. Unauthenticated `Set_Attribute_Single` on MaintenanceMode is the
