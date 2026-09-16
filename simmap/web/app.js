@@ -33,6 +33,23 @@ async function api(path, method = "GET", body) {
 const REFS = { shops: {}, ints: [], streetlights: [] };
 let LAYOUT = null;
 
+// Building art: rendered width locks to the footprint's world width (b.w),
+// height derives from the sprite PNG's own native aspect ratio (spr.w/spr.h,
+// recorded once per asset) so nobody hand-computes a height per building.
+// Anchored at the footprint's ground point (bottom-center by default via
+// anchorX/anchorY) so isometric art lines up with its hotspot without
+// per-building pixel math. edit.js's ?edit=1 preview mirrors this math.
+function drawBuildingSprite(layer, b) {
+  const spr = b.sprite;
+  const rw = X(b.w * (spr.scale || 1));
+  const rh = rw * (spr.h / spr.w);
+  const anchorX = spr.anchorX ?? 0.5;
+  const anchorY = spr.anchorY ?? 1.0;
+  const gx = X(b.x) - rw * anchorX;
+  const gy = (Y(b.y) + Y(b.h) / 2) - rh * anchorY;
+  el("image", { href: spr.src, x: gx, y: gy, width: rw, height: rh }, layer);
+}
+
 function buildOverlay(layout) {
   LAYOUT = layout;
   VB = layout.viewBox || [1000, 545];
@@ -87,9 +104,20 @@ function buildOverlay(layout) {
   el("rect", { x: -4, y: -6, width: 9, height: 12, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
   el("rect", { x: 5, y: -6, width: 9, height: 12, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
 
-  for (const [id, b] of Object.entries(layout.buildings)) {
+  // building art (sprites/) painted back-to-front by ground position so a
+  // building further "south" on screen occludes one further "north" -
+  // buildings with no `sprite` yet just skip this and keep today's look
+  // (invisible hotspot + ring over art baked into basemap.png)
+  const spritesLayer = el("g", { id: "sprites" }, svg);
+  const ringsLayer = el("g", { id: "rings" }, svg);
+  const groundY = ([, b]) => Y(b.y) + Y(b.h) / 2;
+  const buildingEntries = Object.entries(layout.buildings).sort((a, b) => groundY(a) - groundY(b));
+
+  for (const [id, b] of buildingEntries) {
+    if (b.sprite) drawBuildingSprite(spritesLayer, b);
+
     const w = X(b.w), h = Y(b.h), x = X(b.x) - w / 2, y = Y(b.y) - h / 2;
-    const g = el("g", { id: "b-" + id }, svg);
+    const g = el("g", { id: "b-" + id }, ringsLayer);
     const ring = el("rect", { x, y, width: w, height: h, rx: 4, class: "ring healthy" }, g);
     const hot = el("rect", { x, y, width: w, height: h, rx: 4, class: "hotspot" }, g);
     hot.addEventListener("click", () => openTarget(id, b));

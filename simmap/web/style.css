@@ -67,11 +67,53 @@ body {
   border: 2px solid var(--line);
   border-radius: 14px;
   padding: 10px;
-  overflow-x: auto;
 }
-.scene { position: relative; width: 100%; line-height: 0; }
-.scene .basemap { display: block; width: 100%; height: auto; border-radius: 8px; }
+
+/* Camera: .viewport is the visible clipped window; .world is the town at its
+   native pixel size, panned/scaled by camera.js. The aspect-ratio below must
+   match basemap.png's real dimensions (today 1600x872) - camera.js sets
+   .world's actual pixel size from the loaded image, but this CSS value only
+   drives the responsive height of .viewport before/without JS, same as
+   overlay.json's viewBox needing to match the art (see overlay-editing.md). */
+.viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1600 / 872;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0d1117;
+  touch-action: none;
+  cursor: grab;
+}
+.viewport.panning { cursor: grabbing; }
+.world {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1600px; height: 872px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.scene { position: relative; width: 100%; height: 100%; line-height: 0; }
+.scene .basemap { display: block; width: 100%; height: 100%; border-radius: 8px; }
 .scene .overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.camera-controls {
+  position: absolute; top: 10px; right: 10px; z-index: 6;
+  display: flex; gap: 4px;
+}
+.camera-controls button {
+  width: 28px; height: 28px;
+  font: inherit; font-size: 15px; font-weight: 700; line-height: 1;
+  background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px;
+  cursor: pointer;
+}
+.camera-controls button:hover { border-color: var(--accent); background: #fff; }
+#cam-fit { width: auto; font-size: 11px; padding: 0 8px; }
+
+/* building art, painted back-to-front by ground position; rings/hotspots
+   (below) always sit above every sprite so status highlights stay legible */
+#sprites image { image-rendering: pixelated; }
 
 .panel {
   background: var(--panel);

@@ -143,6 +143,7 @@
     scene.appendChild(svg);
     ui.layer = svg;
     ui.grid = mk("g", { class: "pe-grid" }, svg);
+    ui.sprites = mk("g", { class: "pe-sprites" }, svg);
     ui.shapes = mk("g", { class: "pe-shapes" }, svg);
     ui.handles = mk("g", { class: "pe-handles" }, svg);
     svg.addEventListener("pointermove", (e) => {
@@ -218,10 +219,30 @@
     handles = collect();
     if (sel) sel = handles.find((h) => h.id === sel.id) || null;
     drawGrid();
+    drawSpritePreviews();
     drawShapes();
     drawHandles();
     updateJSON();
     updateSelLabel();
+  }
+
+  // faint preview of a building's sprite art (once it has one - see the
+  // sprite-layer plan) under its drag handles, so placing/resizing the
+  // footprint box is done against the real art, not a blank rectangle. Same
+  // anchor math as app.js's drawBuildingSprite(); the two must stay in sync.
+  function drawSpritePreviews() {
+    ui.sprites.innerHTML = "";
+    for (const b of Object.values(L.buildings || {})) {
+      if (!b.sprite) continue;
+      const spr = b.sprite;
+      const rw = px(b.w * (spr.scale || 1));
+      const rh = rw * (spr.h / spr.w);
+      const anchorX = spr.anchorX ?? 0.5;
+      const anchorY = spr.anchorY ?? 1.0;
+      const gx = px(b.x) - rw * anchorX;
+      const gy = py(b.y) + py(b.h) / 2 - rh * anchorY;
+      mk("image", { href: spr.src, x: gx, y: gy, width: rw, height: rh, opacity: 0.65 }, ui.sprites);
+    }
   }
 
   function drawGrid() {
@@ -329,6 +350,7 @@
     // the same object) but refresh VB and the overlay node.
     S = window.PKTR_EDIT;
     VB = S.VB || VB;
+    drawSpritePreviews();
     drawShapes();
     drawHandles();
     updateJSON();

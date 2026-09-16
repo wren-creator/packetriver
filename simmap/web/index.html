@@ -25,9 +25,18 @@
 
   <main class="layout">
     <section class="mapwrap">
-      <div class="scene" id="scene">
-        <img class="basemap" src="/basemap.png" alt="Packet River">
-        <svg class="overlay" id="overlay" viewBox="0 0 1000 545" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="viewport" id="viewport">
+        <div class="world" id="world">
+          <div class="scene" id="scene">
+            <img class="basemap" src="/basemap.png" alt="Packet River">
+            <svg class="overlay" id="overlay" viewBox="0 0 1000 545" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+        <div class="camera-controls" id="camera-controls">
+          <button type="button" id="cam-in" title="zoom in">+</button>
+          <button type="button" id="cam-out" title="zoom out">&minus;</button>
+          <button type="button" id="cam-fit" title="fit whole town">fit</button>
+        </div>
       </div>
     </section>
 
@@ -96,6 +105,7 @@
 
   <div id="toast" hidden></div>
 
+  <script src="/camera.js"></script>
   <script src="/app.js"></script>
   <script defer src="/edit.js"></script>
 </body>

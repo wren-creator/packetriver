@@ -11,7 +11,7 @@ import os
 import pathlib
 import threading
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, abort, request, send_from_directory
 from flask_sock import Sock
 
 from effects import apply
@@ -286,6 +286,13 @@ def _merged_overlay() -> dict:
                     f"pack '{name}' building id '{bid}' collides with an "
                     "existing building id"
                 )
+            # a pack authors its sprite.src relative to its own sprites/ dir
+            # (e.g. "grain_bin.png"); rewrite it here to the URL that
+            # actually serves it, so app.js treats core and pack building
+            # sprites identically.
+            if b.get("sprite", {}).get("src"):
+                b = dict(b, sprite=dict(b["sprite"]))
+                b["sprite"]["src"] = f"/packs/{name}/sprites/{b['sprite']['src']}"
             buildings[bid] = b
     base["buildings"] = buildings
     return base
@@ -300,6 +307,17 @@ def validate_packs() -> None:
 @app.get("/overlay.json")
 def overlay_json():
     return _merged_overlay()
+
+
+@app.get("/packs/<pack>/sprites/<path:filename>")
+def pack_sprite(pack, filename):
+    """Serves only packs/<pack>/sprites/<filename> - never the rest of a
+    pack's directory (its .env.pack.example, simmap_effects.py, docs/, etc.),
+    since the URL shape itself can only resolve inside sprites/, and `pack`
+    must be one of this run's active packs before anything touches disk."""
+    if pack not in _active_pack_names():
+        abort(404)
+    return send_from_directory(PACKS_DIR / pack / "sprites", filename)
 
 
 @app.get("/<path:path>")
