@@ -59,6 +59,6 @@ rather than silently breaking a flag or a map badge mid-game.
 
 ## Currently available
 
-- **Grain Co-op (Vendor Dialects)** - a grain elevator controller on real
-  EtherNet/IP (CIP), the base town's first non-Modbus field protocol.
-  Repo: `packetriver-pack-grain-coop`. `./start.sh --pack grain-coop`.
+None yet. Pack 1 (Grain Co-op, vendor dialects) is built, see `ROADMAP.md`,
+but distribution isn't set up, so there's nothing to buy or install here
+right now.
