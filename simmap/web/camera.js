@@ -22,7 +22,7 @@
   if (!viewport || !world) return;
   const img = world.querySelector(".basemap");
 
-  let worldW = 1800, worldH = 1522;
+  let worldW = 1408, worldH = 736;
   let zoom = 1, panX = 0, panY = 0, minZoom = 1;
 
   function setWorldSize(w, h) {

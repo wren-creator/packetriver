@@ -28,7 +28,7 @@
 
   let S = null;                 // window.PKTR_EDIT from app.js
   let L = null;                 // the live layout object (=== app's LAYOUT)
-  let VB = [1800, 1522];
+  let VB = [1408, 736];
   let initialJSON = "";
   const ui = {};
   let handles = [];             // ordered accessor list for cycling
@@ -48,7 +48,7 @@
   function start() {
     S = window.PKTR_EDIT;
     L = S.layout;
-    VB = S.VB || [1800, 1522];
+    VB = S.VB || [1408, 736];
     initialJSON = JSON.stringify(L, null, 2);
     injectStyle();
     buildPanel();
@@ -84,6 +84,10 @@
       #pe-panel button.warn { border-color:#7a3b3b; }
       #pe-panel .mono { color:#8aa0b4; }
       #pe-panel .sel { color:#ff8fe0; }
+      .pe-legend-h { display:inline-block; width:9px; height:9px; border-radius:50%;
+        background:#12b6d8; vertical-align:middle; margin-right:2px; }
+      .pe-legend-h.size { border-radius:2px; background:#f6c445; }
+      .pe-legend-h.sel { background:#ff3bd0; }
       #pe-json { width:100%; flex:1 1 auto; min-height:180px; resize:vertical;
         background:#05080c; color:#9fb4c6; border:1px solid #222c36; border-radius:6px;
         padding:6px; font:11px/1.35 ui-monospace,monospace; white-space:pre; }
@@ -100,10 +104,11 @@
     p.id = "pe-panel";
     p.innerHTML = `
       <h4 title="click to collapse">OVERLAY EDITOR ▾</h4>
-      <div class="row mono" style="gap:4px">
-        <span style="color:#f0cf5c">&#9679;P-res</span><span style="color:#e88a2e">&#9679;P-biz</span>
-        <span style="color:#9aa0aa">&#9679;P-plant</span><span style="color:#4aa8e0">&#9679;W-res</span>
-        <span style="color:#f2f2ec">&#9679;light</span><span style="color:#d98a6a">&#9679;rail</span>
+      <div class="row mono" style="gap:4px">${legendHTML()}</div>
+      <div class="row mono" style="gap:10px">
+        <span><span class="pe-legend-h"></span> move</span>
+        <span><span class="pe-legend-h size"></span> resize</span>
+        <span><span class="pe-legend-h sel"></span> selected</span>
       </div>
       <div class="row mono">cursor <span id="pe-cur">–</span></div>
       <div class="row"><span class="sel" id="pe-sel">nothing selected</span></div>
@@ -168,6 +173,33 @@
   const px = (fx) => fx * VB[0];
   const py = (fy) => fy * VB[1];
 
+  // handle fill matches the live map colour of whatever it edits, so you can
+  // tell the layers apart while dragging - also drives the legend in the
+  // panel, so a new entry here shows up there automatically
+  const DEFAULT_COLOUR = "#12b6d8"; // buildings, and anything unmatched
+  const HANDLE_COLOUR = [
+    { label: "building", re: /^bld /, c: DEFAULT_COLOUR },
+    { label: "intersection", re: /^int /, c: "#8fd18f" },
+    { label: "streetlight", re: /^light /, c: "#f2f2ec" },
+    { label: "power: residential", re: /^P-res /, c: "#f0cf5c" },
+    { label: "power: business", re: /^P-biz /, c: "#e88a2e" },
+    { label: "power: plant", re: /^P-plant /, c: "#9aa0aa" },
+    { label: "water: residential", re: /^W-res /, c: "#4aa8e0" },
+    { label: "rail / spur", re: /^(railPath|spurPath) /, c: "#d98a6a" },
+    { label: "swimmers", re: /^swimmers /, c: "#ffe4b8" },
+    { label: "outfall", re: /^outfall /, c: "#7cb03a" },
+    { label: "water main", re: /^waterMain /, c: "#2f8fbf" },
+    { label: "power feeder", re: /^powerFeeder/, c: "#e3a52e" },
+    { label: "river", re: /^river$/, c: "#3a8fb0" },
+    { label: "beach zone", re: /^beachZone$/, c: "#6fae54" },
+  ];
+  const colourFor = (id) => {
+    for (const { re, c } of HANDLE_COLOUR) if (re.test(id)) return c;
+    return DEFAULT_COLOUR;
+  };
+  const legendHTML = () => HANDLE_COLOUR
+    .map(({ label, c }) => `<span style="color:${c}">&#9679;${label}</span>`).join("");
+
   // ------------------------------------------------ accessor collection
   // Every editable thing becomes an accessor: { id, kind, get()->[x,y],
   //   set(x,y), and for sizables getSize()/setSize(). kind drives the key
@@ -178,11 +210,29 @@
     const push = (o) => { A.push(o); return o; };
 
     for (const [id, b] of Object.entries(L.buildings || {})) {
-      push({ id: "bld " + id, kind: "box",
-        get: () => [b.x, b.y], set: (x, y) => { b.x = r4(x); b.y = r4(y); },
-        getSize: () => [b.w, b.h],
-        setSize: (w, h) => { b.w = r4(Math.max(0.004, w)); b.h = r4(Math.max(0.004, h)); },
-        outline: () => [b.x - b.w / 2, b.y - b.h / 2, b.w, b.h] });
+      if (b.sprite) {
+        // drag the building directly by what you see: get/set operate on the
+        // sprite's own rendered box (top-left + size), not the underlying
+        // x,y,w,h/anchor fields - same math as app.js's drawBuildingSprite()
+        // and this file's drawSpritePreviews(), kept in sync via spriteBox()
+        push({ id: "bld " + id, kind: "rect",
+          get: () => { const o = spriteBox(b); return [o[0], o[1]]; },
+          set: (x, y) => {
+            const [, , w, h] = spriteBox(b);
+            const spr = b.sprite, ax = spr.anchorX ?? 0.5, ay = spr.anchorY ?? 1.0;
+            b.x = r4(x + w * ax);
+            b.y = r4(y + h * ay - b.h / 2);
+          },
+          getSize: () => { const o = spriteBox(b); return [o[2], o[3]]; },
+          setSize: (w) => { b.sprite.scale = r4(Math.max(0.05, w / b.w)); },
+          outline: () => spriteBox(b) });
+      } else {
+        push({ id: "bld " + id, kind: "box",
+          get: () => [b.x, b.y], set: (x, y) => { b.x = r4(x); b.y = r4(y); },
+          getSize: () => [b.w, b.h],
+          setSize: (w, h) => { b.w = r4(Math.max(0.004, w)); b.h = r4(Math.max(0.004, h)); },
+          outline: () => [b.x - b.w / 2, b.y - b.h / 2, b.w, b.h] });
+      }
     }
     (L.intersections || []).forEach((p) => push({ id: "int " + p.id, kind: "point",
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
@@ -226,22 +276,30 @@
     updateSelLabel();
   }
 
-  // faint preview of a building's sprite art (once it has one - see the
-  // sprite-layer plan) under its drag handles, so placing/resizing the
-  // footprint box is done against the real art, not a blank rectangle. Same
-  // anchor math as app.js's drawBuildingSprite(); the two must stay in sync.
+  // a sprited building's rendered box, in fraction units: [x, y, w, h] with
+  // x,y = top-left, w = fraction of VB[0], h = fraction of VB[1] (same
+  // outline() convention as river/beachZone). Single source of truth for the
+  // drag handle (collect()) and the faint art preview (drawSpritePreviews())
+  // below - matches app.js's drawBuildingSprite(); keep the two in sync.
+  function spriteBox(b) {
+    const spr = b.sprite;
+    const rw = b.w * (spr.scale || 1);
+    const rh = rw * VB[0] / VB[1] * (spr.h / spr.w);
+    const anchorX = spr.anchorX ?? 0.5, anchorY = spr.anchorY ?? 1.0;
+    const gx = b.x - rw * anchorX;
+    const gy = (b.y + b.h / 2) - rh * anchorY;
+    return [gx, gy, rw, rh];
+  }
+
+  // faint preview of a building's sprite art under its drag handles, so
+  // placing/resizing is done against the real art, not a blank rectangle.
   function drawSpritePreviews() {
     ui.sprites.innerHTML = "";
     for (const b of Object.values(L.buildings || {})) {
       if (!b.sprite) continue;
-      const spr = b.sprite;
-      const rw = px(b.w * (spr.scale || 1));
-      const rh = rw * (spr.h / spr.w);
-      const anchorX = spr.anchorX ?? 0.5;
-      const anchorY = spr.anchorY ?? 1.0;
-      const gx = px(b.x) - rw * anchorX;
-      const gy = py(b.y) + py(b.h) / 2 - rh * anchorY;
-      mk("image", { href: spr.src, x: gx, y: gy, width: rw, height: rh, opacity: 0.65 }, ui.sprites);
+      const [gx, gy, rw, rh] = spriteBox(b);
+      mk("image", { href: b.sprite.src, x: px(gx), y: py(gy), width: px(rw), height: py(rh),
+        opacity: 0.65 }, ui.sprites);
     }
   }
 
@@ -277,20 +335,6 @@
         ui.shapes);
     });
   }
-
-  // handle fill matches the live map colour of whatever it edits, so you can
-  // tell the layers apart while dragging
-  const HANDLE_COLOUR = [
-    [/^P-res /, "#f0cf5c"], [/^P-biz /, "#e88a2e"], [/^P-plant /, "#9aa0aa"],
-    [/^W-res /, "#4aa8e0"], [/^light /, "#f2f2ec"],
-    [/^int /, "#8fd18f"], [/^railPath /, "#d98a6a"], [/^spurPath /, "#d98a6a"],
-    [/^swimmers /, "#ffe4b8"], [/^outfall /, "#7cb03a"], [/^waterMain /, "#2f8fbf"],
-    [/^powerFeeder/, "#e3a52e"], [/^river$/, "#3a8fb0"], [/^beachZone$/, "#6fae54"],
-  ];
-  const colourFor = (id) => {
-    for (const [re, c] of HANDLE_COLOUR) if (re.test(id)) return c;
-    return "#12b6d8";
-  };
 
   function drawHandles() {
     ui.handles.innerHTML = "";

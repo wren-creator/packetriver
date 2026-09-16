@@ -1,7 +1,7 @@
 "use strict";
 
 const SVGNS = "http://www.w3.org/2000/svg";
-let VB = [1800, 1522];
+let VB = [1408, 736];
 const X = n => n * VB[0];
 const Y = n => n * VB[1];
 
@@ -32,6 +32,10 @@ async function api(path, method = "GET", body) {
 // ----------------------------------------------------------- overlay build
 const REFS = { shops: {}, ints: [], streetlights: [] };
 let LAYOUT = null;
+// sprites/train.png is painted already heading down-and-left at roughly this
+// angle rather than straight right - tune by eye in the browser if the train
+// looks backwards or sideways on the rendered track
+const TRAIN_SPRITE_ANGLE = 146.5;
 
 // Building art: rendered width locks to the footprint's world width (b.w),
 // height derives from the sprite PNG's own native aspect ratio (spr.w/spr.h,
@@ -52,7 +56,7 @@ function drawBuildingSprite(layer, b) {
 
 function buildOverlay(layout) {
   LAYOUT = layout;
-  VB = layout.viewBox || [1800, 1522];
+  VB = layout.viewBox || [1408, 736];
   const svg = $("overlay");
   svg.setAttribute("viewBox", `0 0 ${VB[0]} ${VB[1]}`);
   svg.innerHTML = "";
@@ -97,12 +101,13 @@ function buildOverlay(layout) {
     fill: "none", stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
   REFS.newsvan = el("text", { class: "newsvan", "text-anchor": "middle",
     "font-size": 15, visibility: "hidden" }, svg);
+  // the sprite art is painted already pointing along its own natural heading
+  // (TRAIN_SPRITE_ANGLE, degrees) rather than straight right, so render()
+  // subtracts that baseline from the track's own heading before rotating
   REFS.train = el("g", { class: "train" }, svg);
-  // fatter across the track (heights +3) without lengthening it (widths / x unchanged)
-  el("rect", { x: -17, y: -6.5, width: 12, height: 13, fill: "#8a3b2f", stroke: "#3a1c16" }, REFS.train);
-  el("rect", { x: -15, y: -11, width: 4, height: 5, fill: "#3a1c16" }, REFS.train);
-  el("rect", { x: -4, y: -6, width: 9, height: 12, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
-  el("rect", { x: 5, y: -6, width: 9, height: 12, fill: "#4f3d30", stroke: "#251c15" }, REFS.train);
+  const trainW = 105, trainH = trainW * (768 / 1331);
+  el("image", { href: "sprites/train.png", x: -trainW / 2, y: -trainH / 2,
+    width: trainW, height: trainH }, REFS.train);
 
   // building art (sprites/) painted back-to-front by ground position so a
   // building further "south" on screen occludes one further "north" -
@@ -205,7 +210,7 @@ function render(s) {
     REFS.train.setAttribute("visibility", show ? "visible" : "hidden");
     if (show)
       REFS.train.setAttribute("transform",
-        `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${ang.toFixed(1)})`);
+        `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${(ang - TRAIN_SPRITE_ANGLE).toFixed(1)})`);
     REFS.spur.classList.toggle("spur-set", s.rail.switch_position === "spur");
   }
 

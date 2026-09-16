@@ -1,61 +1,96 @@
 {
-  "_note": "Percentage coords (0..1). Aligned against basemap.png with the ?edit=1 editor. Re-run the editor if the art changes. `houses` retired - residential state is powerResidential + waterResidential now.",
+  "_note": "Percentage coords (0..1). Aligned against basemap.png with the ?edit=1 editor. Re-run the editor if the art changes. Buildings currently have NO sprite/position re-check yet post terrain-swap (2nd art direction: terrain-only base + sprite buildings) - they need fresh placement, not just a coordinate carry-over. streetlights/powerResidential/waterResidential/powerBusiness/powerPlant/powerFeeder*/waterMain are STALE, carried over unchanged from the old art; they need rework once houses become sprites too.",
   "viewBox": [
-    1800,
-    1522
+    1408,
+    736
   ],
   "buildings": {
     "power": {
-      "x": 0.3927,
-      "y": 0.4277,
-      "w": 0.0999,
-      "h": 0.0859,
+      "x": 0.2699,
+      "y": 0.3023,
+      "w": 0.0781,
+      "h": 0.0747,
       "label": "Packet River Power & Light",
       "kind": "utility",
       "port": 8093,
       "technique": "power_modbus_feeder",
-      "path": "/power"
+      "path": "/power",
+      "sprite": {
+        "src": "sprites/power.png",
+        "w": 965,
+        "h": 628,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "water": {
-      "x": 0.7031,
-      "y": 0.4596,
-      "w": 0.1318,
-      "h": 0.1097,
+      "x": 0.4972,
+      "y": 0.3261,
+      "w": 0.0923,
+      "h": 0.0815,
       "label": "Packet River Municipal Water Authority",
       "kind": "utility",
       "port": 8093,
       "technique": "water_modbus_pump",
-      "path": "/water"
+      "path": "/water",
+      "sprite": {
+        "src": "sprites/water.png",
+        "w": 998,
+        "h": 576,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "watertower": {
-      "x": 0.86,
-      "y": 0.3459,
-      "w": 0.04,
-      "h": 0.0859,
+      "x": 0.6534,
+      "y": 0.2378,
+      "w": 0.0426,
+      "h": 0.0408,
       "label": "Water Tower",
-      "kind": "dressing"
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/watertower.png",
+        "w": 809,
+        "h": 705,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "sewage": {
-      "x": 0.6695,
-      "y": 0.3644,
-      "w": 0.0815,
-      "h": 0.0738,
+      "x": 0.6037,
+      "y": 0.3397,
+      "w": 0.0923,
+      "h": 0.0815,
       "label": "Packet River Water Reclamation Facility",
       "kind": "utility",
       "port": 8093,
       "path": "/sewage",
-      "technique": "sewage_modbus"
+      "technique": "sewage_modbus",
+      "sprite": {
+        "src": "sprites/sewage.png",
+        "w": 1026,
+        "h": 586,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "factory": {
-      "x": 0.5444,
-      "y": 0.3636,
-      "w": 0.1018,
-      "h": 0.0927,
+      "x": 0.4261,
+      "y": 0.3736,
+      "w": 0.1136,
+      "h": 0.1223,
       "label": "Packet River Widget Works",
       "kind": "utility",
       "port": 8093,
       "path": "/factory",
-      "technique": "factory_modbus"
+      "technique": "factory_modbus",
+      "sprite": {
+        "src": "sprites/factory.png",
+        "w": 761,
+        "h": 612,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "tavern": {
       "x": 0.4156,
@@ -223,28 +258,28 @@
   "intersections": [
     {
       "id": 1,
-      "x": 0.3807,
-      "y": 0.57
+      "x": 0.3956,
+      "y": 0.5408
     },
     {
       "id": 2,
-      "x": 0.4347,
-      "y": 0.5733
+      "x": 0.5078,
+      "y": 0.6902
     },
     {
       "id": 3,
-      "x": 0.4784,
-      "y": 0.6515
+      "x": 0.2983,
+      "y": 0.625
     },
     {
       "id": 4,
-      "x": 0.532,
-      "y": 0.6529
+      "x": 0.4013,
+      "y": 0.5068
     },
     {
       "id": 5,
-      "x": 0.5333,
-      "y": 0.5116
+      "x": 0.5398,
+      "y": 0.428
     }
   ],
   "streetlights": [
@@ -300,87 +335,103 @@
   "_railNote": "railPath is just the visible top run: the train enters from off the left edge, crosses the Main Rail Line, and exits off the right; it stays hidden the rest of the cycle before re-entering.",
   "railPath": [
     [
-      0.0289,
-      0.3201
+      -0.0142,
+      0.1155
     ],
     [
-      0.0569,
-      0.4622
+      0.0,
+      0.1196
     ],
     [
-      0.1086,
-      0.4141
+      0.0355,
+      0.125
     ],
     [
-      0.1603,
-      0.3659
+      0.071,
+      0.1332
     ],
     [
-      0.2105,
-      0.3259
+      0.1136,
+      0.1467
     ],
     [
-      0.2694,
-      0.3237
+      0.142,
+      0.1603
     ],
     [
-      0.3209,
-      0.3227
+      0.1776,
+      0.1332
     ],
     [
-      0.4087,
-      0.3215
+      0.2273,
+      0.106
     ],
     [
-      0.4333,
-      0.3209
+      0.2841,
+      0.0883
     ],
     [
-      0.458,
-      0.3203
+      0.3409,
+      0.0815
     ],
     [
-      0.7278,
-      0.3214
+      0.3977,
+      0.0774
     ],
     [
-      0.803,
-      0.3832
+      0.4616,
+      0.0774
     ],
     [
-      0.9062,
-      0.4796
+      0.5114,
+      0.0842
     ],
     [
-      0.9152,
-      0.5176
+      0.554,
+      0.106
     ],
     [
-      0.9174,
-      0.7032
+      0.5895,
+      0.1427
     ],
     [
-      0.898,
-      0.7512
+      0.625,
+      0.1902
     ],
     [
-      0.8116,
-      0.8373
+      0.6747,
+      0.2337
     ],
     [
-      0.9402,
-      0.8388
+      0.7315,
+      0.231
     ],
     [
-      0.9978,
-      0.4232
+      0.7812,
+      0.2337
+    ],
+    [
+      0.8381,
+      0.2514
+    ],
+    [
+      0.8949,
+      0.2921
+    ],
+    [
+      0.9517,
+      0.3465
+    ],
+    [
+      1.0156,
+      0.4008
     ]
   ],
   "river": {
-    "x": 0.6123,
-    "y": 0.7337,
-    "w": 0.1778,
-    "h": 0.5729
+    "x": 0.696,
+    "y": 0.0,
+    "w": 0.304,
+    "h": 1.0
   },
   "outfall": [
     [
@@ -479,31 +530,35 @@
     ]
   ],
   "beachZone": {
-    "x": 0.7268,
-    "y": 0.5071,
-    "w": 0.1652,
-    "h": 0.1393
+    "x": 0.7315,
+    "y": 0.3533,
+    "w": 0.1491,
+    "h": 0.231
   },
   "spurPath": [
     [
-      0.3782,
-      0.3241
+      0.1172,
+      0.1467
     ],
     [
-      0.4084,
-      0.3396
+      0.1634,
+      0.197
     ],
     [
-      0.4493,
-      0.3625
+      0.2202,
+      0.2582
     ],
     [
-      0.4929,
-      0.3797
+      0.2841,
+      0.3193
     ],
     [
-      0.5409,
-      0.3952
+      0.348,
+      0.3736
+    ],
+    [
+      0.3977,
+      0.4076
     ]
   ],
   "powerResidential": [
