@@ -4,9 +4,14 @@
 map — building hotspots and their boxes, traffic heads, houses, streetlights,
 the rail path, the river, the swimmers, the two utility flows. Every value is a
 **fraction, 0..1**, of the base image's width or height. `app.js` just
-multiplies by the `viewBox` (`[1000, 545]`), which shares `basemap.png`'s
-aspect ratio, so the SVG sits 1:1 on the art with no letterboxing. If the art
-ever changes shape, update `viewBox` to match or the whole overlay shifts.
+multiplies by the `viewBox` (today `[1800, 1522]`, matching `basemap.png`'s
+real pixel size), so the SVG sits 1:1 on the art with no letterboxing. If the
+art ever changes shape, update `viewBox` (and `index.html`'s `<svg>`,
+`style.css`'s `.viewport`/`.world`, and `camera.js`'s fallback `worldW`/
+`worldH`) to match, or the whole overlay shifts - `simmap/tools/
+migrate_canvas_v2.py` is the script that did this the one time the canvas
+was padded; a future resize would want a similar one-off, not a hand edit
+of every coordinate.
 
 Shapes:
 

@@ -28,7 +28,7 @@
 
   let S = null;                 // window.PKTR_EDIT from app.js
   let L = null;                 // the live layout object (=== app's LAYOUT)
-  let VB = [1000, 545];
+  let VB = [1800, 1522];
   let initialJSON = "";
   const ui = {};
   let handles = [];             // ordered accessor list for cycling
@@ -48,7 +48,7 @@
   function start() {
     S = window.PKTR_EDIT;
     L = S.layout;
-    VB = S.VB || [1000, 545];
+    VB = S.VB || [1800, 1522];
     initialJSON = JSON.stringify(L, null, 2);
     injectStyle();
     buildPanel();

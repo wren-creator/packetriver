@@ -71,14 +71,14 @@ body {
 
 /* Camera: .viewport is the visible clipped window; .world is the town at its
    native pixel size, panned/scaled by camera.js. The aspect-ratio below must
-   match basemap.png's real dimensions (today 1600x872) - camera.js sets
+   match basemap.png's real dimensions (today 1800x1522) - camera.js sets
    .world's actual pixel size from the loaded image, but this CSS value only
    drives the responsive height of .viewport before/without JS, same as
    overlay.json's viewBox needing to match the art (see overlay-editing.md). */
 .viewport {
   position: relative;
   width: 100%;
-  aspect-ratio: 1600 / 872;
+  aspect-ratio: 1800 / 1522;
   overflow: hidden;
   border-radius: 8px;
   background: #0d1117;
@@ -89,7 +89,7 @@ body {
 .world {
   position: absolute;
   top: 0; left: 0;
-  width: 1600px; height: 872px;
+  width: 1800px; height: 1522px;
   transform-origin: 0 0;
   will-change: transform;
 }

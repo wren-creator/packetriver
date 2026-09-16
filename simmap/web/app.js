@@ -1,7 +1,7 @@
 "use strict";
 
 const SVGNS = "http://www.w3.org/2000/svg";
-let VB = [1000, 545];
+let VB = [1800, 1522];
 const X = n => n * VB[0];
 const Y = n => n * VB[1];
 
@@ -52,7 +52,7 @@ function drawBuildingSprite(layer, b) {
 
 function buildOverlay(layout) {
   LAYOUT = layout;
-  VB = layout.viewBox || [1000, 545];
+  VB = layout.viewBox || [1800, 1522];
   const svg = $("overlay");
   svg.setAttribute("viewBox", `0 0 ${VB[0]} ${VB[1]}`);
   svg.innerHTML = "";
