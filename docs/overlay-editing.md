@@ -18,6 +18,37 @@ Shapes:
 | `railPath`, `outfall`, `waterMain`, `powerFeeder`, `swimmers` | `[[x, y], ...]` | vertex lists |
 | `spurBranch`, `spurEnd` | `[x, y]` | single points |
 
+## Building art: the `sprite` field
+
+A `buildings[id]` entry can carry an optional `sprite` object so its art is
+its own image instead of being painted into `basemap.png`:
+
+```json
+"sprite": { "src": "sprites/power.png", "w": 812, "h": 664,
+            "anchorX": 0.5, "anchorY": 1.0, "scale": 1.0 }
+```
+
+- `src` - path to the PNG. Core buildings: relative to `simmap/web/` (e.g.
+  `sprites/power.png`). Pack buildings: relative to the pack's own
+  `sprites/` dir (e.g. `"grain_bin.png"`) - `simmap/server.py`'s
+  `_merged_overlay()` rewrites it to `/packs/<pack>/sprites/<file>` before
+  the client ever sees it.
+- `w` / `h` - the PNG's **native pixel dimensions**, recorded once. Render
+  width locks to the building's `w` (its existing footprint, already sizing
+  the hotspot), render height derives from `w`/`h`'s aspect ratio - no
+  per-building pixel math.
+- `anchorX` / `anchorY` (default `0.5` / `1.0`) - which point on the sprite
+  sits on the building's ground point (`x`, bottom edge of the footprint
+  box). Only override for art with baked-in shadow/padding.
+- `scale` (default `1`) - a multiplier on the footprint width, for art that
+  should read larger or smaller than its hotspot.
+
+No `sprite` field ⇒ the building renders exactly as it always has (art
+expected in `basemap.png`, hotspot + ring only). This is what lets the
+20 existing buildings migrate a few at a time instead of all at once - see
+`app.js`'s `drawBuildingSprite()`. When a building has a `sprite`, the
+`?edit=1` editor shows a faint preview of it under the drag handles.
+
 ## The editor (`?edit=1`)
 
 Open the map with `?edit=1`:
@@ -28,7 +59,9 @@ http://127.0.0.1:8080/?edit=1
 
 `edit.js` loads for everyone but is inert without that flag, so players never
 see it. With it on you get a draggable handle on every coordinate, a
-calibration grid, a live cursor readout, and a JSON panel.
+calibration grid, a live cursor readout, and a JSON panel. Drag the map or
+scroll to zoom (same camera as the live game) to reach an area that's off
+screen before placing a handle there.
 
 - **Drag** a cyan handle to move it. The real overlay redraws live as you drag.
 - Buildings and the river get a **yellow square** at the bottom-right for size.

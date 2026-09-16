@@ -165,15 +165,32 @@ is what every client renders onto the overlay.
 
 ### The map overlay (`simmap/web/`)
 
-`index.html` layers a transparent `<svg>` over `basemap.png`. `app.js` fetches
-`overlay.json` (percentage coords, `0..1`, for every building hotspot, traffic
-signal, streetlight, the residential power / water dots, the rail path + spur,
-the river, the swimmers, and the water / power flow lines), builds the overlay elements once, then mutates their `fill` /
-`class` / `visibility` from each snapshot. Clicking a building hotspot opens its
-service (Phase 1+); Phase 0 just names it. `overlay.json` is pinned to the
-current base art and gets re-calibrated when the image changes, open the map
-with `?edit=1` for the drag-and-copy overlay editor (`docs/overlay-editing.md`;
-`edit.js`, inert without the flag).
+`index.html` layers a transparent `<svg>` over `basemap.png`, both nested in a
+`.viewport`/`.world` pair (`camera.js`) that drag-pans and wheel/button-zooms
+the whole scene, clamped so you can't pan past the town's edges or zoom out
+past seeing all of it. `app.js` fetches `overlay.json` (percentage coords,
+`0..1`, for every building hotspot, traffic signal, streetlight, the
+residential power / water dots, the rail path + spur, the river, the
+swimmers, and the water / power flow lines), builds the overlay elements
+once - buildings sorted by ground position so any building art paints
+back-to-front like a real isometric scene - then mutates their `fill` /
+`class` / `visibility` from each snapshot. Clicking a building hotspot opens
+its service (Phase 1+); Phase 0 just names it.
+
+A building can optionally carry a `sprite` (an image positioned/sized off
+the same `x,y,w,h` already driving its hotspot) instead of being painted
+directly into `basemap.png` - this is how buildings are meant to be added
+going forward, art and hotspot data staying independent so growing the town
+no longer means repainting the one shared base image. All 20 of today's
+buildings still render the old way (art baked into `basemap.png`, no
+`sprite` field set) pending a batched migration; see `docs/overlay-editing.md`
+for the field shape. Expansion packs (`packs/<name>/overlay.pack.json`) serve
+their own sprite art from `/packs/<name>/sprites/`, merged server-side in
+`simmap/server.py`'s `_merged_overlay()`.
+
+`overlay.json` is pinned to the current base art and gets re-calibrated when
+the image changes; open the map with `?edit=1` for the drag-and-copy overlay
+editor (`docs/overlay-editing.md`; `edit.js`, inert without the flag).
 
 ### Event flow
 
