@@ -12,6 +12,19 @@ function el(tag, attrs, parent) {
   return n;
 }
 function $(id) { return document.getElementById(id); }
+// closest intersection to a building, in fraction space - roads themselves
+// aren't stored as line data (they're painted into the terrain), so the
+// intersection points are the best stand-in for "park on the nearest road"
+function nearestIntersection(b) {
+  const ints = LAYOUT.intersections || [];
+  let best = null, bd = Infinity;
+  for (const it of ints) {
+    const dx = it.x - b.x, dy = it.y - b.y;
+    const d = dx * dx + dy * dy;
+    if (d < bd) { bd = d; best = it; }
+  }
+  return best;
+}
 function toast(msg) {
   const t = $("toast");
   t.textContent = msg; t.hidden = false;
@@ -99,8 +112,12 @@ function buildOverlay(layout) {
   REFS.spur = el("polyline", {
     points: spur.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
-  REFS.newsvan = el("text", { class: "newsvan", "text-anchor": "middle",
-    "font-size": 15, visibility: "hidden" }, svg);
+  // news van: parked at the road intersection nearest the event's focus
+  // building (render() below), not floating over the roof as an emoji
+  REFS.newsvan = el("g", { class: "newsvan", visibility: "hidden" }, svg);
+  const vanW = 50, vanH = vanW * (723 / 675);
+  el("image", { href: "sprites/newsvan.png", x: -vanW / 2, y: -vanH,
+    width: vanW, height: vanH }, REFS.newsvan);
   // the sprite art is painted already pointing along its own natural heading
   // (TRAIN_SPRITE_ANGLE, degrees) rather than straight right, so render()
   // subtracts that baseline from the track's own heading before rotating
@@ -282,10 +299,9 @@ function render(s) {
 
   const focusMap = { rail: "railcontrol" };
   const fb = ev.news_crew && LAYOUT.buildings[focusMap[ev.news_focus] || ev.news_focus];
-  if (fb) {
-    REFS.newsvan.setAttribute("x", X(fb.x));
-    REFS.newsvan.setAttribute("y", Y(fb.y) - Y(fb.h) / 2 - 6);
-    REFS.newsvan.textContent = "\u{1F4F9}";
+  const spot = fb && nearestIntersection(fb);
+  if (spot) {
+    REFS.newsvan.setAttribute("transform", `translate(${X(spot.x).toFixed(1)},${Y(spot.y).toFixed(1)})`);
     REFS.newsvan.setAttribute("visibility", "visible");
   } else {
     REFS.newsvan.setAttribute("visibility", "hidden");

@@ -212,7 +212,7 @@
     "cityhall": {
       "x": 0.5047,
       "y": 0.5853,
-      "w": 0.0638,
+      "w": 0.09,
       "h": 0.0959,
       "label": "Borough Hall - Town of Packet River",
       "kind": "civic",
@@ -220,39 +220,82 @@
       "path": "/townhall/",
       "technique": "townhall_lfi",
       "terminal": 7681,
-      "terminal_label": "AS/400 green screen"
+      "terminal_label": "AS/400 green screen",
+      "sprite": {
+        "src": "sprites/cityhall.png",
+        "w": 579,
+        "h": 637,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "police": {
       "x": 0.4248,
       "y": 0.6611,
-      "w": 0.0549,
+      "w": 0.065,
       "h": 0.0529,
       "label": "Packet River Police Department",
       "kind": "civic",
       "port": 8090,
       "path": "/police/",
-      "technique": "police_leak"
+      "technique": "police_leak",
+      "sprite": {
+        "src": "sprites/police.png",
+        "w": 675,
+        "h": 667,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "fire": {
       "x": 0.5823,
       "y": 0.6664,
-      "w": 0.0484,
+      "w": 0.085,
       "h": 0.0584,
       "label": "Packet River Fire & Rescue",
       "kind": "civic",
       "port": 8090,
       "path": "/fire/",
-      "technique": "fire_defaultcreds"
+      "technique": "fire_defaultcreds",
+      "sprite": {
+        "src": "sprites/fire.png",
+        "w": 703,
+        "h": 647,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "railcontrol": {
-      "x": 0.502,
-      "y": 0.718,
-      "w": 0.0603,
-      "h": 0.0614,
+      "x": 0.2,
+      "y": 0.155,
+      "w": 0.055,
+      "h": 0.05,
       "label": "Packet River & Southern Railroad - Dispatch",
       "kind": "rail",
       "port": 8096,
-      "path": "/"
+      "path": "/",
+      "sprite": {
+        "src": "sprites/railcontrol.png",
+        "w": 564,
+        "h": 672,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "railyard": {
+      "x": 0.335,
+      "y": 0.235,
+      "w": 0.14,
+      "h": 0.06,
+      "label": "Packet River & Southern Railroad - Yard",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/railyard.png",
+        "w": 845,
+        "h": 612,
+        "anchorX": 0.5,
+        "anchorY": 0.9
+      }
     }
   },
   "intersections": [
