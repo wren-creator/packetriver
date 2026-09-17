@@ -277,7 +277,14 @@
       "path": "/",
       "technique": "bank_jwt_none",
       "terminal": 7681,
-      "terminal_label": "z16 green screen"
+      "terminal_label": "z16 green screen",
+      "sprite": {
+        "src": "sprites/bank.png",
+        "w": 775,
+        "h": 1005,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "cityhall": {
       "x": 0.5047,
@@ -605,6 +612,21 @@
         "h": 702,
         "anchorX": 0.5,
         "anchorY": 0.98
+      }
+    },
+    "park": {
+      "x": 0.213,
+      "y": 0.639,
+      "w": 0.09,
+      "h": 0.05,
+      "label": "Neighborhood Park",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/park.png",
+        "w": 903,
+        "h": 536,
+        "anchorX": 0.5,
+        "anchorY": 0.92
       }
     }
   },
