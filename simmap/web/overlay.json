@@ -366,6 +366,246 @@
         "anchorX": 0.5,
         "anchorY": 0.9
       }
+    },
+    "house1": {
+      "x": 0.1264,
+      "y": 0.5054,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house1.png",
+        "w": 767,
+        "h": 802,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house2": {
+      "x": 0.2131,
+      "y": 0.5,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house2.png",
+        "w": 643,
+        "h": 668,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house3": {
+      "x": 0.2876,
+      "y": 0.5598,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house3.png",
+        "w": 636,
+        "h": 554,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house4": {
+      "x": 0.2521,
+      "y": 0.6155,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house4.png",
+        "w": 775,
+        "h": 600,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house5": {
+      "x": 0.103,
+      "y": 0.6562,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house5.png",
+        "w": 768,
+        "h": 788,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house6": {
+      "x": 0.1527,
+      "y": 0.6753,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house1.png",
+        "w": 767,
+        "h": 802,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house7": {
+      "x": 0.2521,
+      "y": 0.6698,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house2.png",
+        "w": 643,
+        "h": 668,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house8": {
+      "x": 0.1314,
+      "y": 0.7405,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house3.png",
+        "w": 636,
+        "h": 554,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house9": {
+      "x": 0.2592,
+      "y": 0.7677,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house4.png",
+        "w": 775,
+        "h": 600,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house10": {
+      "x": 0.2841,
+      "y": 0.822,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house5.png",
+        "w": 768,
+        "h": 788,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house11": {
+      "x": 0.2841,
+      "y": 0.8832,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house1.png",
+        "w": 767,
+        "h": 802,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house12": {
+      "x": 0.3338,
+      "y": 0.606,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house2.png",
+        "w": 643,
+        "h": 668,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house13": {
+      "x": 0.2862,
+      "y": 0.6454,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house3.png",
+        "w": 636,
+        "h": 554,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house14": {
+      "x": 0.2777,
+      "y": 0.6929,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house4.png",
+        "w": 775,
+        "h": 600,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house15": {
+      "x": 0.3409,
+      "y": 0.663,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house on Elm Loop",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house5.png",
+        "w": 768,
+        "h": 788,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
+    },
+    "house_soho": {
+      "x": 0.15,
+      "y": 0.485,
+      "w": 0.028,
+      "h": 0.024,
+      "label": "A house at the edge of town",
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/house_soho.png",
+        "w": 770,
+        "h": 702,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     }
   },
   "intersections": [
