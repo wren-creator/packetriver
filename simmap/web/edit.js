@@ -19,6 +19,7 @@
 
   const SVGNS = "http://www.w3.org/2000/svg";
   const r4 = (n) => Math.round(n * 1e4) / 1e4;
+  const PE_STROKE = 1.2; // must match #pe-layer .pe-shape's stroke-width below
   const mk = (tag, attrs, parent) => {
     const n = document.createElementNS(SVGNS, tag);
     for (const k in attrs || {}) n.setAttribute(k, attrs[k]);
@@ -328,10 +329,17 @@
       mk("polyline", { class: "pe-shape",
         points: arr.map((p) => `${px(p[0])},${py(p[1])}`).join(" ") }, ui.shapes);
     });
-    // box / rect outlines
+    // box / rect outlines - inset by half the stroke width so the drawn
+    // line's outer edge lands exactly on the box (image) edge instead of
+    // straddling it; a centered SVG stroke would otherwise overshoot by
+    // stroke-width/2 on every side, making the outline visibly bigger than
+    // the sprite art it is supposed to hug
     handles.filter((h) => h.outline).forEach((h) => {
       const [ox, oy, ow, oh] = h.outline();
-      mk("rect", { class: "pe-shape", x: px(ox), y: py(oy), width: px(ow), height: py(oh) },
+      const sw = PE_STROKE;
+      mk("rect", { class: "pe-shape",
+        x: px(ox) + sw / 2, y: py(oy) + sw / 2,
+        width: Math.max(0, px(ow) - sw), height: Math.max(0, py(oh) - sw) },
         ui.shapes);
     });
   }
