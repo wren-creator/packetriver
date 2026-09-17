@@ -133,12 +133,12 @@
       "y": 0.492,
       "w": 0.0284,
       "h": 0.0229,
-      "label": "Bakery",
+      "label": "Bakery & Coffee",
       "kind": "dressing",
       "sprite": {
         "src": "sprites/bakery.png",
-        "w": 585,
-        "h": 634,
+        "w": 952,
+        "h": 1049,
         "anchorX": 0.5,
         "anchorY": 0.98
       }
