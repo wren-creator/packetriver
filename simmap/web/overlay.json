@@ -101,7 +101,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/tavern/",
-      "technique": "tavern_defaultcreds"
+      "technique": "tavern_defaultcreds",
+      "sprite": {
+        "src": "sprites/tavern.png",
+        "w": 682,
+        "h": 791,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "generalstore": {
       "x": 0.4467,
@@ -112,7 +119,14 @@
       "kind": "shop",
       "port": 8090,
       "technique": "generalstore_sqli",
-      "path": "/generalstore/"
+      "path": "/generalstore/",
+      "sprite": {
+        "src": "sprites/generalstore.png",
+        "w": 814,
+        "h": 816,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "bakery": {
       "x": 0.4689,
@@ -120,7 +134,14 @@
       "w": 0.0284,
       "h": 0.0229,
       "label": "Bakery",
-      "kind": "dressing"
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/bakery.png",
+        "w": 585,
+        "h": 634,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "pharmacy": {
       "x": 0.5014,
@@ -131,7 +152,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/pharmacy/",
-      "technique": "pharmacy_authbypass"
+      "technique": "pharmacy_authbypass",
+      "sprite": {
+        "src": "sprites/pharmacy.png",
+        "w": 718,
+        "h": 823,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "diner": {
       "x": 0.5346,
@@ -142,7 +170,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/diner/",
-      "technique": "diner_backup"
+      "technique": "diner_backup",
+      "sprite": {
+        "src": "sprites/diner.png",
+        "w": 716,
+        "h": 617,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "barber": {
       "x": 0.5862,
@@ -153,7 +188,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/barber/",
-      "technique": "barber_xss"
+      "technique": "barber_xss",
+      "sprite": {
+        "src": "sprites/barber.png",
+        "w": 651,
+        "h": 743,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "hardware": {
       "x": 0.5649,
@@ -164,7 +206,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/hardware/",
-      "technique": "hardware_idor"
+      "technique": "hardware_idor",
+      "sprite": {
+        "src": "sprites/hardware.png",
+        "w": 756,
+        "h": 752,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "drycleaner": {
       "x": 0.5985,
@@ -175,7 +224,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/drycleaner/",
-      "technique": "drycleaner_gitleak"
+      "technique": "drycleaner_gitleak",
+      "sprite": {
+        "src": "sprites/drycleaner.png",
+        "w": 700,
+        "h": 975,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "cinema": {
       "x": 0.6248,
@@ -183,7 +239,14 @@
       "w": 0.0287,
       "h": 0.0506,
       "label": "Cinema",
-      "kind": "dressing"
+      "kind": "dressing",
+      "sprite": {
+        "src": "sprites/cinema.png",
+        "w": 672,
+        "h": 688,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "baittackle": {
       "x": 0.6505,
@@ -194,7 +257,14 @@
       "kind": "shop",
       "port": 8090,
       "path": "/baittackle/",
-      "technique": "baittackle_ssrf"
+      "technique": "baittackle_ssrf",
+      "sprite": {
+        "src": "sprites/baittackle.png",
+        "w": 753,
+        "h": 936,
+        "anchorX": 0.5,
+        "anchorY": 0.98
+      }
     },
     "bank": {
       "x": 0.7019,
