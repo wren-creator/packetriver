@@ -85,6 +85,9 @@
       #pe-panel button.warn { border-color:#7a3b3b; }
       #pe-panel .mono { color:#8aa0b4; }
       #pe-panel .sel { color:#ff8fe0; }
+      #pe-tilt label { display:flex; align-items:center; gap:4px; color:#8aa0b4; }
+      #pe-tilt input { width:52px; background:#05080c; color:#c9d4e0;
+        border:1px solid #222c36; border-radius:6px; padding:2px 4px; font:inherit; }
       .pe-legend-h { display:inline-block; width:9px; height:9px; border-radius:50%;
         background:#12b6d8; vertical-align:middle; margin-right:2px; }
       .pe-legend-h.size { border-radius:2px; background:#f6c445; }
@@ -113,6 +116,12 @@
       </div>
       <div class="row mono">cursor <span id="pe-cur">–</span></div>
       <div class="row"><span class="sel" id="pe-sel">nothing selected</span></div>
+      <div class="row" id="pe-tilt" hidden>
+        <label>rotate <input id="pe-rot" type="number" step="1" value="0"></label>
+        <label>skew X <input id="pe-skx" type="number" step="1" value="0"></label>
+        <label>skew Y <input id="pe-sky" type="number" step="1" value="0"></label>
+        <button id="pe-tilt-reset" title="rotate=0, skewX=0, skewY=0">reset</button>
+      </div>
       <div class="row">
         <button id="pe-grid">grid: off</button>
         <button id="pe-prev">[ prev</button>
@@ -133,6 +142,10 @@
     ui.sel = p.querySelector("#pe-sel");
     ui.msg = p.querySelector("#pe-msg");
     ui.json = p.querySelector("#pe-json");
+    ui.tilt = p.querySelector("#pe-tilt");
+    ui.rot = p.querySelector("#pe-rot");
+    ui.skx = p.querySelector("#pe-skx");
+    ui.sky = p.querySelector("#pe-sky");
     p.querySelector("#pe-grid").onclick = cycleGrid;
     p.querySelector("#pe-prev").onclick = () => cycleSel(-1);
     p.querySelector("#pe-next").onclick = () => cycleSel(1);
@@ -140,6 +153,23 @@
     p.querySelector("#pe-copy").onclick = copyJSON;
     p.querySelector("#pe-dl").onclick = downloadJSON;
     p.querySelector("#pe-apply").onclick = applyJSON;
+    const tiltInput = (input, field) => input.addEventListener("input", () => {
+      if (!sel || !sel.building) return;
+      const n = Number(input.value);
+      sel.building.sprite[field] = Number.isFinite(n) ? n : 0;
+      queueRebuild();
+    });
+    tiltInput(ui.rot, "rotate");
+    tiltInput(ui.skx, "skewX");
+    tiltInput(ui.sky, "skewY");
+    p.querySelector("#pe-tilt-reset").onclick = () => {
+      if (!sel || !sel.building) return;
+      delete sel.building.sprite.rotate;
+      delete sel.building.sprite.skewX;
+      delete sel.building.sprite.skewY;
+      ui.rot.value = ui.skx.value = ui.sky.value = 0;
+      queueRebuild();
+    };
   }
 
   function buildLayer() {
@@ -216,7 +246,7 @@
         // sprite's own rendered box (top-left + size), not the underlying
         // x,y,w,h/anchor fields - same math as app.js's drawBuildingSprite()
         // and this file's drawSpritePreviews(), kept in sync via spriteBox()
-        push({ id: "bld " + id, kind: "rect",
+        push({ id: "bld " + id, kind: "rect", building: b,
           get: () => { const o = spriteBox(b); return [o[0], o[1]]; },
           set: (x, y) => {
             const [, , w, h] = spriteBox(b);
@@ -299,8 +329,16 @@
     for (const b of Object.values(L.buildings || {})) {
       if (!b.sprite) continue;
       const [gx, gy, rw, rh] = spriteBox(b);
-      mk("image", { href: b.sprite.src, x: px(gx), y: py(gy), width: px(rw), height: py(rh),
-        opacity: 0.65 }, ui.sprites);
+      const spr = b.sprite;
+      const rot = spr.rotate || 0, skx = spr.skewX || 0, sky = spr.skewY || 0;
+      let parent = ui.sprites;
+      if (rot || skx || sky) {
+        const cx = px(b.x), cy = py(b.y + b.h / 2);
+        parent = mk("g", { transform:
+          `translate(${cx},${cy}) rotate(${rot}) skewX(${skx}) skewY(${sky}) translate(${-cx},${-cy})` }, ui.sprites);
+      }
+      mk("image", { href: spr.src, x: px(gx), y: py(gy), width: px(rw), height: py(rh),
+        opacity: 0.65 }, parent);
     }
   }
 
@@ -422,11 +460,20 @@
     select(handles[i]);
   }
   function updateSelLabel() {
-    if (!sel) { ui.sel.textContent = "nothing selected"; return; }
+    if (!sel) { ui.sel.textContent = "nothing selected"; ui.tilt.hidden = true; return; }
     const [x, y] = sel.get();
     let t = `${sel.id}  x ${x}  y ${y}`;
     if (sel.getSize) { const [w, h] = sel.getSize(); t += `  w ${w}  h ${h}`; }
     ui.sel.textContent = t;
+    if (sel.building) {
+      const spr = sel.building.sprite;
+      ui.tilt.hidden = false;
+      if (document.activeElement !== ui.rot) ui.rot.value = spr.rotate || 0;
+      if (document.activeElement !== ui.skx) ui.skx.value = spr.skewX || 0;
+      if (document.activeElement !== ui.sky) ui.sky.value = spr.skewY || 0;
+    } else {
+      ui.tilt.hidden = true;
+    }
   }
 
   function onKey(e) {

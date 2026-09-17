@@ -64,7 +64,18 @@ function drawBuildingSprite(layer, b) {
   const anchorY = spr.anchorY ?? 1.0;
   const gx = X(b.x) - rw * anchorX;
   const gy = (Y(b.y) + Y(b.h) / 2) - rh * anchorY;
-  el("image", { href: spr.src, x: gx, y: gy, width: rw, height: rh }, layer);
+  // optional fine-tuning so art can be nudged to match the terrain's
+  // isometric perspective at its own spot - rotate spins in the picture
+  // plane, skewX/skewY lean the flat art on each axis; all pivot at the
+  // building's own ground point. Set via the ?edit=1 panel's tilt inputs.
+  const rot = spr.rotate || 0, skx = spr.skewX || 0, sky = spr.skewY || 0;
+  let g = layer;
+  if (rot || skx || sky) {
+    const px = X(b.x), py = Y(b.y) + Y(b.h) / 2;
+    g = el("g", { transform:
+      `translate(${px},${py}) rotate(${rot}) skewX(${skx}) skewY(${sky}) translate(${-px},${-py})` }, layer);
+  }
+  el("image", { href: spr.src, x: gx, y: gy, width: rw, height: rh }, g);
 }
 
 function buildOverlay(layout) {
