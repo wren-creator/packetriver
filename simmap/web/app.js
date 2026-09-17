@@ -12,9 +12,9 @@ function el(tag, attrs, parent) {
   return n;
 }
 function $(id) { return document.getElementById(id); }
-// closest intersection to a building, in fraction space - roads themselves
-// aren't stored as line data (they're painted into the terrain), so the
-// intersection points are the best stand-in for "park on the nearest road"
+// closest intersection to a building, in fraction space - fallback for when
+// layout.roads is empty (older overlay data, or a pack that hasn't traced
+// any roads yet)
 function nearestIntersection(b) {
   const ints = LAYOUT.intersections || [];
   let best = null, bd = Infinity;
@@ -24,6 +24,31 @@ function nearestIntersection(b) {
     if (d < bd) { bd = d; best = it; }
   }
   return best;
+}
+// closest point on any traced road (REFS.roads, built from layout.roads) to
+// a building, in fraction space - sampled along each polyline's real SVG
+// geometry via getPointAtLength() rather than approximated, same mechanism
+// the train already uses to walk REFS.rail/REFS.spur. Falls back to the
+// nearest intersection if no roads have been traced yet.
+function nearestPointOnRoads(b) {
+  const roads = REFS.roads || {};
+  const ids = Object.keys(roads);
+  if (!ids.length) return nearestIntersection(b);
+  const tx = X(b.x), ty = Y(b.y);
+  let best = null, bd = Infinity;
+  for (const id of ids) {
+    const poly = roads[id];
+    const len = poly.getTotalLength();
+    if (!len) continue;
+    const step = Math.max(2, len / 200);
+    for (let d = 0; d <= len; d += step) {
+      const p = poly.getPointAtLength(d);
+      const dx = p.x - tx, dy = p.y - ty;
+      const dist = dx * dx + dy * dy;
+      if (dist < bd) { bd = dist; best = { x: p.x / VB[0], y: p.y / VB[1] }; }
+    }
+  }
+  return best || nearestIntersection(b);
 }
 function toast(msg) {
   const t = $("toast");
@@ -123,12 +148,32 @@ function buildOverlay(layout) {
   REFS.spur = el("polyline", {
     points: spur.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
     fill: "none", stroke: "#6f6350", "stroke-width": 2.5, class: "spur" }, svg);
-  // news van: parked at the road intersection nearest the event's focus
-  // building (render() below), not floating over the roof as an emoji
+
+  // road network: invisible on the live map (the roads are already painted
+  // into basemap.png), but kept as real SVG polylines so anything that
+  // needs "closest point on a road" - the news van, the parade, whatever's
+  // next - can use getTotalLength()/getPointAtLength() the same way the
+  // train already walks REFS.rail/REFS.spur, instead of falling back to
+  // the nearest intersection dot. Edit and extend via ?edit=1.
+  REFS.roads = {};
+  for (const [id, pts] of Object.entries(layout.roads || {})) {
+    REFS.roads[id] = el("polyline", {
+      points: pts.map(p => `${X(p[0])},${Y(p[1])}`).join(" "),
+      fill: "none", stroke: "none", opacity: 0 }, svg);
+  }
+  // news van: parked at the point on the road network nearest the event's
+  // focus building (render() below), not floating over the roof as an emoji
   REFS.newsvan = el("g", { class: "newsvan", visibility: "hidden" }, svg);
   const vanW = 50, vanH = vanW * (723 / 675);
   el("image", { href: "sprites/newsvan.png", x: -vanW / 2, y: -vanH,
     width: vanW, height: vanH }, REFS.newsvan);
+  // parade: no route to walk yet (Founder's Day parade has no focus
+  // building the way news_crew does), so it just sets up at a fixed spot
+  // along the "main" road while the event is active - see render() below
+  REFS.parade = el("g", { class: "parade", visibility: "hidden" }, svg);
+  const paradeW = 70, paradeH = paradeW * (363 / 426);
+  el("image", { href: "sprites/parade.png", x: -paradeW / 2, y: -paradeH,
+    width: paradeW, height: paradeH }, REFS.parade);
   // the sprite art is painted already pointing along its own natural heading
   // (TRAIN_SPRITE_ANGLE, degrees) rather than straight right, so render()
   // subtracts that baseline from the track's own heading before rotating
@@ -310,12 +355,24 @@ function render(s) {
 
   const focusMap = { rail: "railcontrol" };
   const fb = ev.news_crew && LAYOUT.buildings[focusMap[ev.news_focus] || ev.news_focus];
-  const spot = fb && nearestIntersection(fb);
+  const spot = fb && nearestPointOnRoads(fb);
   if (spot) {
     REFS.newsvan.setAttribute("transform", `translate(${X(spot.x).toFixed(1)},${Y(spot.y).toFixed(1)})`);
     REFS.newsvan.setAttribute("visibility", "visible");
   } else {
     REFS.newsvan.setAttribute("visibility", "hidden");
+  }
+
+  // parade has no focus building to walk toward like news_crew does, so it
+  // just sets up partway down the main road while the event is active
+  const mainRoad = REFS.roads && REFS.roads.main;
+  if (ev.parade && mainRoad) {
+    const len = mainRoad.getTotalLength();
+    const p = mainRoad.getPointAtLength(len * 0.6);
+    REFS.parade.setAttribute("transform", `translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`);
+    REFS.parade.setAttribute("visibility", "visible");
+  } else {
+    REFS.parade.setAttribute("visibility", "hidden");
   }
 }
 

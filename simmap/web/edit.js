@@ -67,6 +67,7 @@
       #pe-layer .pe-grid line { stroke: rgba(0,200,255,.18); stroke-width:1; }
       #pe-layer .pe-grid text { fill: rgba(0,200,255,.5); font: 9px monospace; }
       #pe-layer .pe-shape { fill:none; stroke:#12b6d8; stroke-width:1.2; stroke-dasharray:4 3; }
+      #pe-layer .pe-road { stroke:#4a4a4a; stroke-width:2; stroke-dasharray:6 4; }
       #pe-layer .pe-h { fill:#12b6d8; stroke:#04303a; stroke-width:1; cursor:grab; }
       #pe-layer .pe-h:hover { fill:#38d9f5; }
       #pe-layer .pe-h.sel { fill:#ff3bd0; stroke:#3a0030; }
@@ -217,6 +218,7 @@
     { label: "power: plant", re: /^P-plant /, c: "#9aa0aa" },
     { label: "water: residential", re: /^W-res /, c: "#4aa8e0" },
     { label: "rail / spur", re: /^(railPath|spurPath) /, c: "#d98a6a" },
+    { label: "road", re: /^road:/, c: "#4a4a4a" },
     { label: "swimmers", re: /^swimmers /, c: "#ffe4b8" },
     { label: "outfall", re: /^outfall /, c: "#7cb03a" },
     { label: "water main", re: /^waterMain /, c: "#2f8fbf" },
@@ -283,6 +285,17 @@
         get: () => arr[i].slice(), set: (x, y) => { arr[i] = [r4(x), r4(y)]; },
         idx: () => arr.indexOf(arr[i]) }));
     });
+    // road network (layout.roads: {id: [[x,y],...]}) - invisible on the
+    // live map (roads are painted into the terrain) but fully editable
+    // here, same vertex mechanics as railPath/spurPath: drag a point, Alt+
+    // click the layer to insert one after the selected vertex, Delete to
+    // remove it. Add a brand new named road by hand-editing the JSON panel.
+    for (const [roadId, arr] of Object.entries(L.roads || {})) {
+      if (!Array.isArray(arr)) continue;
+      arr.forEach((_, i) => push({ id: "road:" + roadId + " " + i, kind: "vertex", arr, key: "road:" + roadId,
+        get: () => arr[i].slice(), set: (x, y) => { arr[i] = [r4(x), r4(y)]; },
+        idx: () => arr.indexOf(arr[i]) }));
+    }
     for (const key of ["river", "beachZone"]) {
       const rv = L[key];
       if (!rv) continue;
@@ -367,6 +380,11 @@
       mk("polyline", { class: "pe-shape",
         points: arr.map((p) => `${px(p[0])},${py(p[1])}`).join(" ") }, ui.shapes);
     });
+    for (const arr of Object.values(L.roads || {})) {
+      if (!Array.isArray(arr) || arr.length < 2) continue;
+      mk("polyline", { class: "pe-shape pe-road",
+        points: arr.map((p) => `${px(p[0])},${py(p[1])}`).join(" ") }, ui.shapes);
+    }
     // box / rect outlines - inset by half the stroke width so the drawn
     // line's outer edge lands exactly on the box (image) edge instead of
     // straddling it; a centered SVG stroke would otherwise overshoot by
