@@ -293,8 +293,8 @@
       "terminal_label": "AS/400 green screen",
       "sprite": {
         "src": "sprites/cityhall.png",
-        "w": 579,
-        "h": 637,
+        "w": 960,
+        "h": 1086,
         "anchorX": 0.5,
         "anchorY": 0.98
       }
