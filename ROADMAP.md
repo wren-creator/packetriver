@@ -163,6 +163,21 @@ reuse map live in the design doc.
 
 ## Ideas / bucket list
 
+- **Coffee shop - second WiFi MITM lane.** The Main Street Bakery & Coffee is
+  live on the map (art only, `kind: dressing`, no service yet). The plan is
+  an independent second WiFi lane parallel to 5a's `netlab`/`diner_wifi` -
+  its own AP + patron-bot containers on their own internal subnet, its own
+  web bug (a different class than the diner's exposed backup, so it isn't a
+  repeat), and a `paygw` checkout like the other Main Street shops. Needs a
+  new compose service pair, a lightweight web app under `websites/site/`, a
+  gateway vhost, and a `scoring/flags.py` technique entry. Not started -
+  deliberately parked here instead of built ad hoc alongside sprite batches.
+- **Give the SOHO pivot a house on the map.** `soho-router`/`soho-resident`
+  (Phase 5b) have never had a building on the town map - the residential
+  loop is getting real house sprites (16 planned) and one of them should be
+  visually/functionally the SOHO pivot house, wired to the router's WAN-side
+  admin port. Art + placement work, no new backend needed (the challenge
+  already exists).
 - **Credential hygiene, deeper.** The field-plc HMI logins are now per-plant,
   minted at boot, rotated at Alert L2, discoverable via `/ops/handover.txt`.
   Next: (a) a wall-clock rotation option (`PKT_CRED_ROTATE_MIN`, off by
