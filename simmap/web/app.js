@@ -78,6 +78,12 @@ let LAYOUT = null;
 // building does) - layout.train.sprite, falls back to this baseline if
 // overlay.json predates the field.
 const TRAIN_SPRITE_DEFAULT = { rotate: 146.5, skewX: 0, skewY: 0, offsetX: 0, offsetY: 0 };
+// per-tick tracking for the train's own live path position/heading, and
+// ?edit=1's freeze toggle - deliberately NOT on LAYOUT.train, so none of it
+// ever leaks into copy JSON/download/overlay.json (LAYOUT is exactly what
+// gets serialized; this is scratch, exposed to edit.js via PKTR_EDIT.trainLive
+// as a stable object reference both files mutate in place).
+const TRAIN_LIVE = { raw: null, ang: 0, frozen: false };
 
 // Building art: rendered width locks to the footprint's world width (b.w),
 // height derives from the sprite PNG's own native aspect ratio (spr.w/spr.h,
@@ -231,7 +237,7 @@ function buildOverlay(layout) {
   REFS.waterRes   = dots("waterResidential", "wdot");
 
   // hook for the ?edit=1 overlay editor (edit.js); inert otherwise
-  window.PKTR_EDIT = { layout, VB, overlay: svg, rebuild: () => buildOverlay(layout) };
+  window.PKTR_EDIT = { layout, VB, overlay: svg, rebuild: () => buildOverlay(layout), trainLive: TRAIN_LIVE };
 }
 
 // ---------------------------------------------------------------- render
@@ -271,31 +277,41 @@ function render(s) {
   });
 
   if (s.rail && REFS.rail) {
-    const L = REFS.rail.getTotalLength();
-    const SL = REFS.spur.getTotalLength();
     let p, ang, show = true;
-    if (s.rail.on_spur || s.rail.derailed) {
-      // routed onto the spur: travel it from the branch down to the plant,
-      // then hold at the factory once derailed
-      const frac = s.rail.derailed ? 1.0 : (s.rail.spur_pos || 0);
-      const d = Math.min(SL, frac * SL);
-      p = REFS.spur.getPointAtLength(d);
-      const q = REFS.spur.getPointAtLength(Math.max(0, d - 6));
-      ang = Math.atan2(p.y - q.y, p.x - q.x) * 180 / Math.PI;
-    } else if (s.rail.train_pos < 1.0) {
-      const d = s.rail.train_pos * L;
-      p = REFS.rail.getPointAtLength(d);
-      const q = REFS.rail.getPointAtLength(Math.min(L, d + 6));
-      ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
-    } else { show = false; }
+    if (TRAIN_LIVE.frozen && TRAIN_LIVE.raw) {
+      // ?edit=1 asked to hold it still (see edit.js's select()) so rotate/
+      // skew/offset can be judged against a fixed picture instead of a
+      // target that's moving every tick - reuse the last live point/heading
+      // rather than recomputing from s.rail, everything else (offset,
+      // rotate, skew) still applies live below.
+      p = { x: TRAIN_LIVE.raw.x * VB[0], y: TRAIN_LIVE.raw.y * VB[1] };
+      ang = TRAIN_LIVE.ang;
+    } else {
+      const L = REFS.rail.getTotalLength();
+      const SL = REFS.spur.getTotalLength();
+      if (s.rail.on_spur || s.rail.derailed) {
+        // routed onto the spur: travel it from the branch down to the plant,
+        // then hold at the factory once derailed
+        const frac = s.rail.derailed ? 1.0 : (s.rail.spur_pos || 0);
+        const d = Math.min(SL, frac * SL);
+        p = REFS.spur.getPointAtLength(d);
+        const q = REFS.spur.getPointAtLength(Math.max(0, d - 6));
+        ang = Math.atan2(p.y - q.y, p.x - q.x) * 180 / Math.PI;
+      } else if (s.rail.train_pos < 1.0) {
+        const d = s.rail.train_pos * L;
+        p = REFS.rail.getPointAtLength(d);
+        const q = REFS.rail.getPointAtLength(Math.min(L, d + 6));
+        ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+      } else { show = false; }
+      if (show) {
+        // fraction units, like every other overlay coordinate, so edit.js's
+        // drag handle can read/offset it the same way it reads b.x/b.y
+        TRAIN_LIVE.raw = { x: p.x / VB[0], y: p.y / VB[1] };
+        TRAIN_LIVE.ang = ang;
+      }
+    }
     REFS.train.setAttribute("visibility", show ? "visible" : "hidden");
     if (show) {
-      // p/ang are the raw path point/heading; LAYOUT.train._raw (fraction
-      // units, like every other overlay coordinate) records that point
-      // before offsetX/offsetY nudge it, so edit.js's drag handle always
-      // knows where "no offset" is, even mid-drag while the train keeps
-      // moving under it.
-      LAYOUT.train._raw = { x: p.x / VB[0], y: p.y / VB[1] };
       const spr = LAYOUT.train.sprite;
       const dx = p.x + X(spr.offsetX || 0), dy = p.y + Y(spr.offsetY || 0);
       REFS.train.setAttribute("transform",

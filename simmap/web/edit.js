@@ -132,6 +132,7 @@
         <button id="pe-grid">grid: off</button>
         <button id="pe-prev">[ prev</button>
         <button id="pe-next">next ]</button>
+        <button id="pe-sel-train" title="jump straight to the moving train, instead of hunting for its dot or cycling through every other handle">select train</button>
         <button id="pe-revert" class="warn">revert</button>
       </div>
       <div class="row">
@@ -155,6 +156,10 @@
     p.querySelector("#pe-grid").onclick = cycleGrid;
     p.querySelector("#pe-prev").onclick = () => cycleSel(-1);
     p.querySelector("#pe-next").onclick = () => cycleSel(1);
+    p.querySelector("#pe-sel-train").onclick = () => {
+      const h = handles.find((x) => x.id === "train");
+      if (h) select(h); else msg("train handle not found - reload the page?");
+    };
     p.querySelector("#pe-revert").onclick = revert;
     p.querySelector("#pe-copy").onclick = copyJSON;
     p.querySelector("#pe-dl").onclick = downloadJSON;
@@ -293,17 +298,18 @@
     // the train's current on-screen point (its live path position plus
     // whatever offsetX/offsetY nudge is already dialed in); set() converts
     // a drag back into that offset, using the same "raw" path point app.js
-    // stamps onto L.train._raw every tick so the handle tracks a moving
-    // target instead of a fixed spot.
+    // stamps onto S.trainLive.raw every tick (deliberately off L, not part
+    // of the saved layout) so the handle tracks a moving target instead of
+    // a fixed spot - unless select() has frozen it, see below.
     if (L.train && L.train.sprite) {
       push({ id: "train", kind: "point", building: { sprite: L.train.sprite },
         get: () => {
-          const raw = L.train._raw || { x: 0.5, y: 0.5 };
+          const raw = (S.trainLive && S.trainLive.raw) || { x: 0.5, y: 0.5 };
           const spr = L.train.sprite;
           return [r4(raw.x + (spr.offsetX || 0)), r4(raw.y + (spr.offsetY || 0))];
         },
         set: (x, y) => {
-          const raw = L.train._raw || { x: 0.5, y: 0.5 };
+          const raw = (S.trainLive && S.trainLive.raw) || { x: 0.5, y: 0.5 };
           L.train.sprite.offsetX = r4(x - raw.x);
           L.train.sprite.offsetY = r4(y - raw.y);
         } });
@@ -508,6 +514,11 @@
 
   // ------------------------------------------------------- selection + keys
   function select(h) {
+    // freeze the train in place while it's the selection, otherwise rotate/
+    // skew/offset are judged against a target that's moved again by the
+    // time the next tick redraws it - see app.js's TRAIN_LIVE.frozen check.
+    // Anything else selected (including nothing) lets it resume moving.
+    if (S.trainLive) S.trainLive.frozen = !!(h && h.id === "train");
     sel = h;
     drawHandles();
     updateSelLabel();
@@ -523,6 +534,7 @@
     const [x, y] = sel.get();
     let t = `${sel.id}  x ${x}  y ${y}`;
     if (sel.getSize) { const [w, h] = sel.getSize(); t += `  w ${w}  h ${h}`; }
+    if (sel.id === "train") t += "  [frozen - moves again once deselected]";
     ui.sel.textContent = t;
     if (sel.building) {
       const spr = sel.building.sprite;
