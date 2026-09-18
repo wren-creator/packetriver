@@ -172,12 +172,13 @@ reuse map live in the design doc.
   new compose service pair, a lightweight web app under `websites/site/`, a
   gateway vhost, and a `scoring/flags.py` technique entry. Not started -
   deliberately parked here instead of built ad hoc alongside sprite batches.
-- **Give the SOHO pivot a house on the map.** `soho-router`/`soho-resident`
-  (Phase 5b) have never had a building on the town map - the residential
-  loop is getting real house sprites (16 planned) and one of them should be
-  visually/functionally the SOHO pivot house, wired to the router's WAN-side
-  admin port. Art + placement work, no new backend needed (the challenge
-  already exists).
+- **Wire the SOHO pivot's house up functionally.** `house_soho` is live on
+  the map (art + placement done, `kind: dressing`, placed apart from the
+  main residential cluster near the entrance road) but it's scenery only -
+  clicking it doesn't do anything. Remaining: make it
+  `kind: utility`/click through to `soho-router`/`soho-resident`'s (Phase 5b)
+  WAN-side admin port, same as `bakery` still needs its own backend below.
+  No new backend needed for the challenge itself, just the map hookup.
 - **Credential hygiene, deeper.** The field-plc HMI logins are now per-plant,
   minted at boot, rotated at Alert L2, discoverable via `/ops/handover.txt`.
   Next: (a) a wall-clock rotation option (`PKT_CRED_ROTATE_MIN`, off by

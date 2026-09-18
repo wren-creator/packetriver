@@ -4,6 +4,25 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### The town map moves off one baked-in mural onto generated terrain + sprites
+
+- `basemap.png` used to be a single hand-painted mural with all 20 buildings
+  painted directly into it - adding a building meant hand-painting the
+  master art and hand-matching overlay coordinates. Replaced it with a
+  fresh AI-generated terrain-only base (roads, rail, river, welcome sign,
+  ambient trees/grass, zero buildings) and moved every building - all the
+  originals plus 16 new houses, the neighborhood park, the parade, the news
+  van - onto its own independently positioned sprite PNG, Command & Conquer
+  style. `docs/overlay-editing.md` documents the `sprite` field; `?edit=1`
+  gained direct move/resize/rotate/skew of a building's rendered sprite box.
+- `overlay.json` grew a `roads` field (same vertex-editing shape as
+  `railPath`), real road geometry (not just intersection dots), used so far
+  by the parade and the news van's `nearestPointOnRoads()`.
+- The Grain Co-op expansion pack (`packs/grain-coop/`) got its own sprite
+  art for the first time: `grain_coop_elevator` (four silos, an auger
+  loading a semi trailer, fenced compound) and a new `grain_coop_office`
+  scenery building alongside it.
+
 ### Containment audit - the pivot-isolation check was a false alarm
 
 - `status.sh`'s `player → traffic-plc` check fired `audit FAILED ... stop the

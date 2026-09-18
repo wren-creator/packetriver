@@ -179,14 +179,15 @@ its service (Phase 1+); Phase 0 just names it.
 
 A building can optionally carry a `sprite` (an image positioned/sized off
 the same `x,y,w,h` already driving its hotspot) instead of being painted
-directly into `basemap.png` - this is how buildings are meant to be added
-going forward, art and hotspot data staying independent so growing the town
-no longer means repainting the one shared base image. All 20 of today's
-buildings still render the old way (art baked into `basemap.png`, no
-`sprite` field set) pending a batched migration; see `docs/overlay-editing.md`
-for the field shape. Expansion packs (`packs/<name>/overlay.pack.json`) serve
-their own sprite art from `/packs/<name>/sprites/`, merged server-side in
-`simmap/server.py`'s `_merged_overlay()`.
+directly into `basemap.png`. `basemap.png` is now generated terrain only
+(roads, rail, river, ambient trees/grass, zero buildings) and every
+building on the map - all the originals plus houses, the park, the parade,
+the news van - renders as its own independently positioned sprite; growing
+the town no longer means repainting the one shared base image. See
+`docs/overlay-editing.md` for the field shape and the `?edit=1` editor that
+places/tilts sprites. Expansion packs (`packs/<name>/overlay.pack.json`)
+serve their own sprite art from `/packs/<name>/sprites/`, merged
+server-side in `simmap/server.py`'s `_merged_overlay()`.
 
 `overlay.json` is pinned to the current base art and gets re-calibrated when
 the image changes; open the map with `?edit=1` for the drag-and-copy overlay
