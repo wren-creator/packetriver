@@ -1,655 +1,683 @@
 {
-  "_note": "Percentage coords (0..1). Aligned against basemap.png with the ?edit=1 editor. Re-run the editor if the art changes. Buildings currently have NO sprite/position re-check yet post terrain-swap (2nd art direction: terrain-only base + sprite buildings) - they need fresh placement, not just a coordinate carry-over. streetlights/powerResidential/waterResidential/powerBusiness/powerPlant/powerFeeder*/waterMain are STALE, carried over unchanged from the old art; they need rework once houses become sprites too.",
-  "viewBox": [
-    1408,
-    736
-  ],
+  "_note": "Percentage coords (0..1). Aligned against basemap.png with the ?edit=1 editor. Re-run the editor if the art changes. Full recalibration pass done: every building, streetlight, power/water residential dot, feeder line, intersection, and the rail path itself repositioned to match the current terrain (2026-09-18).",
+  "_railNote": "railPath is just the visible top run: the train enters, crosses the Main Rail Line, and exits, then stays hidden the rest of the cycle before re-entering. Both endpoints are inset from the canvas edge by the train sprite's own half-diagonal (see app.js's trainW/trainH) so the full sprite is always on-screen while visible, never clipped mid-appear/vanish.",
+  "beachZone": {
+    "h": 0.3226,
+    "w": 0.1315,
+    "x": 0.7534,
+    "y": 0.3588
+  },
   "buildings": {
-    "power": {
-      "x": 0.2699,
-      "y": 0.3023,
-      "w": 0.0781,
-      "h": 0.0747,
-      "label": "Packet River Power & Light",
-      "kind": "utility",
-      "port": 8093,
-      "technique": "power_modbus_feeder",
-      "path": "/power",
-      "sprite": {
-        "src": "sprites/power.png",
-        "w": 965,
-        "h": 628,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "water": {
-      "x": 0.4972,
-      "y": 0.3261,
-      "w": 0.0923,
-      "h": 0.0815,
-      "label": "Packet River Municipal Water Authority",
-      "kind": "utility",
-      "port": 8093,
-      "technique": "water_modbus_pump",
-      "path": "/water",
-      "sprite": {
-        "src": "sprites/water.png",
-        "w": 998,
-        "h": 576,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "watertower": {
-      "x": 0.6534,
-      "y": 0.2378,
-      "w": 0.0426,
-      "h": 0.0408,
-      "label": "Water Tower",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/watertower.png",
-        "w": 809,
-        "h": 705,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "sewage": {
-      "x": 0.6037,
-      "y": 0.3397,
-      "w": 0.0923,
-      "h": 0.0815,
-      "label": "Packet River Water Reclamation Facility",
-      "kind": "utility",
-      "port": 8093,
-      "path": "/sewage",
-      "technique": "sewage_modbus",
-      "sprite": {
-        "src": "sprites/sewage.png",
-        "w": 1026,
-        "h": 586,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "factory": {
-      "x": 0.4261,
-      "y": 0.3736,
-      "w": 0.1136,
-      "h": 0.1223,
-      "label": "Packet River Widget Works",
-      "kind": "utility",
-      "port": 8093,
-      "path": "/factory",
-      "technique": "factory_modbus",
-      "sprite": {
-        "src": "sprites/factory.png",
-        "w": 761,
-        "h": 612,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "tavern": {
-      "x": 0.4156,
-      "y": 0.512,
-      "w": 0.0373,
-      "h": 0.0275,
-      "label": "The Broken Packet Tavern",
-      "kind": "shop",
-      "port": 8090,
-      "path": "/tavern/",
-      "technique": "tavern_defaultcreds",
-      "sprite": {
-        "src": "sprites/tavern.png",
-        "w": 682,
-        "h": 791,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "generalstore": {
-      "x": 0.4467,
-      "y": 0.5006,
-      "w": 0.0356,
-      "h": 0.0264,
-      "label": "Packet River General Store",
-      "kind": "shop",
-      "port": 8090,
-      "technique": "generalstore_sqli",
-      "path": "/generalstore/",
-      "sprite": {
-        "src": "sprites/generalstore.png",
-        "w": 814,
-        "h": 816,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "bakery": {
-      "x": 0.4689,
-      "y": 0.492,
-      "w": 0.0284,
-      "h": 0.0229,
-      "label": "Bakery & Coffee",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/bakery.png",
-        "w": 952,
-        "h": 1049,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "pharmacy": {
-      "x": 0.5014,
-      "y": 0.4759,
-      "w": 0.0338,
-      "h": 0.0252,
-      "label": "Packet River Pharmacy",
-      "kind": "shop",
-      "port": 8090,
-      "path": "/pharmacy/",
-      "technique": "pharmacy_authbypass",
-      "sprite": {
-        "src": "sprites/pharmacy.png",
-        "w": 718,
-        "h": 823,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "diner": {
-      "x": 0.5346,
-      "y": 0.4608,
-      "w": 0.038,
-      "h": 0.0383,
-      "label": "The Packet River Diner",
-      "kind": "shop",
-      "port": 8090,
-      "path": "/diner/",
-      "technique": "diner_backup",
-      "sprite": {
-        "src": "sprites/diner.png",
-        "w": 716,
-        "h": 617,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "barber": {
-      "x": 0.5862,
-      "y": 0.5029,
-      "w": 0.032,
-      "h": 0.0241,
-      "label": "Riverbend Barber & Salon",
-      "kind": "shop",
-      "port": 8090,
-      "path": "/barber/",
-      "technique": "barber_xss",
-      "sprite": {
-        "src": "sprites/barber.png",
-        "w": 651,
-        "h": 743,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "hardware": {
-      "x": 0.5649,
-      "y": 0.5347,
-      "w": 0.0356,
-      "h": 0.0275,
-      "label": "Riverside Hardware & Supply",
-      "kind": "shop",
-      "port": 8090,
-      "path": "/hardware/",
-      "technique": "hardware_idor",
-      "sprite": {
-        "src": "sprites/hardware.png",
-        "w": 756,
-        "h": 752,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "drycleaner": {
-      "x": 0.5985,
-      "y": 0.5584,
-      "w": 0.0392,
-      "h": 0.0514,
-      "label": "Packet River Cleaners",
-      "kind": "shop",
-      "port": 8090,
-      "path": "/drycleaner/",
-      "technique": "drycleaner_gitleak",
-      "sprite": {
-        "src": "sprites/drycleaner.png",
-        "w": 700,
-        "h": 975,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "cinema": {
-      "x": 0.6248,
-      "y": 0.576,
-      "w": 0.0287,
-      "h": 0.0506,
-      "label": "Cinema",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/cinema.png",
-        "w": 672,
-        "h": 688,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
     "baittackle": {
-      "x": 0.6505,
-      "y": 0.5934,
-      "w": 0.0346,
       "h": 0.0571,
-      "label": "Packet River Bait & Tackle",
       "kind": "shop",
-      "port": 8090,
+      "label": "Packet River Bait & Tackle",
       "path": "/baittackle/",
-      "technique": "baittackle_ssrf",
+      "port": 8090,
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 936,
         "src": "sprites/baittackle.png",
         "w": 753,
-        "h": 936,
+        "scale": 1.3457
+      },
+      "technique": "baittackle_ssrf",
+      "w": 0.0346,
+      "x": 0.6707,
+      "y": 0.8618
+    },
+    "bakery": {
+      "h": 0.0229,
+      "kind": "dressing",
+      "label": "Bakery & Coffee",
+      "sprite": {
         "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "anchorY": 0.98,
+        "h": 1049,
+        "src": "sprites/bakery.png",
+        "w": 952
+      },
+      "w": 0.0284,
+      "x": 0.702,
+      "y": 0.6566
     },
     "bank": {
-      "x": 0.7019,
-      "y": 0.6253,
-      "w": 0.054,
       "h": 0.0696,
-      "label": "First Packet Bank & Trust",
       "kind": "bank",
-      "port": 8100,
+      "label": "First Packet Bank & Trust",
       "path": "/",
+      "port": 8100,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 1005,
+        "src": "sprites/bank.png",
+        "w": 775
+      },
       "technique": "bank_jwt_none",
       "terminal": 7681,
       "terminal_label": "z16 green screen",
+      "w": 0.054,
+      "x": 0.6081,
+      "y": 0.5086
+    },
+    "barber": {
+      "h": 0.0241,
+      "kind": "shop",
+      "label": "Riverbend Barber & Salon",
+      "path": "/barber/",
+      "port": 8090,
       "sprite": {
-        "src": "sprites/bank.png",
-        "w": 775,
-        "h": 1005,
         "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "anchorY": 0.98,
+        "h": 743,
+        "src": "sprites/barber.png",
+        "w": 651
+      },
+      "technique": "barber_xss",
+      "w": 0.032,
+      "x": 0.6266,
+      "y": 0.5558
+    },
+    "cinema": {
+      "h": 0.0506,
+      "kind": "dressing",
+      "label": "Cinema",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 688,
+        "src": "sprites/cinema.png",
+        "w": 672
+      },
+      "w": 0.0287,
+      "x": 0.4867,
+      "y": 0.2985
     },
     "cityhall": {
-      "x": 0.5047,
-      "y": 0.5853,
-      "w": 0.09,
       "h": 0.0959,
-      "label": "Borough Hall - Town of Packet River",
       "kind": "civic",
-      "port": 8090,
+      "label": "Borough Hall - Town of Packet River",
       "path": "/townhall/",
+      "port": 8090,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 1086,
+        "src": "sprites/cityhall.png",
+        "w": 960,
+        "scale": 0.7191
+      },
       "technique": "townhall_lfi",
       "terminal": 7681,
       "terminal_label": "AS/400 green screen",
-      "sprite": {
-        "src": "sprites/cityhall.png",
-        "w": 960,
-        "h": 1086,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+      "w": 0.09,
+      "x": 0.5013,
+      "y": 0.5827
     },
-    "police": {
-      "x": 0.4248,
-      "y": 0.6611,
-      "w": 0.065,
-      "h": 0.0529,
-      "label": "Packet River Police Department",
-      "kind": "civic",
+    "diner": {
+      "h": 0.0383,
+      "kind": "shop",
+      "label": "The Packet River Diner",
+      "path": "/diner/",
       "port": 8090,
-      "path": "/police/",
-      "technique": "police_leak",
       "sprite": {
-        "src": "sprites/police.png",
-        "w": 675,
-        "h": 667,
         "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "anchorY": 0.98,
+        "h": 617,
+        "src": "sprites/diner.png",
+        "w": 716,
+        "scale": 0.9344
+      },
+      "technique": "diner_backup",
+      "w": 0.038,
+      "x": 0.9247,
+      "y": 0.22
+    },
+    "drycleaner": {
+      "h": 0.0514,
+      "kind": "shop",
+      "label": "Packet River Cleaners",
+      "path": "/drycleaner/",
+      "port": 8090,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 975,
+        "src": "sprites/drycleaner.png",
+        "w": 700
+      },
+      "technique": "drycleaner_gitleak",
+      "w": 0.0392,
+      "x": 0.6542,
+      "y": 0.5763
+    },
+    "factory": {
+      "h": 0.1223,
+      "kind": "utility",
+      "label": "Packet River Widget Works",
+      "path": "/factory",
+      "port": 8093,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 612,
+        "src": "sprites/factory.png",
+        "w": 761
+      },
+      "technique": "factory_modbus",
+      "w": 0.1136,
+      "x": 0.5984,
+      "y": 0.1815
     },
     "fire": {
-      "x": 0.5823,
-      "y": 0.6664,
-      "w": 0.085,
       "h": 0.0584,
-      "label": "Packet River Fire & Rescue",
       "kind": "civic",
-      "port": 8090,
+      "label": "Packet River Fire & Rescue",
       "path": "/fire/",
-      "technique": "fire_defaultcreds",
+      "port": 8090,
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 647,
         "src": "sprites/fire.png",
         "w": 703,
-        "h": 647,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 0.6209
+      },
+      "technique": "fire_defaultcreds",
+      "w": 0.085,
+      "x": 0.3449,
+      "y": 0.4281
     },
-    "railcontrol": {
-      "x": 0.2,
-      "y": 0.155,
-      "w": 0.055,
-      "h": 0.05,
-      "label": "Packet River & Southern Railroad - Dispatch",
-      "kind": "rail",
-      "port": 8096,
-      "path": "/",
+    "generalstore": {
+      "h": 0.0264,
+      "kind": "shop",
+      "label": "Packet River General Store",
+      "path": "/generalstore/",
+      "port": 8090,
       "sprite": {
-        "src": "sprites/railcontrol.png",
-        "w": 564,
-        "h": 672,
         "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "anchorY": 0.98,
+        "h": 816,
+        "src": "sprites/generalstore.png",
+        "w": 814
+      },
+      "technique": "generalstore_sqli",
+      "w": 0.0356,
+      "x": 0.8806,
+      "y": 0.2121
     },
-    "railyard": {
-      "x": 0.335,
-      "y": 0.235,
-      "w": 0.14,
-      "h": 0.06,
-      "label": "Packet River & Southern Railroad - Yard",
-      "kind": "dressing",
+    "hardware": {
+      "h": 0.0275,
+      "kind": "shop",
+      "label": "Riverside Hardware & Supply",
+      "path": "/hardware/",
+      "port": 8090,
       "sprite": {
-        "src": "sprites/railyard.png",
-        "w": 845,
-        "h": 612,
         "anchorX": 0.5,
-        "anchorY": 0.9
-      }
+        "anchorY": 0.98,
+        "h": 752,
+        "src": "sprites/hardware.png",
+        "w": 756
+      },
+      "technique": "hardware_idor",
+      "w": 0.0356,
+      "x": 0.5698,
+      "y": 0.4893
     },
     "house1": {
-      "x": 0.1264,
-      "y": 0.5054,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 802,
         "src": "sprites/house1.png",
         "w": 767,
-        "h": 802,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house2": {
-      "x": 0.2131,
-      "y": 0.5,
+        "scale": 1.2989
+      },
       "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house2.png",
-        "w": 643,
-        "h": 668,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house3": {
-      "x": 0.2876,
-      "y": 0.5598,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house3.png",
-        "w": 636,
-        "h": 554,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house4": {
-      "x": 0.2521,
-      "y": 0.6155,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house4.png",
-        "w": 775,
-        "h": 600,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house5": {
-      "x": 0.103,
-      "y": 0.6562,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house5.png",
-        "w": 768,
-        "h": 788,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house6": {
-      "x": 0.1527,
-      "y": 0.6753,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house1.png",
-        "w": 767,
-        "h": 802,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house7": {
-      "x": 0.2521,
-      "y": 0.6698,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house2.png",
-        "w": 643,
-        "h": 668,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house8": {
-      "x": 0.1314,
-      "y": 0.7405,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house3.png",
-        "w": 636,
-        "h": 554,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
-    },
-    "house9": {
-      "x": 0.2592,
-      "y": 0.7677,
-      "w": 0.028,
-      "h": 0.024,
-      "label": "A house on Elm Loop",
-      "kind": "dressing",
-      "sprite": {
-        "src": "sprites/house4.png",
-        "w": 775,
-        "h": 600,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+      "x": 0.1315,
+      "y": 0.5527
     },
     "house10": {
-      "x": 0.2841,
-      "y": 0.822,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 788,
         "src": "sprites/house5.png",
         "w": 768,
-        "h": 788,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 1.2853
+      },
+      "w": 0.028,
+      "x": 0.285,
+      "y": 0.8223
     },
     "house11": {
-      "x": 0.2841,
-      "y": 0.8832,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 802,
         "src": "sprites/house1.png",
         "w": 767,
-        "h": 802,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 1.5699
+      },
+      "w": 0.028,
+      "x": 0.3172,
+      "y": 0.8676
     },
     "house12": {
-      "x": 0.3338,
-      "y": 0.606,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 668,
         "src": "sprites/house2.png",
         "w": 643,
-        "h": 668,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 1.4196
+      },
+      "w": 0.028,
+      "x": 0.2664,
+      "y": 0.5353
     },
     "house13": {
-      "x": 0.2862,
-      "y": 0.6454,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 554,
         "src": "sprites/house3.png",
         "w": 636,
-        "h": 554,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 1.79
+      },
+      "w": 0.028,
+      "x": 0.4061,
+      "y": 0.9127
     },
     "house14": {
-      "x": 0.2777,
-      "y": 0.6929,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 600,
         "src": "sprites/house4.png",
         "w": 775,
-        "h": 600,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 1.5735
+      },
+      "w": 0.028,
+      "x": 0.3524,
+      "y": 0.7914
     },
     "house15": {
-      "x": 0.3409,
-      "y": 0.663,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house on Elm Loop",
       "kind": "dressing",
+      "label": "A house on Elm Loop",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 788,
         "src": "sprites/house5.png",
         "w": 768,
-        "h": 788,
+        "scale": 1.4537
+      },
+      "w": 0.028,
+      "x": 0.4003,
+      "y": 0.7145
+    },
+    "house2": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
         "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "anchorY": 0.98,
+        "h": 668,
+        "src": "sprites/house2.png",
+        "w": 643,
+        "scale": 1.3001
+      },
+      "w": 0.028,
+      "x": 0.1677,
+      "y": 0.5202
+    },
+    "house3": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 554,
+        "src": "sprites/house3.png",
+        "w": 636,
+        "scale": 1.9078
+      },
+      "w": 0.028,
+      "x": 0.3584,
+      "y": 0.9648
+    },
+    "house4": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 600,
+        "src": "sprites/house4.png",
+        "w": 775,
+        "scale": 1.4945
+      },
+      "w": 0.028,
+      "x": 0.3052,
+      "y": 0.5819
+    },
+    "house5": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 788,
+        "src": "sprites/house5.png",
+        "w": 768,
+        "scale": 1.2606
+      },
+      "w": 0.028,
+      "x": 0.1653,
+      "y": 0.6737
+    },
+    "house6": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 802,
+        "src": "sprites/house1.png",
+        "w": 767,
+        "scale": 1.3512
+      },
+      "w": 0.028,
+      "x": 0.2011,
+      "y": 0.7188
+    },
+    "house7": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 668,
+        "src": "sprites/house2.png",
+        "w": 643,
+        "scale": 1.4047
+      },
+      "w": 0.028,
+      "x": 0.0572,
+      "y": 0.638
+    },
+    "house8": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 554,
+        "src": "sprites/house3.png",
+        "w": 636,
+        "scale": 1.5227
+      },
+      "w": 0.028,
+      "x": 0.2345,
+      "y": 0.662
+    },
+    "house9": {
+      "h": 0.024,
+      "kind": "dressing",
+      "label": "A house on Elm Loop",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 600,
+        "src": "sprites/house4.png",
+        "w": 775,
+        "scale": 1.3249
+      },
+      "w": 0.028,
+      "x": 0.2615,
+      "y": 0.7804
     },
     "house_soho": {
-      "x": 0.15,
-      "y": 0.485,
-      "w": 0.028,
       "h": 0.024,
-      "label": "A house at the edge of town",
       "kind": "dressing",
+      "label": "A house at the edge of town",
       "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 702,
         "src": "sprites/house_soho.png",
         "w": 770,
-        "h": 702,
-        "anchorX": 0.5,
-        "anchorY": 0.98
-      }
+        "scale": 1.4781
+      },
+      "w": 0.028,
+      "x": 0.0933,
+      "y": 0.5977
     },
     "park": {
-      "x": 0.213,
-      "y": 0.639,
-      "w": 0.09,
       "h": 0.05,
-      "label": "Neighborhood Park",
       "kind": "dressing",
+      "label": "Neighborhood Park",
       "sprite": {
-        "src": "sprites/park.png",
-        "w": 903,
-        "h": 536,
         "anchorX": 0.5,
-        "anchorY": 0.92
-      }
+        "anchorY": 0.92,
+        "h": 536,
+        "src": "sprites/park.png",
+        "w": 903
+      },
+      "w": 0.09,
+      "x": 0.6135,
+      "y": 0.7558
+    },
+    "pharmacy": {
+      "h": 0.0252,
+      "kind": "shop",
+      "label": "Packet River Pharmacy",
+      "path": "/pharmacy/",
+      "port": 8090,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 823,
+        "src": "sprites/pharmacy.png",
+        "w": 718
+      },
+      "technique": "pharmacy_authbypass",
+      "w": 0.0338,
+      "x": 0.8804,
+      "y": 0.136
+    },
+    "police": {
+      "h": 0.0529,
+      "kind": "civic",
+      "label": "Packet River Police Department",
+      "path": "/police/",
+      "port": 8090,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 667,
+        "src": "sprites/police.png",
+        "w": 675,
+        "scale": 0.8342
+      },
+      "technique": "police_leak",
+      "w": 0.065,
+      "x": 0.6817,
+      "y": 0.6115
+    },
+    "power": {
+      "h": 0.0747,
+      "kind": "utility",
+      "label": "Packet River Power & Light",
+      "path": "/power",
+      "port": 8093,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 628,
+        "src": "sprites/power.png",
+        "w": 965,
+        "scale": 1.5552
+      },
+      "technique": "power_modbus_feeder",
+      "w": 0.0781,
+      "x": 0.362,
+      "y": 0.35
+    },
+    "railcontrol": {
+      "h": 0.05,
+      "kind": "rail",
+      "label": "Packet River & Southern Railroad - Dispatch",
+      "path": "/",
+      "port": 8096,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 672,
+        "src": "sprites/railcontrol.png",
+        "w": 564
+      },
+      "w": 0.055,
+      "x": 0.2,
+      "y": 0.155
+    },
+    "railyard": {
+      "h": 0.06,
+      "kind": "dressing",
+      "label": "Packet River & Southern Railroad - Yard",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.9,
+        "h": 612,
+        "src": "sprites/railyard.png",
+        "w": 845
+      },
+      "w": 0.14,
+      "x": 0.2772,
+      "y": 0.1996
+    },
+    "sewage": {
+      "h": 0.0815,
+      "kind": "utility",
+      "label": "Packet River Water Reclamation Facility",
+      "path": "/sewage",
+      "port": 8093,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 586,
+        "src": "sprites/sewage.png",
+        "w": 1026,
+        "scale": 1.2649
+      },
+      "technique": "sewage_modbus",
+      "w": 0.0923,
+      "x": 0.6938,
+      "y": 0.1734
+    },
+    "tavern": {
+      "h": 0.0275,
+      "kind": "shop",
+      "label": "The Broken Packet Tavern",
+      "path": "/tavern/",
+      "port": 8090,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 791,
+        "src": "sprites/tavern.png",
+        "w": 682
+      },
+      "technique": "tavern_defaultcreds",
+      "w": 0.0373,
+      "x": 0.3997,
+      "y": 0.5162
+    },
+    "water": {
+      "h": 0.0815,
+      "kind": "utility",
+      "label": "Packet River Municipal Water Authority",
+      "path": "/water",
+      "port": 8093,
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 576,
+        "src": "sprites/water.png",
+        "w": 998,
+        "scale": 1.4965
+      },
+      "technique": "water_modbus_pump",
+      "w": 0.0923,
+      "x": 0.7004,
+      "y": 0.3509
+    },
+    "watertower": {
+      "h": 0.0408,
+      "kind": "dressing",
+      "label": "Water Tower",
+      "sprite": {
+        "anchorX": 0.5,
+        "anchorY": 0.98,
+        "h": 705,
+        "src": "sprites/watertower.png",
+        "w": 809,
+        "scale": 1.8079
+      },
+      "w": 0.0426,
+      "x": 0.6566,
+      "y": 0.3618
     }
   },
   "intersections": [
     {
       "id": 1,
-      "x": 0.3956,
-      "y": 0.5408
+      "x": 0.3662,
+      "y": 0.538
     },
     {
       "id": 2,
-      "x": 0.5078,
-      "y": 0.6902
+      "x": 0.4752,
+      "y": 0.6816
     },
     {
       "id": 3,
-      "x": 0.2983,
-      "y": 0.625
+      "x": 0.5367,
+      "y": 0.6871
     },
     {
       "id": 4,
-      "x": 0.4013,
-      "y": 0.5068
+      "x": 0.4242,
+      "y": 0.5393
     },
     {
       "id": 5,
@@ -657,92 +685,372 @@
       "y": 0.428
     }
   ],
-  "streetlights": [
+  "outfall": [
+    [
+      0.7086,
+      0.1908
+    ],
+    [
+      0.7484,
+      0.2107
+    ],
+    [
+      0.781,
+      0.2264
+    ]
+  ],
+  "powerBusiness": [
     {
-      "x": 0.4466,
-      "y": 0.5445
+      "x": 0.3929,
+      "y": 0.4693
     },
     {
-      "x": 0.6848,
-      "y": 0.658
+      "x": 0.4718,
+      "y": 0.3793
     },
     {
-      "x": 0.299,
-      "y": 0.6455
+      "x": 0.6206,
+      "y": 0.4399
     },
     {
-      "x": 0.355,
-      "y": 0.4971
+      "x": 0.532,
+      "y": 0.3261
     },
     {
-      "x": 0.324,
-      "y": 0.7676
+      "x": 0.5073,
+      "y": 0.3573
     },
     {
-      "x": 0.6377,
-      "y": 0.7459
+      "x": 0.4876,
+      "y": 0.3713
     },
     {
-      "x": 0.5141,
-      "y": 0.5024
+      "x": 0.629,
+      "y": 0.5048
     },
     {
-      "x": 0.6338,
-      "y": 0.6927
+      "x": 0.6567,
+      "y": 0.5141
     },
     {
-      "x": 0.6332,
-      "y": 0.4368
+      "x": 0.479,
+      "y": 0.3995
+    },
+    {
+      "x": 0.4789,
+      "y": 0.5359
+    },
+    {
+      "x": 0.7036,
+      "y": 0.6125
+    },
+    {
+      "x": 0.3493,
+      "y": 0.4067
+    },
+    {
+      "x": 0.6753,
+      "y": 0.8057
+    },
+    {
+      "x": 0.6856,
+      "y": 0.5585
+    },
+    {
+      "x": 0.5604,
+      "y": 0.4508
+    },
+    {
+      "x": 0.511,
+      "y": 0.5403
+    },
+    {
+      "x": 0.511,
+      "y": 0.3762
+    },
+    {
+      "x": 0.5244,
+      "y": 0.3666
+    }
+  ],
+  "powerFeeder": [
+    [
+      0.3501,
+      0.3428
+    ],
+    [
+      0.2888,
+      0.3975
+    ],
+    [
+      0.011,
+      0.5978
+    ],
+    [
+      0.266,
+      0.9488
+    ],
+    [
+      0.4694,
+      0.7394
+    ],
+    [
+      0.3526,
+      0.5846
+    ],
+    [
+      0.2295,
+      0.6915
+    ]
+  ],
+  "powerFeederBiz": [
+    [
+      0.3889,
+      0.3919
+    ],
+    [
+      0.3451,
+      0.4746
+    ],
+    [
+      0.4032,
+      0.5644
+    ],
+    [
+      0.5122,
+      0.4557
+    ],
+    [
+      0.6936,
+      0.6962
+    ]
+  ],
+  "powerFeederPlant": [
+    [
+      0.3818,
+      0.3023
+    ],
+    [
+      0.3076,
+      0.1964
+    ],
+    [
+      0.5496,
+      0.1743
+    ],
+    [
+      0.683,
+      0.189
+    ],
+    [
+      0.7255,
+      0.2762
+    ]
+  ],
+  "powerPlant": [
+    {
+      "x": 0.4018,
+      "y": 0.3516
+    },
+    {
+      "x": 0.6845,
+      "y": 0.1646
+    },
+    {
+      "x": 0.6161,
+      "y": 0.1293
+    },
+    {
+      "x": 0.7263,
+      "y": 0.1857
+    },
+    {
+      "x": 0.3076,
+      "y": 0.0997
+    },
+    {
+      "x": 0.3635,
+      "y": 0.34
+    },
+    {
+      "x": 0.5619,
+      "y": 0.1251
+    },
+    {
+      "x": 0.6408,
+      "y": 0.4053
+    },
+    {
+      "x": 0.1992,
+      "y": 0.1301
+    },
+    {
+      "x": 0.7361,
+      "y": 0.3291
+    },
+    {
+      "x": 0.5702,
+      "y": 0.4267
+    },
+    {
+      "x": 0.708,
+      "y": 0.2943
+    }
+  ],
+  "powerResidential": [
+    {
+      "x": 0.0979,
+      "y": 0.5499
+    },
+    {
+      "x": 0.1734,
+      "y": 0.4794
+    },
+    {
+      "x": 0.2704,
+      "y": 0.4866
+    },
+    {
+      "x": 0.2125,
+      "y": 0.679
+    },
+    {
+      "x": 0.1525,
+      "y": 0.741
+    },
+    {
+      "x": 0.2273,
+      "y": 0.618
+    },
+    {
+      "x": 0.1269,
+      "y": 0.5037
+    },
+    {
+      "x": 0.2139,
+      "y": 0.5683
+    },
+    {
+      "x": 0.0779,
+      "y": 0.7903
+    },
+    {
+      "x": 0.1587,
+      "y": 0.6363
+    },
+    {
+      "x": 0.1942,
+      "y": 0.5652
+    },
+    {
+      "x": 0.4063,
+      "y": 0.6599
+    },
+    {
+      "x": 0.1128,
+      "y": 0.6791
+    },
+    {
+      "x": 0.2505,
+      "y": 0.6076
+    },
+    {
+      "x": 0.2659,
+      "y": 0.9184
+    },
+    {
+      "x": 0.1811,
+      "y": 0.787
+    },
+    {
+      "x": 0.1965,
+      "y": 0.8026
+    },
+    {
+      "x": 0.0935,
+      "y": 0.804
+    },
+    {
+      "x": 0.3026,
+      "y": 0.5452
+    },
+    {
+      "x": 0.2247,
+      "y": 0.8429
     },
     {
       "x": 0.5113,
-      "y": 0.6313
+      "y": 0.72
     },
     {
-      "x": 0.2963,
-      "y": 0.449
+      "x": 0.3175,
+      "y": 0.8052
     },
     {
-      "x": 0.5422,
-      "y": 0.5409
+      "x": 0.0725,
+      "y": 0.7529
+    },
+    {
+      "x": 0.2822,
+      "y": 0.786
+    },
+    {
+      "x": 0.077,
+      "y": 0.7768
+    },
+    {
+      "x": 0.0603,
+      "y": 0.598
+    },
+    {
+      "x": 0.3504,
+      "y": 0.7626
+    },
+    {
+      "x": 0.3537,
+      "y": 0.9106
+    },
+    {
+      "x": 0.0556,
+      "y": 0.7581
+    },
+    {
+      "x": 0.2703,
+      "y": 0.7462
+    },
+    {
+      "x": 0.4096,
+      "y": 0.8593
     }
   ],
-  "_railNote": "railPath is just the visible top run: the train enters, crosses the Main Rail Line, and exits, then stays hidden the rest of the cycle before re-entering. Both endpoints are inset from the canvas edge by the train sprite's own half-diagonal (see app.js's trainW/trainH) so the full sprite is always on-screen while visible, never clipped mid-appear/vanish.",
-  "train": {
-    "sprite": {
-      "rotate": 146.5,
-      "skewX": 0,
-      "skewY": 0
-    }
-  },
   "railPath": [
     [
-      0.0459,
-      0.1274
+      -0.0023,
+      0.3443
     ],
     [
-      0.071,
-      0.1332
+      0.0969,
+      0.1963
     ],
     [
-      0.1136,
-      0.1467
+      0.1325,
+      0.1446
     ],
     [
-      0.142,
-      0.1603
+      0.1741,
+      0.0904
     ],
     [
-      0.1776,
-      0.1332
+      0.1937,
+      0.0838
     ],
     [
-      0.2273,
-      0.106
+      0.223,
+      0.0824
     ],
     [
-      0.2841,
-      0.0883
+      0.2742,
+      0.0825
     ],
     [
       0.3409,
@@ -761,70 +1069,160 @@
       0.0842
     ],
     [
-      0.554,
-      0.106
+      0.5787,
+      0.085
     ],
     [
-      0.5895,
-      0.1427
+      0.7354,
+      0.0848
     ],
     [
-      0.625,
-      0.1902
+      0.7691,
+      0.0983
     ],
     [
-      0.6747,
-      0.2337
+      0.8047,
+      0.1459
     ],
     [
-      0.7315,
-      0.231
+      0.8448,
+      0.2047
     ],
     [
-      0.7812,
-      0.2337
+      0.8631,
+      0.2281
     ],
     [
-      0.8381,
-      0.2514
+      0.901,
+      0.2794
     ],
     [
-      0.8949,
-      0.2921
+      0.962,
+      0.3844
     ],
     [
-      0.9517,
-      0.3465
+      0.9639,
+      0.822
     ],
     [
-      0.9541,
-      0.3485
+      0.8708,
+      0.9961
     ]
   ],
   "river": {
-    "x": 0.696,
-    "y": 0.0,
+    "h": 1,
     "w": 0.304,
-    "h": 1.0
+    "x": 0.696,
+    "y": 0
   },
-  "outfall": [
-    [
-      0.68,
-      0.3728
-    ],
-    [
-      0.6793,
-      0.3716
-    ],
-    [
-      0.7612,
-      0.3842
+  "roads": {
+    "main": [
+      [
+        0.1333,
+        0.2091
+      ],
+      [
+        0.3864,
+        0.5741
+      ],
+      [
+        0.5151,
+        0.4549
+      ],
+      [
+        0.6174,
+        0.6143
+      ],
+      [
+        0.5048,
+        0.734
+      ],
+      [
+        0.4068,
+        0.5918
+      ]
     ]
+  },
+  "spurPath": [
+    [
+      0.3395,
+      0.0843
+    ],
+    [
+      0.3708,
+      0.1006
+    ],
+    [
+      0.389,
+      0.1162
+    ],
+    [
+      0.4105,
+      0.1472
+    ],
+    [
+      0.4366,
+      0.1635
+    ],
+    [
+      0.5645,
+      0.1576
+    ]
+  ],
+  "streetlights": [
+    {
+      "x": 0.4465,
+      "y": 0.583
+    },
+    {
+      "x": 0.6721,
+      "y": 0.6004
+    },
+    {
+      "x": 0.2952,
+      "y": 0.6164
+    },
+    {
+      "x": 0.2245,
+      "y": 0.2664
+    },
+    {
+      "x": 0.2256,
+      "y": 0.7961
+    },
+    {
+      "x": 0.6278,
+      "y": 0.8228
+    },
+    {
+      "x": 0.5492,
+      "y": 0.4631
+    },
+    {
+      "x": 0.6198,
+      "y": 0.6668
+    },
+    {
+      "x": 0.6759,
+      "y": 0.2229
+    },
+    {
+      "x": 0.5113,
+      "y": 0.671
+    },
+    {
+      "x": 0.2785,
+      "y": 0.3391
+    },
+    {
+      "x": 0.5741,
+      "y": 0.6091
+    }
   ],
   "swimmers": [
     [
-      0.7529,
-      0.6299
+      0.805,
+      0.6053
     ],
     [
       0.8142,
@@ -835,552 +1233,181 @@
       0.4944
     ],
     [
-      0.7444,
-      0.5299
+      0.7599,
+      0.5374
     ],
     [
-      0.722,
-      0.583
+      0.7676,
+      0.4273
     ]
+  ],
+  "train": {
+    "sprite": {
+      "rotate": 146.5,
+      "skewX": 0,
+      "skewY": 0,
+      "offsetX": 0,
+      "offsetY": 0
+    }
+  },
+  "viewBox": [
+    1408,
+    736
   ],
   "waterMain": [
     [
-      0.62,
-      0.5034
+      0.6645,
+      0.3393
     ],
     [
-      0.5533,
-      0.4925
+      0.5219,
+      0.4746
     ],
     [
-      0.5017,
-      0.5266
+      0.3077,
+      0.6781
     ],
     [
-      0.3148,
-      0.6403
+      0.214,
+      0.5343
     ],
     [
-      0.2464,
-      0.5754
+      0.0909,
+      0.6676
     ],
     [
-      0.1428,
-      0.6438
+      0.2956,
+      0.9496
     ],
     [
-      0.3256,
-      0.7916
+      0.4963,
+      0.7629
     ]
-  ],
-  "powerFeeder": [
-    [
-      0.3756,
-      0.4347
-    ],
-    [
-      0.3122,
-      0.457
-    ],
-    [
-      0.0738,
-      0.6284
-    ],
-    [
-      0.3311,
-      0.837
-    ],
-    [
-      0.4607,
-      0.7457
-    ],
-    [
-      0.3136,
-      0.6246
-    ],
-    [
-      0.2183,
-      0.6852
-    ]
-  ],
-  "beachZone": {
-    "x": 0.7315,
-    "y": 0.3533,
-    "w": 0.1491,
-    "h": 0.231
-  },
-  "spurPath": [
-    [
-      0.1172,
-      0.1467
-    ],
-    [
-      0.1634,
-      0.197
-    ],
-    [
-      0.2202,
-      0.2582
-    ],
-    [
-      0.2841,
-      0.3193
-    ],
-    [
-      0.348,
-      0.3736
-    ],
-    [
-      0.3977,
-      0.4076
-    ]
-  ],
-  "powerResidential": [
-    {
-      "x": 0.1999,
-      "y": 0.5617
-    },
-    {
-      "x": 0.2452,
-      "y": 0.5483
-    },
-    {
-      "x": 0.2838,
-      "y": 0.5658
-    },
-    {
-      "x": 0.1564,
-      "y": 0.5825
-    },
-    {
-      "x": 0.2105,
-      "y": 0.72
-    },
-    {
-      "x": 0.3118,
-      "y": 0.5902
-    },
-    {
-      "x": 0.1297,
-      "y": 0.5988
-    },
-    {
-      "x": 0.2297,
-      "y": 0.6054
-    },
-    {
-      "x": 0.4897,
-      "y": 0.8266
-    },
-    {
-      "x": 0.1443,
-      "y": 0.6749
-    },
-    {
-      "x": 0.1859,
-      "y": 0.6381
-    },
-    {
-      "x": 0.2698,
-      "y": 0.7022
-    },
-    {
-      "x": 0.1664,
-      "y": 0.7023
-    },
-    {
-      "x": 0.2642,
-      "y": 0.6267
-    },
-    {
-      "x": 0.2972,
-      "y": 0.7295
-    },
-    {
-      "x": 0.2337,
-      "y": 0.741
-    },
-    {
-      "x": 0.246,
-      "y": 0.764
-    },
-    {
-      "x": 0.3177,
-      "y": 0.7426
-    },
-    {
-      "x": 0.1152,
-      "y": 0.6603
-    },
-    {
-      "x": 0.2779,
-      "y": 0.7755
-    },
-    {
-      "x": 0.5644,
-      "y": 0.7657
-    },
-    {
-      "x": 0.4162,
-      "y": 0.7459
-    },
-    {
-      "x": 0.5353,
-      "y": 0.7795
-    },
-    {
-      "x": 0.3944,
-      "y": 0.764
-    },
-    {
-      "x": 0.5074,
-      "y": 0.7995
-    },
-    {
-      "x": 0.1057,
-      "y": 0.6239
-    },
-    {
-      "x": 0.3633,
-      "y": 0.7104
-    },
-    {
-      "x": 0.4356,
-      "y": 0.7135
-    },
-    {
-      "x": 0.3664,
-      "y": 0.7782
-    },
-    {
-      "x": 0.4376,
-      "y": 0.7821
-    },
-    {
-      "x": 0.3443,
-      "y": 0.7942
-    }
   ],
   "waterResidential": [
     {
-      "x": 0.2101,
-      "y": 0.5544
+      "x": 0.2028,
+      "y": 0.6674
     },
     {
-      "x": 0.2562,
-      "y": 0.5472
+      "x": 0.2586,
+      "y": 0.4863
     },
     {
-      "x": 0.2948,
-      "y": 0.5753
+      "x": 0.1406,
+      "y": 0.5124
     },
     {
-      "x": 0.1673,
-      "y": 0.5749
+      "x": 0.1627,
+      "y": 0.4745
     },
     {
-      "x": 0.4786,
-      "y": 0.8175
+      "x": 0.6966,
+      "y": 0.5607
     },
     {
-      "x": 0.3209,
-      "y": 0.5796
+      "x": 0.1697,
+      "y": 0.6296
     },
     {
-      "x": 0.1405,
-      "y": 0.5918
+      "x": 0.0879,
+      "y": 0.5573
     },
     {
-      "x": 0.2407,
-      "y": 0.599
+      "x": 0.5696,
+      "y": 0.4582
     },
     {
-      "x": 0.2546,
-      "y": 0.6345
+      "x": 0.2388,
+      "y": 0.5917
     },
     {
-      "x": 0.1537,
-      "y": 0.681
+      "x": 0.6223,
+      "y": 0.5158
     },
     {
-      "x": 0.1963,
-      "y": 0.6308
+      "x": 0.606,
+      "y": 0.4404
     },
     {
-      "x": 0.2824,
-      "y": 0.6972
+      "x": 0.395,
+      "y": 0.6686
     },
     {
-      "x": 0.1761,
-      "y": 0.6945
+      "x": 0.6481,
+      "y": 0.5237
     },
     {
-      "x": 0.2078,
-      "y": 0.654
+      "x": 0.2604,
+      "y": 0.7548
     },
     {
-      "x": 0.3065,
-      "y": 0.7218
+      "x": 0.405,
+      "y": 0.4572
     },
     {
-      "x": 0.201,
-      "y": 0.7262
+      "x": 0.1308,
+      "y": 0.7212
     },
     {
-      "x": 0.2549,
-      "y": 0.756
+      "x": 0.2137,
+      "y": 0.7709
     },
     {
-      "x": 0.3279,
-      "y": 0.737
+      "x": 0.2931,
+      "y": 0.7756
     },
     {
-      "x": 0.2259,
-      "y": 0.7463
+      "x": 0.1636,
+      "y": 0.7637
     },
     {
-      "x": 0.2684,
-      "y": 0.7833
+      "x": 0.6659,
+      "y": 0.817
     },
     {
-      "x": 0.5743,
-      "y": 0.7721
+      "x": 0.4932,
+      "y": 0.5538
     },
     {
-      "x": 0.1199,
-      "y": 0.6244
+      "x": 0.051,
+      "y": 0.5876
     },
     {
-      "x": 0.5451,
-      "y": 0.7861
+      "x": 0.7149,
+      "y": 0.6116
     },
     {
-      "x": 0.1272,
-      "y": 0.651
+      "x": 0.1258,
+      "y": 0.6317
     },
     {
-      "x": 0.5163,
-      "y": 0.807
+      "x": 0.3395,
+      "y": 0.3951
     },
     {
-      "x": 0.4043,
-      "y": 0.7705
+      "x": 0.3129,
+      "y": 0.5398
     },
     {
-      "x": 0.3727,
-      "y": 0.719
+      "x": 0.326,
+      "y": 0.8178
     },
     {
-      "x": 0.4267,
-      "y": 0.7534
+      "x": 0.4008,
+      "y": 0.866
     },
     {
-      "x": 0.3765,
-      "y": 0.7868
+      "x": 0.3606,
+      "y": 0.7546
     },
     {
-      "x": 0.4474,
-      "y": 0.7747
+      "x": 0.2398,
+      "y": 0.6126
     },
     {
-      "x": 0.3545,
-      "y": 0.8016
+      "x": 0.3627,
+      "y": 0.9021
     }
-  ],
-  "powerBusiness": [
-    {
-      "x": 0.411,
-      "y": 0.5256
-    },
-    {
-      "x": 0.4878,
-      "y": 0.4824
-    },
-    {
-      "x": 0.5388,
-      "y": 0.4803
-    },
-    {
-      "x": 0.5404,
-      "y": 0.4538
-    },
-    {
-      "x": 0.4365,
-      "y": 0.5093
-    },
-    {
-      "x": 0.4626,
-      "y": 0.4959
-    },
-    {
-      "x": 0.555,
-      "y": 0.5118
-    },
-    {
-      "x": 0.5861,
-      "y": 0.5063
-    },
-    {
-      "x": 0.5116,
-      "y": 0.4697
-    },
-    {
-      "x": 0.5043,
-      "y": 0.5496
-    },
-    {
-      "x": 0.6311,
-      "y": 0.5634
-    },
-    {
-      "x": 0.402,
-      "y": 0.635
-    },
-    {
-      "x": 0.4982,
-      "y": 0.706
-    },
-    {
-      "x": 0.6063,
-      "y": 0.5448
-    },
-    {
-      "x": 0.6596,
-      "y": 0.5823
-    },
-    {
-      "x": 0.583,
-      "y": 0.6515
-    },
-    {
-      "x": 0.6138,
-      "y": 0.6393
-    },
-    {
-      "x": 0.6802,
-      "y": 0.5988
-    }
-  ],
-  "powerPlant": [
-    {
-      "x": 0.4018,
-      "y": 0.3516
-    },
-    {
-      "x": 0.7534,
-      "y": 0.4625
-    },
-    {
-      "x": 0.5377,
-      "y": 0.3372
-    },
-    {
-      "x": 0.6872,
-      "y": 0.3434
-    },
-    {
-      "x": 0.3804,
-      "y": 0.4098
-    },
-    {
-      "x": 0.4843,
-      "y": 0.3831
-    },
-    {
-      "x": 0.5796,
-      "y": 0.3741
-    },
-    {
-      "x": 0.6606,
-      "y": 0.3961
-    },
-    {
-      "x": 0.418,
-      "y": 0.4451
-    },
-    {
-      "x": 0.7105,
-      "y": 0.484
-    },
-    {
-      "x": 0.5702,
-      "y": 0.4267
-    },
-    {
-      "x": 0.6601,
-      "y": 0.4528
-    }
-  ],
-  "powerFeederBiz": [
-    [
-      0.3844,
-      0.4404
-    ],
-    [
-      0.388,
-      0.5432
-    ],
-    [
-      0.4851,
-      0.4932
-    ],
-    [
-      0.5178,
-      0.5264
-    ],
-    [
-      0.6579,
-      0.6534
-    ]
-  ],
-  "powerFeederPlant": [
-    [
-      0.4176,
-      0.4111
-    ],
-    [
-      0.4289,
-      0.4003
-    ],
-    [
-      0.4387,
-      0.3752
-    ],
-    [
-      0.5,
-      0.3602
-    ],
-    [
-      0.5267,
-      0.3545
-    ]
-  ],
-  "roads": {
-    "main": [
-      [
-        0.07,
-        0.16
-      ],
-      [
-        0.15,
-        0.3
-      ],
-      [
-        0.25,
-        0.42
-      ],
-      [
-        0.4013,
-        0.5068
-      ],
-      [
-        0.3956,
-        0.5408
-      ],
-      [
-        0.5078,
-        0.6902
-      ]
-    ]
-  }
+  ]
 }
