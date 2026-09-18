@@ -190,10 +190,10 @@ function buildOverlay(layout) {
   el("image", { href: "sprites/parade.png", x: -paradeW / 2, y: -paradeH,
     width: paradeW, height: paradeH }, REFS.parade);
   // flat side-elevation art (see TRAIN_SPRITE_DEFAULT above), native
-  // 1135x168 - long and short, so it doesn't share a size convention with
-  // any other sprite here, tuned by eye against the actual track
+  // 2722x1321 - user-supplied, taller/less elongated than the first pass
+  // since car roof heights vary - tuned by eye against the actual track
   REFS.train = el("g", { class: "train" }, svg);
-  const trainW = 220, trainH = trainW * (168 / 1135);
+  const trainW = 220, trainH = trainW * (1321 / 2722);
   el("image", { href: "sprites/train.png", x: -trainW / 2, y: -trainH / 2,
     width: trainW, height: trainH }, REFS.train);
 
