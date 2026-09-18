@@ -708,6 +708,13 @@
     }
   ],
   "_railNote": "railPath is just the visible top run: the train enters from off the left edge, crosses the Main Rail Line, and exits off the right; it stays hidden the rest of the cycle before re-entering.",
+  "train": {
+    "sprite": {
+      "rotate": 146.5,
+      "skewX": 0,
+      "skewY": 0
+    }
+  },
   "railPath": [
     [
       -0.0142,

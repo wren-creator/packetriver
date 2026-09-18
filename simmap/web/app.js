@@ -71,9 +71,13 @@ async function api(path, method = "GET", body) {
 const REFS = { shops: {}, ints: [], streetlights: [] };
 let LAYOUT = null;
 // sprites/train.png is painted already heading down-and-left at roughly this
-// angle rather than straight right - tune by eye in the browser if the train
-// looks backwards or sideways on the rendered track
-const TRAIN_SPRITE_ANGLE = 146.5;
+// angle rather than straight right, so render() subtracts it from the
+// track's own heading before rotating. Editable live via ?edit=1 (same
+// rotate/skewX/skewY panel buildings use, plus an offsetX/offsetY drag
+// handle since the train has no fixed x/y of its own to drag like a
+// building does) - layout.train.sprite, falls back to this baseline if
+// overlay.json predates the field.
+const TRAIN_SPRITE_DEFAULT = { rotate: 146.5, skewX: 0, skewY: 0, offsetX: 0, offsetY: 0 };
 
 // Building art: rendered width locks to the footprint's world width (b.w),
 // height derives from the sprite PNG's own native aspect ratio (spr.w/spr.h,
@@ -106,6 +110,10 @@ function drawBuildingSprite(layer, b) {
 function buildOverlay(layout) {
   LAYOUT = layout;
   VB = layout.viewBox || [1408, 736];
+  // ensure layout.train.sprite exists so edit.js has something to mutate
+  // even against an overlay.json predating this field
+  layout.train = layout.train || {};
+  layout.train.sprite = Object.assign({}, TRAIN_SPRITE_DEFAULT, layout.train.sprite);
   const svg = $("overlay");
   svg.setAttribute("viewBox", `0 0 ${VB[0]} ${VB[1]}`);
   svg.innerHTML = "";
@@ -281,9 +289,19 @@ function render(s) {
       ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
     } else { show = false; }
     REFS.train.setAttribute("visibility", show ? "visible" : "hidden");
-    if (show)
+    if (show) {
+      // p/ang are the raw path point/heading; LAYOUT.train._raw (fraction
+      // units, like every other overlay coordinate) records that point
+      // before offsetX/offsetY nudge it, so edit.js's drag handle always
+      // knows where "no offset" is, even mid-drag while the train keeps
+      // moving under it.
+      LAYOUT.train._raw = { x: p.x / VB[0], y: p.y / VB[1] };
+      const spr = LAYOUT.train.sprite;
+      const dx = p.x + X(spr.offsetX || 0), dy = p.y + Y(spr.offsetY || 0);
       REFS.train.setAttribute("transform",
-        `translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) rotate(${(ang - TRAIN_SPRITE_ANGLE).toFixed(1)})`);
+        `translate(${dx.toFixed(1)},${dy.toFixed(1)}) rotate(${(ang - spr.rotate).toFixed(1)}) ` +
+        `skewX(${spr.skewX || 0}) skewY(${spr.skewY || 0})`);
+    }
     REFS.spur.classList.toggle("spur-set", s.rail.switch_position === "spur");
   }
 

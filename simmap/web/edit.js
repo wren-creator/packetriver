@@ -267,6 +267,27 @@
           outline: () => [b.x - b.w / 2, b.y - b.h / 2, b.w, b.h] });
       }
     }
+    // the train: no fixed x/y of its own (it's animated along railPath/
+    // spurPath every tick by app.js's render()), so drag/rotate/skew all
+    // act on layout.train.sprite instead of a static box. get() reports
+    // the train's current on-screen point (its live path position plus
+    // whatever offsetX/offsetY nudge is already dialed in); set() converts
+    // a drag back into that offset, using the same "raw" path point app.js
+    // stamps onto L.train._raw every tick so the handle tracks a moving
+    // target instead of a fixed spot.
+    if (L.train && L.train.sprite) {
+      push({ id: "train", kind: "point", building: { sprite: L.train.sprite },
+        get: () => {
+          const raw = L.train._raw || { x: 0.5, y: 0.5 };
+          const spr = L.train.sprite;
+          return [r4(raw.x + (spr.offsetX || 0)), r4(raw.y + (spr.offsetY || 0))];
+        },
+        set: (x, y) => {
+          const raw = L.train._raw || { x: 0.5, y: 0.5 };
+          L.train.sprite.offsetX = r4(x - raw.x);
+          L.train.sprite.offsetY = r4(y - raw.y);
+        } });
+    }
     (L.intersections || []).forEach((p) => push({ id: "int " + p.id, kind: "point",
       get: () => [p.x, p.y], set: (x, y) => { p.x = r4(x); p.y = r4(y); } }));
     const pts = (key, label) => (L[key] || []).forEach((p, i) => push({
