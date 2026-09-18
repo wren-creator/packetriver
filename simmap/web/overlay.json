@@ -707,7 +707,7 @@
       "y": 0.5409
     }
   ],
-  "_railNote": "railPath is just the visible top run: the train enters from off the left edge, crosses the Main Rail Line, and exits off the right; it stays hidden the rest of the cycle before re-entering.",
+  "_railNote": "railPath is just the visible top run: the train enters, crosses the Main Rail Line, and exits, then stays hidden the rest of the cycle before re-entering. Both endpoints are inset from the canvas edge by the train sprite's own half-diagonal (see app.js's trainW/trainH) so the full sprite is always on-screen while visible, never clipped mid-appear/vanish.",
   "train": {
     "sprite": {
       "rotate": 146.5,
@@ -717,16 +717,8 @@
   },
   "railPath": [
     [
-      -0.0142,
-      0.1155
-    ],
-    [
-      0.0,
-      0.1196
-    ],
-    [
-      0.0355,
-      0.125
+      0.0459,
+      0.1274
     ],
     [
       0.071,
@@ -805,8 +797,8 @@
       0.3465
     ],
     [
-      1.0156,
-      0.4008
+      0.9541,
+      0.3485
     ]
   ],
   "river": {
