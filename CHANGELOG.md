@@ -4,6 +4,49 @@ All notable changes to Packet River. Newest first.
 
 ## [Unreleased]
 
+### The train and four Main Street shops turn to face the right way, ?edit=1 gets tilt/drag controls for both
+
+- Rotating a flat sprite in `?edit=1` only ever spins it in the screen
+  plane (a "roll") - it can't turn an object to face a new direction
+  the way a real yaw would, since that means showing different faces
+  than what's painted. Confirmed live (`railyard` spun 90deg just
+  tips the whole scene sideways) before regenerating art instead of
+  fighting it with transforms.
+- `pharmacy`, `cinema`, `generalstore`, and `diner` regenerated facing
+  south (their real street) instead of the original three-quarter
+  corner view, then slotted into an actual row along that street.
+- The train (`sprites/train.png`) went through two redesigns: first a
+  modern engine + hoppers in a level side-elevation (replacing the old
+  diagonal 4-car steam train), then swapped again for user-supplied
+  art matted out of a baked-in checkerboard-transparency PNG.
+  `layout.train.sprite` (rotate/skewX/skewY/offsetX/offsetY) is now a
+  first-class, live-editable thing in `?edit=1` - same tilt panel as
+  buildings, plus a drag handle for position since the train has no
+  fixed x/y of its own (it's animated along `railPath`/`spurPath`
+  every tick). Selecting it freezes it in place so edits can be judged
+  against a still picture instead of a moving target; deselecting lets
+  it resume. Its live per-tick tracking lives in a standalone
+  `TRAIN_LIVE` object (`PKTR_EDIT.trainLive`), deliberately off
+  `LAYOUT` so it can't leak into copy JSON/download the way an earlier
+  pass's `train._raw` field did.
+- `railyard` (the trackside siding scene) went through several passes
+  before landing: matting a full baked-background photo, a failed
+  regeneration attempt at the same busy multi-track scene, then a
+  simpler single-track ask that isolated cleanly but came out flat
+  side-on: building `factory.png` in as the *camera* reference (not
+  the train, which is deliberately flat/side-on by design) finally got
+  the same steep ~60-degree down-look every building uses.
+- `railPath`'s two endpoints pulled inward by the train sprite's own
+  half-diagonal so it's never clipped mid-appear/vanish at the edges
+  of its visible run.
+- `?edit=1`'s tilt panel gained turn-left/turn-right buttons beside the
+  rotate field (1deg per click, shift for 5deg) and a "select train"
+  button, since finding its moving dot among a hundred other handles
+  (or cycling `[`/`]` from scratch) wasn't practical.
+- Several more manual relayout passes via `?edit=1` (buildings,
+  streetlights, power/water dots, the rail path itself) to match the
+  generated terrain and the newly-reoriented shops.
+
 ### The town map moves off one baked-in mural onto generated terrain + sprites
 
 - `basemap.png` used to be a single hand-painted mural with all 20 buildings

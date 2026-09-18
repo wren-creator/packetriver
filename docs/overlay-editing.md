@@ -4,7 +4,7 @@
 map — building hotspots and their boxes, traffic heads, houses, streetlights,
 the rail path, the river, the swimmers, the two utility flows. Every value is a
 **fraction, 0..1**, of the base image's width or height. `app.js` just
-multiplies by the `viewBox` (today `[1800, 1522]`, matching `basemap.png`'s
+multiplies by the `viewBox` (today `[1408, 736]`, matching `basemap.png`'s
 real pixel size), so the SVG sits 1:1 on the art with no letterboxing. If the
 art ever changes shape, update `viewBox` (and `index.html`'s `<svg>`,
 `style.css`'s `.viewport`/`.world`, and `camera.js`'s fallback `worldW`/
@@ -54,6 +54,37 @@ expected in `basemap.png`, hotspot + ring only). This is what lets the
 `app.js`'s `drawBuildingSprite()`. When a building has a `sprite`, the
 `?edit=1` editor shows a faint preview of it under the drag handles.
 
+### Tilt: `rotate` / `skewX` / `skewY`
+
+Any `sprite` can also carry `rotate`, `skewX`, `skewY` (all degrees,
+default `0`). `rotate` spins the flat art in the screen plane - a **roll**,
+pivoting on the footprint's ground point. `skewX`/`skewY` shear it, useful
+for nudging a slightly-off piece of art to sit flatter against the terrain's
+isometric grid.
+
+What none of these can do is a **yaw** - turn the depicted object to face a
+new direction the way it would if you actually walked around it. That would
+mean showing a different painted face than the one that exists, which a 2D
+transform can't manufacture. If a building's front is pointing the wrong
+way, that needs new art (regenerate it facing the right direction), not a
+bigger rotate value - confirmed the hard way spinning `railyard` 90deg in
+this editor: the whole scene just tips onto its side, it doesn't turn to
+face you.
+
+### The train
+
+The train isn't a building (it's animated along `railPath`/`spurPath` every
+tick, not parked at a fixed `x,y`), but it gets the same rotate/skewX/skewY
+tilt panel via `overlay.json`'s top-level `train.sprite`, plus `offsetX`/
+`offsetY` for nudging its position relative to wherever it currently is on
+the track. Select it with the **select train** button (finding its small,
+constantly-moving dot among every other handle isn't practical) - selecting
+it also freezes it in place so tilt/offset edits can be judged against a
+still picture; deselecting lets it move again. `train.sprite.rotate` is the
+art's own baked-in heading (the angle it's painted facing), subtracted from
+the track's live heading each tick, not an on-top-of-upright extra tilt the
+way it is for a building.
+
 ## The editor (`?edit=1`)
 
 Open the map with `?edit=1`:
@@ -70,6 +101,12 @@ screen before placing a handle there.
 
 - **Drag** a cyan handle to move it. The real overlay redraws live as you drag.
 - Buildings and the river get a **yellow square** at the bottom-right for size.
+- Select anything with a `sprite` (a building, or the train) to get the tilt
+  panel: a **rotate** number field with turn-left/turn-right buttons beside
+  it (1deg per click, Shift-click for 5deg), plus **skew X**/**skew Y**
+  fields and a **reset** button.
+- **select train** jumps straight to the train's handle instead of hunting
+  for its moving dot or cycling through everything else.
 - **Arrow keys** nudge the selection by `0.001` (Shift = `0.01`).
   Cmd/Ctrl + arrows resize the selection.
 - **`[`** / **`]`** cycle the selection; **`Esc`** deselects.
