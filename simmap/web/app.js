@@ -70,14 +70,15 @@ async function api(path, method = "GET", body) {
 // ----------------------------------------------------------- overlay build
 const REFS = { shops: {}, ints: [], streetlights: [] };
 let LAYOUT = null;
-// sprites/train.png is painted already heading down-and-left at roughly this
-// angle rather than straight right, so render() subtracts it from the
-// track's own heading before rotating. Editable live via ?edit=1 (same
+// sprites/train.png (a modern engine + 2 hoppers) is painted as a flat,
+// level side-elevation view already facing right - a 0deg heading in
+// render()'s atan2 convention - so no baseline offset needed before
+// rotating to match the track. Editable live via ?edit=1 (same
 // rotate/skewX/skewY panel buildings use, plus an offsetX/offsetY drag
 // handle since the train has no fixed x/y of its own to drag like a
 // building does) - layout.train.sprite, falls back to this baseline if
 // overlay.json predates the field.
-const TRAIN_SPRITE_DEFAULT = { rotate: 146.5, skewX: 0, skewY: 0, offsetX: 0, offsetY: 0 };
+const TRAIN_SPRITE_DEFAULT = { rotate: 0, skewX: 0, skewY: 0, offsetX: 0, offsetY: 0 };
 // per-tick tracking for the train's own live path position/heading, and
 // ?edit=1's freeze toggle - deliberately NOT on LAYOUT.train, so none of it
 // ever leaks into copy JSON/download/overlay.json (LAYOUT is exactly what
@@ -188,11 +189,11 @@ function buildOverlay(layout) {
   const paradeW = 70, paradeH = paradeW * (363 / 426);
   el("image", { href: "sprites/parade.png", x: -paradeW / 2, y: -paradeH,
     width: paradeW, height: paradeH }, REFS.parade);
-  // the sprite art is painted already pointing along its own natural heading
-  // (TRAIN_SPRITE_ANGLE, degrees) rather than straight right, so render()
-  // subtracts that baseline from the track's own heading before rotating
+  // flat side-elevation art (see TRAIN_SPRITE_DEFAULT above), native
+  // 1135x168 - long and short, so it doesn't share a size convention with
+  // any other sprite here, tuned by eye against the actual track
   REFS.train = el("g", { class: "train" }, svg);
-  const trainW = 105, trainH = trainW * (768 / 1331);
+  const trainW = 220, trainH = trainW * (168 / 1135);
   el("image", { href: "sprites/train.png", x: -trainW / 2, y: -trainH / 2,
     width: trainW, height: trainH }, REFS.train);
 

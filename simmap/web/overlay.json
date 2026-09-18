@@ -87,9 +87,9 @@
       "sprite": {
         "anchorX": 0.5,
         "anchorY": 0.98,
-        "h": 688,
+        "h": 1002,
         "src": "sprites/cinema.png",
-        "w": 672
+        "w": 978
       },
       "w": 0.0287,
       "x": 0.4867,
@@ -125,9 +125,9 @@
       "sprite": {
         "anchorX": 0.5,
         "anchorY": 0.98,
-        "h": 617,
+        "h": 880,
         "src": "sprites/diner.png",
-        "w": 716,
+        "w": 930,
         "scale": 0.9344
       },
       "technique": "diner_backup",
@@ -199,9 +199,9 @@
       "sprite": {
         "anchorX": 0.5,
         "anchorY": 0.98,
-        "h": 816,
+        "h": 832,
         "src": "sprites/generalstore.png",
-        "w": 814
+        "w": 688
       },
       "technique": "generalstore_sqli",
       "w": 0.0356,
@@ -506,9 +506,9 @@
       "sprite": {
         "anchorX": 0.5,
         "anchorY": 0.98,
-        "h": 823,
+        "h": 1070,
         "src": "sprites/pharmacy.png",
-        "w": 718
+        "w": 729
       },
       "technique": "pharmacy_authbypass",
       "w": 0.0338,
@@ -1243,7 +1243,7 @@
   ],
   "train": {
     "sprite": {
-      "rotate": 146.5,
+      "rotate": 0,
       "skewX": 0,
       "skewY": 0,
       "offsetX": 0,
