@@ -89,6 +89,7 @@
       #pe-tilt label { display:flex; align-items:center; gap:4px; color:#8aa0b4; }
       #pe-tilt input { width:52px; background:#05080c; color:#c9d4e0;
         border:1px solid #222c36; border-radius:6px; padding:2px 4px; font:inherit; }
+      #pe-tilt #pe-rot-ccw, #pe-tilt #pe-rot-cw { padding:2px 6px; font-size:13px; line-height:1; }
       .pe-legend-h { display:inline-block; width:9px; height:9px; border-radius:50%;
         background:#12b6d8; vertical-align:middle; margin-right:2px; }
       .pe-legend-h.size { border-radius:2px; background:#f6c445; }
@@ -118,7 +119,11 @@
       <div class="row mono">cursor <span id="pe-cur">–</span></div>
       <div class="row"><span class="sel" id="pe-sel">nothing selected</span></div>
       <div class="row" id="pe-tilt" hidden>
-        <label>rotate <input id="pe-rot" type="number" step="1" value="0"></label>
+        <label>rotate
+          <button id="pe-rot-ccw" type="button" title="turn left (shift = bigger step)">&#8630;</button>
+          <input id="pe-rot" type="number" step="1" value="0">
+          <button id="pe-rot-cw" type="button" title="turn right (shift = bigger step)">&#8631;</button>
+        </label>
         <label>skew X <input id="pe-skx" type="number" step="1" value="0"></label>
         <label>skew Y <input id="pe-sky" type="number" step="1" value="0"></label>
         <button id="pe-tilt-reset" title="rotate=0, skewX=0, skewY=0">reset</button>
@@ -163,6 +168,21 @@
     tiltInput(ui.rot, "rotate");
     tiltInput(ui.skx, "skewX");
     tiltInput(ui.sky, "skewY");
+    // turn-left/turn-right buttons beside the rotate field, for nudging by
+    // eye instead of typing a degree value - 1deg per click, shift-click
+    // for a coarser 5deg step, same shift-for-bigger-step convention as the
+    // arrow-key nudge on a position handle
+    const bumpRotate = (dir) => (e) => {
+      if (!sel || !sel.building) return;
+      const step = e.shiftKey ? 5 : 1;
+      const cur = Number(ui.rot.value) || 0;
+      const next = r4(cur + dir * step);
+      ui.rot.value = next;
+      sel.building.sprite.rotate = next;
+      queueRebuild();
+    };
+    p.querySelector("#pe-rot-ccw").onclick = bumpRotate(-1);
+    p.querySelector("#pe-rot-cw").onclick = bumpRotate(1);
     p.querySelector("#pe-tilt-reset").onclick = () => {
       if (!sel || !sel.building) return;
       delete sel.building.sprite.rotate;
