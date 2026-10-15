@@ -3,7 +3,7 @@
 # shipped default, and the built-in Diagnostics packet-capture will hand you a
 # decoded dump of the home LAN - where the resident (a rail engineer) signs in
 # to a crew portal over plain HTTP on a loop.
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 WORKDIR /app
 RUN pip install --no-cache-dir "Flask==3.0.3"

@@ -1,5 +1,5 @@
 # field-plc: the water + power soft-PLCs (Modbus/TCP) and their operator HMI.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/*

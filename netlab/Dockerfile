@@ -5,7 +5,7 @@
 #                     plus an ARP-storm watcher that feeds the Alert meter
 #   ROLE=patron    -> a scripted diner patron that logs in + checks mail in
 #                     cleartext every few seconds
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 WORKDIR /app
 RUN apk add --no-cache openssl \

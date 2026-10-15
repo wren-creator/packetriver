@@ -1,7 +1,7 @@
 # rail-plc: the loop-track switch + spur controller for Packet River.
 # A raw-TCP "maintenance console" with default credentials and a command
 # that shells out unsanitised - the deliberate weaknesses.
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 WORKDIR /app
 RUN pip install --no-cache-dir "paho-mqtt==2.1.0" "Flask==3.0.3"

@@ -1,7 +1,7 @@
 # player: the boxed-in attacker workstation. Real open-source tools, no route
 # off the lab. Attack the town from here, or set PKT_LIGHT=1 and use your own
 # shell against the published ports instead.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \

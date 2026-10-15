@@ -2,7 +2,7 @@
 # schema, the health check, and stub endpoints; Phase 1 adds per-session flag
 # generation + injection, submission validation, the score formula, and the
 # leaderboard.
-FROM python:3.12-alpine
+FROM python:3.14-alpine
 
 RUN apk add --no-cache curl
 

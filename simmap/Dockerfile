@@ -2,7 +2,7 @@
 # process. Phase 0 runs a light idle model and a debug breach/reset path;
 # later phases add the ICS client loops and the physics integrators lifted
 # from crosscreek/process-sim.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
