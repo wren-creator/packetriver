@@ -1,7 +1,7 @@
 # The Packet River AS/400 (IBM i) - a TN5250 green-screen host. Vendored from
 # web3270's mock-lpar (GPL-3.0). No npm deps: node builtins + the local rpg/
 # interpreter only.
-FROM node:20-alpine
+FROM node:25-alpine
 
 WORKDIR /app
 COPY package.json mock-as400.js ./
