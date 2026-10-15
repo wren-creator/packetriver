@@ -1,0 +1,50 @@
+# Dependabot version updates. Weekly; minor and patch bumps grouped into one PR,
+# major bumps arrive separately so they can be tested on purpose.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directories:
+      - "/bank"
+      - "/mainframe/as400"
+      - "/mainframe/z16"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "pip"
+    directories:
+      - "/field-plc"
+      - "/scoring"
+      - "/simmap"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "docker"
+    directories:
+      - "/bank"
+      - "/dns"
+      - "/factory-snmp"
+      - "/field-plc"
+      - "/gateway"
+      - "/mainframe/as400"
+      - "/mainframe/z16"
+      - "/netlab"
+      - "/paygw"
+      - "/player"
+      - "/rail-plc"
+      - "/scoring"
+      - "/simmap"
+      - "/soho-router"
+      - "/traffic-plc"
+      - "/websites"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
