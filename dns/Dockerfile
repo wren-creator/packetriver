@@ -1,6 +1,6 @@
 # Packet River municipal DNS - CoreDNS, authoritative for packetriver.range,
 # with zone transfer left wide open on purpose.
-FROM alpine:3.20
+FROM alpine:3.24
 
 RUN apk add --no-cache coredns
 
